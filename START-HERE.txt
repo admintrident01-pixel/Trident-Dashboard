@@ -1,0 +1,135 @@
+LOCAL DEVELOPMENT IS NOW AVAILABLE
+See LOCAL-DEVELOPMENT.txt and double-click Start-Local-Development.cmd.
+The local preview uses separate storage. Existing deployment instructions follow.
+
+VERSION C - ONLINE SETUP
+
+WHAT IS READY
+React sign-in shell for the existing Cloudflare Worker, the existing quote
+editor, a Google Cloud Run API, BigQuery storage adapter and private PDF storage.
+Only nikita.trident2024@gmail.com is accepted by the API. Google verifies the
+sign-in token; the backend checks its audience, issuer, email verification and
+approved email. No password or private key belongs in the frontend or GitHub.
+
+WHAT HAS NOT HAPPENED
+No GitHub commit, Cloudflare deployment, Google Cloud deployment, billing change
+or real cloud-data import has been performed. The current website is unchanged.
+Google client ID is configured. The Cloud Run API URL is still required.
+
+START HERE: CREATE GOOGLE SIGN-IN
+1. In Google Cloud choose project trident-dashboard-511019.
+2. Open Google Auth Platform. Configure Branding with app name Trident Quotes
+   and your support email. Choose External audience; while in Testing add
+   nikita.trident2024@gmail.com as a test user.
+3. Open Clients, Create client, Web application.
+4. Under Authorised JavaScript origins add:
+   https://trident.nikita-trident2024.workers.dev
+   Do not add a path or trailing slash. This app uses a JavaScript callback;
+   an authorised redirect URI is not required for this flow.
+5. Completed: your client ID is now included in .env.example and deployment
+   scripts. No client secret is used by this application.
+Official guide: https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid
+
+SOURCE PACKAGE
+Online contains application source for the existing GitHub repository. It keeps
+its React/Vite dependencies and wrangler name trident. Only upload the contents
+of Online to GitHub. Do not upload the parent folder's local workbook, quote
+records, drafts or PDFs. Those are private data and have separate storage.
+No runtime download or copy of Version B is needed by the online editor.
+
+DATABASE CHOICE
+The supplied backend follows the screenshot's BigQuery approach, with a single
+versioned register record for this initial one-person app. Each save atomically
+checks and advances the global revision in one conditional UPDATE. PDFs are
+immutable private objects; their references change with the register commit.
+A lost response requires refreshing Home before retrying. Failed PDF cleanup
+can leave an unreferenced private object; it does not appear in the quote list.
+BigQuery is an analytics database, so queries/saves may be slower than a normal
+transaction database. This implementation enforces an 8 MiB register size cap.
+Before wider team use or a large register, prefer a transactional database.
+The database choice can still be changed before deployment; a SQLite adapter
+exists only for local test verification, not Cloud Run production storage.
+https://docs.cloud.google.com/bigquery/docs/best-practices-performance-compute
+
+GOOGLE CLOUD RESOURCES
+Cloud Run and BigQuery region: australia-southeast1 (Sydney).
+Proposed dedicated dataset: trident_quotes. Existing datasets are not replaced.
+BigQuery table: trident-dashboard-511019.trident_quotes.app_state.
+Private PDF bucket: trident-dashboard-511019-quote-pdfs.
+Runtime account: quote-api@trident-dashboard-511019.iam.gserviceaccount.com.
+Check for naming collisions and verify dataset/bucket locations before running.
+Cloud billing must be enabled. Google Cloud usage can incur charges even when
+Cloudflare is on its free plan. Set a budget alert in the Cloud project.
+
+SETUP IN CLOUD SHELL
+Upload the Online source folder to Google Cloud Shell and enter it. Review
+setup-cloud.sh. It enables the required APIs and grants BigQuery job execution,
+dataset-scoped data editing and private bucket object management to the runtime
+identity. Deployment/build permissions belong to the deploying account; if
+Cloud Build reports missing permissions, follow its specific service-account
+error rather than granting Project Owner to the runtime account.
+The setup/deploy scripts now default to your supplied public client ID. Run:
+ export GOOGLE_CLIENT_ID='1087455515042-ql715veu24peb1hhfrp69sj31t8sahaf.apps.googleusercontent.com'
+ bash setup-cloud.sh
+
+INITIALISE PRIVATE DATA ONCE
+Make a separate private upload of your local Version B folder to Cloud Shell,
+including workbook, Quote Records, Drafts and Generated Quotes. Open Version B
+Home beforehand so any older standalone drafts are migrated. Keep local backups.
+Do not place these files in GitHub. From Online/backend run:
+ pip install -r requirements.txt
+ export GOOGLE_CLOUD_PROJECT='trident-dashboard-511019'
+ export BIGQUERY_TABLE='trident-dashboard-511019.trident_quotes.app_state'
+ export PDF_BUCKET='trident-dashboard-511019-quote-pdfs'
+ python import_local.py '/path/to/Version B'
+The table must be empty. The import refuses to overwrite an existing register.
+Initialisation must finish before deploying and letting the app write quotes.
+Remove the private Cloud Shell upload afterwards if it is no longer needed.
+
+DEPLOY BACKEND
+From Online, with GOOGLE_CLIENT_ID still set:
+ bash deploy-api.sh
+Record the returned HTTPS service URL. Cloud Run permits browser requests to
+reach the service, but every data API verifies the Google token and owner email.
+The health endpoint contains only version/health, no client or configuration data.
+PDF objects have no public bucket access. Cross-origin requests are allowed only
+from the specified Cloudflare origin. No Cloud Run filesystem data is relied on.
+https://docs.cloud.google.com/run/docs/deploying-source-code
+
+CONNECT CLOUDFLARE
+Commit only Online source to the existing Trident repository. In its Cloudflare
+build configuration set build command npm run build, deploy command
+npx wrangler deploy (for the existing Workers assets setup).
+Add build environment variables:
+ VITE_API_URL = the Cloud Run HTTPS URL, with no final slash
+ VITE_GOOGLE_CLIENT_ID = the same web client ID used by the API
+Run npm ci and npm run build locally if desired. Rebuild/deploy the Worker.
+The existing wrangler.jsonc publishes dist and handles SPA navigation.
+Do not create a second app or change the existing trident Worker name.
+The build variable values are public configuration, not client secrets.
+
+FINAL LIVE CHECKS
+Sign in with the approved account; another Google account must be denied.
+Save a draft, close/reopen, finalise, view PDF, edit, regenerate and delete.
+Deleted numbers must stay reserved. Test two tabs updating the same quote.
+Download Excel, edit a quote type or bank detail, upload and verify defaults.
+Keep existing Quote Register rows, identity, status and revision values intact.
+Sign out and check that protected API/PDF requests require authentication.
+Cloud integration must pass these live checks before calling Version C deployed.
+
+LOCAL VERIFICATION COMPLETED
+React production build and lint passed. API tests covered missing/wrong account,
+wrong origin, draft/finalise/edit/delete, deleted number reservation, workbook
+history retention, compare-and-swap conflicts and staged PDF cleanup. Browser
+workflow tested React sign-in handoff, editor saving, authenticated PDF viewing,
+editing, deletion and sign-out with a simulated Google token and SQLite storage.
+Real Google token verification, BigQuery concurrency and Cloud Storage IAM have
+not yet been exercised against the user's cloud environment.
+
+VERSION A AND B
+Existing Version A/B files and archives remain unchanged. Version C's local
+working copy remains available separately from Online. The supplied Online ZIP
+contains source only, without private quote data or installed dependencies.
+
+CONFIGURED GOOGLE CLIENT ID
+1087455515042-ql715veu24peb1hhfrp69sj31t8sahaf.apps.googleusercontent.com

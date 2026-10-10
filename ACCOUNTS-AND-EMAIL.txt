@@ -1,0 +1,94 @@
+TRIDENT ACCOUNTS AND EMAIL REMINDERS
+
+LOCAL WORKSPACE
+Open http://127.0.0.1:18780/. The updated local API uses port 18782.
+Open local Admin workspace enters the development account bala@trice.nz.
+This shortcut exists only in the loopback development server, never production.
+The previous owner account is preserved; Admins can edit or disable it in Settings.
+Settings > Users & access adds users and assigns Admin or Technician access.
+Link each Technician to one technician name from Technicians & vehicles.
+Use Send confirmation, or enter the invited email on the sign-in screen.
+Local confirmation links are previews, not emails delivered to real inboxes.
+Settings > Email reminders > Email history shows these local previews.
+No password or Google account is required for email-link sign-in.
+
+ACCESS
+Admin: users, Settings, quotes, weekly time sheet dashboard, leave decisions,
+fleet changes, editing prior checks, and email reminders.
+Technician: own time sheet and leave requests, viewing all vehicle checks, and
+new checks dated today. Existing vehicle checks cannot be changed by Technicians.
+API access rules enforce these permissions even if UI controls are bypassed.
+Account changes revoke email sessions and outstanding confirmation links.
+Inactive accounts cannot access the API. An Admin cannot demote or disable their
+own account. At least one active Admin is required.
+
+CONFIRMATION LINKS
+Only invited/active users can sign in. Sign-in responses do not disclose unknown
+accounts in production. Links have random 256-bit secrets, are stored as hashes,
+expire after 15 minutes and can be used once. Sessions expire after 8 hours and
+are kept in browser memory. Sign out revokes the email session on the server.
+Sign-in email requests are rate-limited per address and per source IP.
+Local previews contain sign-in links; keep the database and backups private.
+The supplied Google token verifier remains compatible with the existing owner
+integration; the new browser sign-in uses the invited-email flow.
+
+VEHICLE DEADLINES
+The next vehicle check uses Next vehicle check due from the most recent dated
+check. New forms default to 30 days after the check date. Older records without
+an explicit expiry retain the 30-day rule. Admin edits to the latest check update
+the dashboard and reminders; editing an older check does not replace a newer one.
+Admin Home and Vehicle checks have reminder email buttons showing due dates and
+days remaining. Recipients must be active, confirmed users linked to the driver.
+No recipient is guessed. Missing/unknown recipients are shown for Admin action.
+
+TIME SHEET DEADLINES
+Settings > Email reminders sets the weekly weekday, time and reminder lead time
+in Pacific/Auckland. Defaults: Friday at 17:00, reminder 24 hours before.
+Current and previous Monday-starting weeks are checked. Submitted time sheets
+stop reminders for that week. Changes to daylight saving are handled in Auckland
+time. Automatic reminders are off until an Admin enables them.
+Automatic reminders send at most once per recipient, task/due date/Auckland day
+while due; they continue daily if overdue. The local service creates previews
+every minute while running. It never sends real emails, even if SMTP is configured.
+
+CONNECTING REAL EMAIL (NOT CONNECTED OR DEPLOYED BY THIS CHANGE)
+Ask your chosen email provider for an authorised SMTP sender. Use a dedicated
+sender credential or app credential, not a personal mailbox password in chat.
+For Cloud Run, configure these SERVER-ONLY environment variables/secrets:
+ SMTP_HOST       Provider SMTP hostname
+ SMTP_PORT       587 (STARTTLS), or 465 (TLS from connection start)
+ SMTP_FROM       Verified/authorised sending email address
+ SMTP_USER       Provider username (if required)
+ SMTP_PASSWORD   Provider credential, supplied through a server-side secret
+ FRONTEND_ORIGIN Exact HTTPS frontend origin, no trailing slash
+ REMINDER_JOB_TOKEN Random secret used only by the scheduled job
+Never put credentials in VITE_ frontend variables, Git, or this transfer bundle.
+The server requires validated TLS. SMTP acceptance is shown as sent, not proof
+of inbox delivery. Configure SPF/DKIM/DMARC with the provider and check bounce
+handling before enabling business reminders. A failed/uncertain delivery is not
+retried silently. Ask the user to request a new confirmation link or send a new
+reminder after reviewing email history. A queue item stuck in sending after a
+server crash needs review before any resend, to avoid duplicates.
+Production account links are removed from email history after delivery attempts.
+
+ONLINE AUTOMATIC REMINDERS
+Deploy the updated backend Docker image and frontend together when requested.
+Connect a trusted scheduler (for example Cloud Scheduler) to POST:
+ https://YOUR_API/api/reminders/run
+Header: Authorization: Bearer <the configured REMINDER_JOB_TOKEN>
+An hourly schedule is sufficient; daily deduplication is in the application.
+Keep the job credential private; require HTTPS. This scheduler setup and actual
+email sending have not been performed. Enable automatic reminders in Settings
+after sender and scheduler verification. Manual reminder buttons work once
+SMTP is connected. No email service shows a clear configuration error.
+
+VERIFICATION
+Build and lint checks plus API regression tests cover role enforcement, own-data
+access, sign-in expiry/single use/logout, disabled accounts, rate limiting,
+Admin lockout prevention, invitation previews, scheduler authentication, weekly
+and vehicle deadlines, automatic deduplication, and simulated SMTP success/failure.
+Real SMTP delivery and online scheduling require the actual provider environment.
+The old local service on 18781 could not be stopped by this restricted session;
+the new launcher uses 18782 and separate api-accounts log/pid files. A normal
+computer restart removes the old process. Both services are loopback-only.
+The pre-change database backup is .local-data/before-accounts-backup.db.

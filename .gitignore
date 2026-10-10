@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.local
+backend/.env
+__pycache__/
+*.pyc
+*.xlsx
+*.pdf
+Drafts/
+Quote Records/
+Generated Quotes/
+credentials*.json
+
+.local-data/
+.local-runtime/

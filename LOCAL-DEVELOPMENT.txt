@@ -1,0 +1,101 @@
+TRIDENT VERSION C - LOCAL DEVELOPMENT
+
+Double-click Start-Local-Development.cmd in this folder.
+Open http://127.0.0.1:18780/ and choose Open local workspace. The main Home page has Quotes and Time sheet options.
+Quotes opens the quote dashboard; use the top Home tab to return to the main
+workspace. Moving between them preserves unsaved quote fields.
+Time sheet uses the uploaded weekly layout. Enter a technician name, work or
+leave hours, notes and a signature. Submit saves the signed sheet locally;
+Generate PDF downloads the current sheet without submitting it. Saved technician
+names appear as suggestions. Moving between pages preserves unsaved time sheets.
+Time sheets are stored alongside quotes in .local-data/quotes.db. The uploaded
+Google Apps Script calls have been replaced with this application's API.
+The new time sheet API must be deployed with the frontend when publishing later.
+Weekly report shows a daily hours table, stacked weekly chart and last week's
+table from signed submissions. The latest sheet per technician/week is used;
+choose work hours or work and leave hours. Weekends are included.
+Settings manages technician names and vehicle registrations. Initial technician
+names come from the supplied report screenshot; registrations start blank.
+Save settings updates the time sheet name suggestions. Existing submitted
+history remains even if a technician is removed from the settings list.
+Vehicle checks has the supplied fleet dashboard, a New vehicle check button and
+an editable submission history. The form has vehicle/inspection, compliance and
+sign-off sections. All OK records every checklist item as Pass; Issues found
+requires Pass, Fail or N/A for each item. Saved checks update dashboard dates,
+readings and remaining kilometres. Next check is 30 days after the check date.
+WOF uses its expiry date only; WOF due kilometres and remaining kilometres are
+removed. RUC, service and wheel alignment kilometres remaining are calculated
+from their due readings minus the odometer. WOF and rego months to expiry use
+today's Auckland date. These calculated values also preview in the sign-off step.
+Older dated checks remain in history without replacing a newer dashboard check.
+Manage vehicles edits registrations, make/model, driver and active status and
+can add vehicles. A vehicle assigned to a technician uses their rego in Settings.
+Remove beside a vehicle removes it from the editable list; Save vehicles applies
+the removal to the dashboard. Its submitted checks stay viewable and editable
+in history. Removed vehicle IDs are retained for history and cannot be reassigned.
+The initial fleet values are transcribed from the supplied dashboard screenshot;
+they are starting readings, not submitted check forms. All submissions and fleet
+edits are stored in the local database alongside quote and time sheet data.
+The vehicles.py API module must be deployed with the frontend when publishing.
+The local API runs on 127.0.0.1:18782. Both services stay on this computer.
+
+Quote data is stored in Online/.local-data. The first start copies Version B's
+local workbook, quote records and PDFs. Later starts keep your local edits.
+This is a test copy; live cloud quotes added since that local snapshot are not
+automatically downloaded. Nothing saved locally updates the live website.
+
+Work on features in this source folder. React changes refresh automatically.
+For quote editor HTML changes, refresh the browser. Restart the local API after
+changing Python code. The launch shortcut reuses existing local services.
+
+No Google sign-in is required for this loopback-only development entry point.
+Production builds always retain Google sign-in and the live API. The Cloud Run
+Dockerfile excludes the development server. Production API has no development
+session endpoint. No production credentials or account settings are changed.
+
+Online/.local-data is excluded from Git and the online ZIP. Keep it private.
+When ready, run npm run build and npm run lint, then publish only source changes.
+Changes are not committed or uploaded automatically. Tell Codex when the build
+is final and you want the reviewed package uploaded/deployed.
+
+Node and Python are already available on this computer through Codex. On another
+computer they and npm dependencies must be installed before local development.
+The launch shortcut checks the bundled runtimes, then normal installed runtimes.
+The existing live baseline ZIP is preserved separately.
+
+Leave forms provides requests, approval/decline decisions, cancellation and
+history. Requests always begin Pending. The signed-in owner can review decisions
+in this initial single-user version. Declines require decision notes.
+Select a technician from Settings, leave type, dates, hours per day and reason.
+Weekdays default to 8 hours; weekend inclusion and daily hours are editable.
+Overlapping pending/approved requests for the same technician are blocked.
+Approved leave automatically fills and locks the matching time sheet rows.
+New time sheet submissions require approved leave for nonzero leave hours.
+The API validates approval status, type, dates and hours and stores the approval
+IDs in signed time sheet history. Cancelled leave stops future syncing; signed
+history is preserved. No pending leave appears in weekly reports until a time
+sheet has been signed and submitted. Approval changes update open time sheets.
+Leave requests and decisions are saved in the same local database. The leave.py
+API module must be deployed with the frontend when publishing these features.
+
+The vehicle dashboard includes the latest submitted checklist per vehicle and a
+View check button. Next-check status is red for due/overdue or 1-7 days remaining,
+orange for 8-14 days, yellow for 15-21 days and green for 22 or more days.
+Missing checks show a neutral No check recorded status. Due dates are 30 days
+after the check date. Status uses Auckland's current date and refreshes daily.
+
+Settings now has Technicians & vehicles, Time sheet defaults and Quote settings.
+Default start/finish times use 15-minute increments and update untouched entries;
+manually edited times and approved leave are preserved.
+Quote settings edits business/payment details, GST, validity, email text, starting
+number, quote types/scopes and default items/prices. Current workbook settings
+are read automatically. The internal workbook preserves the quote register; users
+no longer need Excel buttons. Existing/deleted numbers remain reserved.
+The quote_settings.py API module must be deployed with these frontend changes.
+
+ACCOUNT AND REMINDER UPDATE
+Read ACCOUNTS-AND-EMAIL.txt for current sign-in, roles and email setup.
+The browser now uses invited-email confirmation links; Google is not required.
+Settings includes Users & access and Email reminders. Quotes, leave decisions,
+weekly reports, Settings and saved-check editing are limited to Admins.
+The local API now runs on 127.0.0.1:18782. Emails are local previews only.
