@@ -1,0 +1,6 @@
+gunicorn>=23,<24
+google-cloud-bigquery>=3.25,<4
+google-cloud-storage>=3,<4
+google-auth>=2.35,<3
+requests>=2.32,<3
+reportlab>=4.4,<5
