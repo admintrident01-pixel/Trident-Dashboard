@@ -49,8 +49,10 @@ class Application:
    if self.local:
     mail=next((m for m in reversed(list(result.get('mailOutbox',{}).values())) if m['to']==address and m['status']=='queued'),None)
     if mail:payload.update(message='Local preview only. No email was sent. Open the confirmation link below.',previewLink=mail['body'].split('\n')[3])
-  else:result,payload=accounts.consume(state,p.get('token'))
+  elif path=='/api/auth/login':result,payload=accounts.password_login(state,p,environ.get('REMOTE_ADDR',''))
+  else:result,payload=accounts.consume(state,p.get('token'),p.get('remember',False))
   self.commit(revision,result)
+  if payload is None:raise Problem(401,'Email or password is incorrect. Use an email link to set or reset your password.')
   if path=='/api/auth/request':reminders.deliver(self.store,self.local)
   return payload
  def __call__(self,environ,start_response):
@@ -62,7 +64,7 @@ class Application:
     if origin!=self.origin or not origin:raise Problem(403,'Origin is not allowed.')
     headers += [('Access-Control-Allow-Methods','GET,POST,OPTIONS'),('Access-Control-Allow-Headers','Authorization,Content-Type,If-Match,X-Quote-Token')];payload={}
    elif path=='/api/health':payload={'ok':True,'version':'C'}
-   elif path in ('/api/auth/request','/api/auth/confirm') and method=='POST':
+   elif path in ('/api/auth/request','/api/auth/confirm','/api/auth/login') and method=='POST':
     if origin!=self.origin or not origin:raise Problem(403,'Open the approved Trident website to sign in.')
     if self.store is None:self.store=BigQueryStore()
     payload=self.account_request(environ)
@@ -84,7 +86,9 @@ class Application:
     revision,state=self.store.read()
     user=accounts.resolve(state,auth[7:],self.verify);email=user['email']
     if method=='POST' and origin!=self.origin:raise Problem(403,'Save requests must come from the approved website.')
-    if path=='/api/session' and method=='GET':payload={**user,'token':'cloud','workbook':'Trident-Quote-Settings.xlsx'}
+    if path=='/api/session' and method=='GET':payload={**user,'hasPassword':email in state.get('passwords',{}),'token':'cloud','workbook':'Trident-Quote-Settings.xlsx'}
+    elif path=='/api/auth/password' and method=='POST':
+     state=accounts.set_password(state,user,auth[7:],self.body(environ).get('password'));self.commit(revision,state,actor=email);payload={'saved':True,'hasPassword':True}
     elif path=='/api/auth/logout' and method=='POST':
      state.get('sessions',{}).pop(accounts.digest(auth[7:]),None);self.commit(revision,state,actor=email);payload={'signedOut':True}
     else:

@@ -22,6 +22,64 @@ def digest(value):
 def public(user):
     return {key: user.get(key) for key in ('email', 'name', 'technician', 'role', 'active', 'verified')}
 
+def password_hash(value, salt=None):
+    if not isinstance(value, str) or not 12 <= len(value) <= 128:
+        raise Problem(400, 'Use a password between 12 and 128 characters.')
+    salt = salt or secrets.token_hex(16)
+    key = hashlib.scrypt(value.encode(), salt=bytes.fromhex(salt), n=16384, r=8, p=5, maxmem=64*1024*1024, dklen=32)
+    return {'salt': salt, 'hash': key.hex()}
+
+def new_session(result, address, remember=False, email_verified_at=None):
+    now = time.time()
+    existing = [(k, v) for k, v in result.get('sessions', {}).items() if v['expires'] > now]
+    own = [k for k, v in existing if v['email'] == address]
+    discard = set(own[:-4])
+    result['sessions'] = dict([(k, v) for k, v in existing if k not in discard][-999:])
+    token = 'trident_' + secrets.token_urlsafe(32)
+    record = {'email': address, 'expires': now + (30*86400 if remember else 8*3600)}
+    if email_verified_at is not None: record['emailVerifiedAt'] = email_verified_at
+    result['sessions'][digest(token)] = record
+    return {'token': token, 'hasPassword': address in result.get('passwords', {}), **public(users(result)[address])}
+
+def password_login(state, data, ip):
+    address = email(data.get('email'))
+    value = data.get('password')
+    if not isinstance(value, str) or len(value) > 128:
+        raise Problem(401, 'Email or password is incorrect. Use an email link to set or reset your password.')
+    if not isinstance(data.get('remember', False), bool): raise Problem(400, 'Invalid sign-in preference.')
+    result = copy.deepcopy(state)
+    now = time.time()
+    rates = {k: v for k, v in result.get('passwordRates', {}).items() if v['until'] > now}
+    keys = [(digest(address), 10), ('ip:' + digest(ip), 50)]
+    if any(rates.get(k, {}).get('count', 0) >= limit for k, limit in keys):
+        raise Problem(429, 'Too many attempts. Wait 15 minutes or sign in using an email link.')
+    for k, _ in keys:
+        previous = rates.get(k, {'until': now + 900, 'count': 0})
+        rates[k] = {**previous, 'count': previous['count'] + 1}
+    result['passwordRates'] = dict(list(rates.items())[-2000:])
+    user = users(result).get(address)
+    stored = result.get('passwords', {}).get(address)
+    # Perform the same expensive check for unknown accounts and wrong passwords.
+    candidate = password_hash(value if len(value) >= 12 else 'invalid-password-placeholder', (stored or {}).get('salt', '00'*16))
+    matches = secrets.compare_digest(candidate['hash'], (stored or {}).get('hash', '00'*32))
+    if not (stored and matches and len(value) >= 12 and user and user['active'] and user['verified']):
+        return result, None
+    result['passwordRates'].pop(digest(address), None)
+    return result, new_session(result, address, data.get('remember', False))
+
+def set_password(state, user, token, value):
+    session = state.get('sessions', {}).get(digest(token), {})
+    if not user.get('verified') or time.time() - session.get('emailVerifiedAt', 0) > 900:
+        raise Problem(403, 'Open a fresh email sign-in link before setting or resetting your password.')
+    result = copy.deepcopy(state)
+    result.setdefault('passwords', {})[user['email']] = password_hash(value)
+    for collection in ('sessions', 'loginLinks'):
+        result[collection] = {k:v for k,v in result.get(collection, {}).items() if v['email'] != user['email']}
+    result.setdefault('sessions', {})[digest(token)] = {**session}
+    result['sessions'][digest(token)].pop('emailVerifiedAt', None)
+    result.get('passwordRates', {}).pop(digest(user['email']), None)
+    return result
+
 def resolve(state, token, verify):
     if token.startswith('trident_'):
         session = state.get('sessions', {}).get(digest(token))
@@ -105,7 +163,7 @@ def issue(state, address, origin, ip='', invitation=False):
     reminders.queue(result, address, subject, body, 'account')
     return result
 
-def consume(state, value):
+def consume(state, value, remember=False):
     if not isinstance(value, str) or len(value) > 200:
         raise Problem(400, 'Invalid sign-in link.')
     item = state.get('loginLinks', {}).get(digest(value))
@@ -118,11 +176,5 @@ def consume(state, value):
     result['users'] = copy.deepcopy(users(state))
     result['users'][item['email']]['verified'] = True
     del result['loginLinks'][digest(value)]
-    now = time.time()
-    existing = [(k, v) for k, v in result.get('sessions', {}).items() if v['expires'] > now]
-    own_sessions = [k for k, v in existing if v['email'] == item['email']]
-    discard = set(own_sessions[:-4])
-    result['sessions'] = dict([(k, v) for k, v in existing if k not in discard][-999:])
-    token = 'trident_' + secrets.token_urlsafe(32)
-    result['sessions'][digest(token)] = {'email': item['email'], 'expires': now + 8 * 3600}
-    return result, {'token': token, **public(result['users'][item['email']])}
+    if not isinstance(remember, bool): raise Problem(400, 'Invalid sign-in preference.')
+    return result, new_session(result, item['email'], remember, time.time())

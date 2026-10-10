@@ -1,0 +1,14 @@
+.signin{margin:24px auto;padding:24px;max-width:520px}
+.signin .signin-logo{max-width:210px;width:65%;height:auto}
+.signin h1{font-size:24px;margin:18px 0 10px}
+.signin form{display:grid;gap:14px}
+.signin .vehicle-field{display:grid;gap:6px;font-weight:600}
+.signin .vehicle-field input{width:100%;padding:10px 12px;border:1px solid #cbd8e9;border-radius:6px;font:inherit;color:#20334d;background:#fff}
+.signin .signin-remember{display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;line-height:1.4;margin:6px 0 12px}
+.signin .signin-remember input{width:16px;height:16px;flex:none;margin:1px 0;accent-color:#17345f}
+.signin button{min-height:38px;width:100%}
+.signin .signin-secondary{margin-top:10px;background:#edf2fa;color:#17345f;border:1px solid #cbd8e9}
+.signin button:disabled{opacity:.6;cursor:wait}
+.signin .report-hint{font-size:13px;margin:0;color:#65758a}
+.signin>p.report-hint{margin-top:16px}
+@media(max-width:560px){.signin{margin:12px;padding:20px}.signin h1{font-size:22px}}

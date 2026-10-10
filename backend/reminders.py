@@ -120,12 +120,14 @@ def deliver(store, local=False):
             context = ssl.create_default_context()
             factory = smtplib.SMTP_SSL if port == 465 else smtplib.SMTP
             kwargs = {'context': context} if port == 465 else {}
-            with factory(os.environ['SMTP_HOST'], port, timeout=20, **kwargs) as smtp:
+            with factory(os.environ['SMTP_HOST'], port, timeout=20, local_hostname='trice.nz', **kwargs) as smtp:
                 if port != 465: smtp.starttls(context=context)
                 if os.environ.get('SMTP_USER'): smtp.login(os.environ['SMTP_USER'], os.environ['SMTP_PASSWORD'])
                 smtp.send_message(msg)
-        except Exception:
+        except Exception as mail_error:
             # A delivery error can be ambiguous; never retry silently.
+            import logging
+            logging.exception('SMTP delivery failed: %s; code=%s', type(mail_error).__name__, getattr(mail_error, 'smtp_code', 'none'))
             status = 'failed'
         for _ in range(10):
             rev, current = store.read()

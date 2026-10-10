@@ -71,6 +71,47 @@ class AccountsAPI(unittest.TestCase):
         with self.assertRaises(Problem):accounts.consume(r,raw)
         self.store.state['sessions']={accounts.digest('trident_expired'):{'email':accounts.FIRST_ADMIN,'expires':0}}
         self.assertEqual(self.call('/api/session',token='trident_expired')[0],401)
+    def confirmed_session(self, remember=False):
+        status,data,_=self.call('/api/auth/request','POST',{'email':accounts.FIRST_ADMIN},token='')
+        self.assertEqual(status,200)
+        link=data['previewLink'].split('#confirm=')[1]
+        return self.call('/api/auth/confirm','POST',{'token':link,'remember':remember},token='')[1]
+    def test_password_setup_login_and_recovery_revokes_old_sessions(self):
+        session=self.confirmed_session()
+        password='a long private password'
+        self.assertEqual(self.call('/api/auth/password','POST',{'password':'short'},token=session['token'])[0],400)
+        self.assertEqual(self.call('/api/auth/password','POST',{'password':password},token=session['token'])[0],200)
+        stored=self.store.state['passwords'][accounts.FIRST_ADMIN]
+        self.assertNotIn(password,json.dumps(stored))
+        self.assertEqual(self.call('/api/auth/password','POST',{'password':password},token=session['token'])[0],403)
+        status,login,_=self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':password,'remember':True},token='')
+        self.assertEqual(status,200)
+        self.assertTrue(login['hasPassword'])
+        self.assertGreater(self.store.state['sessions'][accounts.digest(login['token'])]['expires'],time.time()+29*86400)
+        self.assertEqual(self.call('/api/auth/password','POST',{'password':password},token=login['token'])[0],403)
+        self.assertEqual(self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':'wrong password'},token='')[0],401)
+        self.store.state['loginRates']={}
+        reset=self.confirmed_session()
+        self.assertEqual(self.call('/api/auth/password','POST',{'password':'a new private password'},token=reset['token'])[0],200)
+        self.assertEqual(self.call('/api/session',token=login['token'])[0],401)
+        self.assertEqual(self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':password},token='')[0],401)
+        self.assertEqual(self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':'a new private password'},token='')[0],200)
+        self.assertNotIn('passwords',self.call('/api/users')[1])
+    def test_password_attempts_throttled_and_cannot_bypass_confirmation(self):
+        self.store.state['passwords']={accounts.FIRST_ADMIN:accounts.password_hash('a long private password')}
+        self.assertEqual(self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':'a long private password'},token='')[0],401)
+        for _ in range(9):
+            self.assertEqual(self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':'wrong'},token='')[0],401)
+        self.assertEqual(self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':'wrong'},token='')[0],429)
+        self.assertEqual(self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':'a long private password'},token='',origin='https://evil.nz')[0],403)
+        self.assertEqual(self.call('/api/auth/password','POST',{'password':'a long private password'},token='admin')[0],403)
+    def test_password_setup_recent_email_required_and_disabled_account_blocked(self):
+        session=self.confirmed_session()
+        self.store.state['sessions'][accounts.digest(session['token'])]['emailVerifiedAt']=time.time()-901
+        self.assertEqual(self.call('/api/auth/password','POST',{'password':'a long private password'},token=session['token'])[0],403)
+        self.store.state['users'][accounts.FIRST_ADMIN].update(active=False,verified=True)
+        self.store.state['passwords']={accounts.FIRST_ADMIN:accounts.password_hash('a long private password')}
+        self.assertEqual(self.call('/api/auth/login','POST',{'email':accounts.FIRST_ADMIN,'password':'a long private password'},token='')[0],401)
     def test_disable_account_revokes_access(self):
         status,_,_=self.call('/api/users','POST',{**self.store.state['users']['tech@example.nz'],'active':False})
         self.assertEqual(status,200)

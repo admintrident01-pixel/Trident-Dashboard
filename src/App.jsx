@@ -14,16 +14,17 @@ import EmailSignIn from './EmailSignIn'
 
 import ReminderDashboard from './ReminderDashboard'
 import TechSchedule from './TechSchedule'
+import {loadSession,saveSession} from './session'
 
 const localMode=import.meta.env.DEV&&import.meta.env.VITE_LOCAL_DEVELOPMENT==='true'
 
 const api=localMode?'http://127.0.0.1:18782':(import.meta.env.VITE_API_URL||'https://trident-quote-api-dsn2tnnc3q-ts.a.run.app').replace(/\/$/,'')
 
-const clientId=import.meta.env.VITE_GOOGLE_CLIENT_ID||'1087455515042-ql715veu24peb1hhfrp69sj31t8sahaf.apps.googleusercontent.com'
-
 export default function App(){
 
- const [session,setSession]=useState(null),[error,setError]=useState(''),[document,setDocument]=useState(''),[timesheetDocument,setTimesheetDocument]=useState(''),[page,setPage]=useState('home')
+ const [session,setSession]=useState(loadSession),[error,setError]=useState(''),[document,setDocument]=useState(''),[timesheetDocument,setTimesheetDocument]=useState(''),[page,setPage]=useState('home')
+
+ useEffect(()=>saveSession(session),[session])
 
  const timesheetFrame=useRef(null),quoteFrame=useRef(null)
 
@@ -37,7 +38,7 @@ export default function App(){
 
   const response=await fetch(api+path,{...init,headers}),data=await response.json()
 
-  if(response.status===401){setSession(null);setDocument('');setTimesheetDocument('');setPage('home')}
+  if(response.status===401||response.status===403&&data.error==='Your account is not active. Contact an administrator.'){setSession(null);setDocument('');setTimesheetDocument('');setPage('home')}
 
   if(!response.ok)throw Error(data.error||'Unable to complete this request.')
 
@@ -87,9 +88,12 @@ export default function App(){
 
   if(!session)return
 
-  const timer=setInterval(async()=>{try{const r=await fetch(api+'/api/session',{headers:{Authorization:'Bearer '+session.token}}),d=await r.json();if(!r.ok){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');return}if(d.role!==session.role||d.technician!==session.technician){setSession({...d,token:session.token});setDocument('');setTimesheetDocument('');setPage('home')}}catch{/* Recheck on the next interval. */}},60000)
+  let cancelled=false
+  const check=async()=>{try{const r=await fetch(api+'/api/session',{headers:{Authorization:'Bearer '+session.token}}),d=await r.json();if(cancelled)return;if(r.status===401||r.status===403){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');return}if(!r.ok)return;if(d.role!==session.role||d.technician!==session.technician){setSession({...session,...d,token:session.token});setDocument('');setTimesheetDocument('');setPage('home')}}catch{/* Keep the session through temporary connection failures. */}}
+  check()
+  const timer=setInterval(check,60000)
 
-  return()=>clearInterval(timer)
+  return()=>{cancelled=true;clearInterval(timer)}
 
  },[session])
 
@@ -97,7 +101,7 @@ export default function App(){
 
  const signOut=async()=>{try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
 
- if(!api||!clientId||api.includes('YOUR-')||clientId.includes('YOUR-'))return <main className="signin"><h1>Trident Quote Builder · Version C</h1><p>Online setup is not finished. Configure the API address and Google sign-in client ID, then rebuild the website.</p></main>
+ if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Quote Builder · Version C</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
 
  return session?<div className={`workspace${localMode?' is-local':''}`}>
 
