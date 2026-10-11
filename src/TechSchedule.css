@@ -36,7 +36,7 @@
 .travel-controls{position:absolute;right:1px;top:0;display:flex;gap:1px}.tech-schedule .travel-controls button{padding:0;width:16px;min-height:13px;height:13px;font-size:11px;line-height:11px;background:#f6f7f8;color:#39434f;border:1px solid #adb3bb;border-radius:2px}
 .schedule-note-field select{display:block;width:100%;margin-top:8px}
 
-.tech-schedule .schedule-refresh{border-radius:50%;width:32px;height:32px;min-width:32px;min-height:32px;box-sizing:border-box;padding:4px;display:inline-flex;align-items:center;justify-content:center;color:#fff;border:2px solid var(--trident-navy,#17345f)!important}.schedule-refresh svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}.tech-schedule .schedule-refresh.sync-synced{background:#278447!important;color:#fff!important}.tech-schedule .schedule-refresh.sync-syncing{background:#e8ae25!important;color:#182c43!important}.tech-schedule .schedule-refresh.sync-failed{background:#c93535!important;color:#fff!important}.schedule-refresh.sync-syncing svg{animation:schedule-sync-spin 1.2s linear infinite}@keyframes schedule-sync-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.schedule-refresh.sync-syncing svg{animation:none}}
+.tech-schedule .schedule-refresh{border-radius:50%;width:32px;height:32px;min-width:32px;min-height:32px;box-sizing:border-box;padding:4px;display:inline-flex;align-items:center;justify-content:center;color:#fff;border:2px solid var(--trident-navy,#17345f)!important}.schedule-refresh svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}.tech-schedule .schedule-refresh.sync-synced{background:#278447!important;color:#fff!important}.tech-schedule .schedule-refresh.sync-syncing{background:#e8ae25!important;color:#182c43!important}.tech-schedule .schedule-refresh.sync-failed{background:#c93535!important;color:#fff!important}.schedule-refresh.sync-syncing svg{animation:schedule-sync-spin 1.2s linear infinite}@keyframes schedule-sync-spin{to{transform:rotate(-360deg)}}@media(prefers-reduced-motion:reduce){.schedule-refresh.sync-syncing svg{animation:none}}
 
 .trident-portal .tech-schedule{padding:2px 4px 0}
 .trident-portal .tech-schedule>.schedule-toolbar{margin:0 0 2px;row-gap:2px}
@@ -63,3 +63,18 @@
 .trident-portal .tech-schedule .schedule-time-axis b{display:block;font-weight:normal;line-height:9px}
 .trident-portal .tech-schedule .schedule-time-axis small{display:block;font-size:7px;line-height:8px}
 .trident-portal .tech-schedule .schedule-name-heading{padding:6px 0;text-align:center;font-size:9px}
+
+.trident-portal .tech-schedule .schedule-toolbar-status{flex:1 1 80px;min-width:0;max-height:32px;overflow:auto;font-size:11px;line-height:15px}
+.trident-portal .tech-schedule .schedule-toolbar-status p{margin:0;padding:0;font-size:11px;line-height:15px;overflow-wrap:anywhere}
+.trident-portal .tech-schedule .schedule-toolbar-status:empty{flex-basis:0}
+.trident-portal .tech-schedule .schedule-toolbar-status .schedule-error button{height:auto;min-height:0;padding:0;border:0;background:transparent;color:inherit;font-size:inherit;line-height:inherit;text-decoration:underline}
+@media(max-width:1100px){.trident-portal .tech-schedule .schedule-toolbar-status:not(:empty){flex-basis:160px}}
+
+.trident-portal .tech-schedule .schedule-toolbar .schedule-refresh{width:21px;height:21px;min-width:21px;min-height:21px;flex-basis:21px;padding:2px}
+.trident-portal .tech-schedule .schedule-refresh svg{width:13.5px;height:13.5px}
+
+.trident-portal .tech-schedule .schedule-refresh:is(.sync-synced,.sync-syncing,.sync-failed){background:var(--trident-navy,#17345f)!important;color:#fff!important;border:2px solid var(--sync-status-color)!important;box-shadow:none;align-self:center}
+.trident-portal .tech-schedule .schedule-refresh.sync-synced{--sync-status-color:#278447}
+.trident-portal .tech-schedule .schedule-refresh.sync-syncing{--sync-status-color:#e8ae25}
+.trident-portal .tech-schedule .schedule-refresh.sync-failed{--sync-status-color:#c93535}
+.trident-portal .tech-schedule .schedule-title-actions{align-items:center}

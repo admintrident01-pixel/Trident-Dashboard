@@ -1,0 +1,1 @@
+Sync button remains 21x21 with white arrows and now uses the theme navy background. Status is indicated by a green, yellow or red border with no glow. Includes earlier cumulative changes. Commit extracted files to GitHub to publish. This appearance update needs no backend deployment.
