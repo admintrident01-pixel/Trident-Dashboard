@@ -1,0 +1,1 @@
+Sorting headers now use navy up/down triangles. The active direction is solid and the other triangle fades. This cumulative package includes the previous timesheet history updates. Upload to GitHub to publish frontend changes. If timesheet history has not yet been deployed, also follow TIMESHEET-HISTORY-UPDATE.txt for backend deployment.

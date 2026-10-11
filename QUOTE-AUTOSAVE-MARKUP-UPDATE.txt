@@ -1,0 +1,16 @@
+Quote autosave and markup update
+
+Changed quote forms autosave to Drafts every 10 seconds. Unchanged forms do not write. Saving, saved timestamps, unsaved changes and errors appear in the quote header status bar, including Calculate labour. Save failures retain the unsaved warning. Navigation, signing out, closing or refreshing the browser warn if changes are unsaved. Background browser timer throttling may delay autosaves.
+
+Autosave uses the existing quote identity and revision checks. Changes to completed quotes become drafts under the same number until finalised again; the previous PDF remains available. Autosave does not generate a new PDF. Typing can continue during autosave; changes made during the request remain dirty for the next cycle. Calculator entries are saved with each quote and restored on reopening.
+
+Calculate labour now includes Markup % before Margin %. Selling unit price = base cost * (1 + markup / 100) / (1 - margin / 100), rounded to cents. GST is applied after subtotal. Transfer final value and individual items use the same formula. Markup defaults are managed under Settings > Quote settings > Labour calculator. Base costs, margins, markup and names refresh after settings are saved, retaining manually adjusted values. Previous settings default markup to 0.
+
+This cumulative package includes all previous updates. Publish both backend and frontend. Upload the files to GitHub, then in Cloud Shell:
+cd ~/Trident-Dashboard
+git pull --ff-only
+gcloud run deploy trident-quote-api --project=trident-dashboard-511203 --region=australia-southeast1 --source=backend
+
+Verify the connected Cloudflare frontend build completes, then refresh the site. If git pull reports local changes, preserve them before pulling; do not overwrite them.
+
+Validation: 11 quote autosave/calculation tests and 5 backend calculator settings tests passed. Frontend lint, inline script syntax checks, and production build passed. Tests use synthetic submissions and do not change existing business quotes.

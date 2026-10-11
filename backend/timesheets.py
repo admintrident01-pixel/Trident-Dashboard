@@ -87,11 +87,39 @@ def save(state, data):
                 valid = False
             if not valid:
                 raise Problem(400, 'Enter hours from 0 to 24 in 0.25-hour increments.')
+        unpaid_lunch = day.get('unpaidLunch', False)
+        if not isinstance(unpaid_lunch, bool):
+            raise Problem(400, 'Invalid unpaid lunch choice.')
+        if unpaid_lunch and status != 'Work':
+            raise Problem(400, 'Unpaid lunch applies only to work hours.')
+        entered_hours = hours
+        lunch_hours = min(hours, decimal.Decimal('0.5')) if unpaid_lunch else decimal.Decimal(0)
+        hours -= lunch_hours
         total += hours
-        cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'start': start if method == 'times' else '', 'finish': finish if method == 'times' else ''})
-    entry = {'id': str(uuid.uuid4()), 'technician': technician, 'weekStart': week, 'signature': signature, 'notes': text(data.get('notes', ''), 'weekly notes', 4000), 'days': cleaned, 'total': float(total), 'submittedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
+        cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'enteredHours': float(entered_hours), 'unpaidLunch': unpaid_lunch, 'lunchHours': float(lunch_hours), 'start': start if method == 'times' else '', 'finish': finish if method == 'times' else ''})
+    entry = {'id': str(uuid.uuid4()), 'revision': 1, 'technician': technician, 'weekStart': week, 'signature': signature, 'notes': text(data.get('notes', ''), 'weekly notes', 4000), 'days': cleaned, 'total': float(total), 'submittedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
     result = copy.deepcopy(state)
     import leave
     entry['approvedLeaveIds'] = leave.enforce_timesheet(state, entry)
     result.setdefault('timesheets', {})[entry['id']] = entry
     return result, entry
+
+
+def edit_submission(state, data, actor):
+    if not isinstance(data, dict):raise Problem(400, 'Invalid time sheet correction.')
+    old=state.get('timesheets', {}).get(data.get('id'))
+    if not old:raise Problem(404, 'This time sheet no longer exists.')
+    if type(data.get('revision')) is not int or data['revision'] != old.get('revision',1):
+        raise Problem(409, 'This time sheet changed. Refresh and reopen it.')
+    if data.get('technician') != old['technician'] or data.get('weekStart') != old['weekStart']:
+        raise Problem(400, 'Keep the original technician and week for a correction.')
+    reason=text(data.get('editReason'), 'correction reason', 1000, True)
+    payload={**data, 'signature':old['signature']}
+    _, entry=save(state,payload)
+    previous={k:copy.deepcopy(v) for k,v in old.items() if k!='editHistory'}
+    history=copy.deepcopy(old.get('editHistory',[]))
+    stamp=datetime.datetime.now(datetime.timezone.utc).isoformat()
+    history.append({'editedBy':actor,'editedAt':stamp,'reason':reason,'previous':previous})
+    entry.update(id=old['id'],submittedAt=old['submittedAt'],submittedBy=old.get('submittedBy',''),revision=old.get('revision',1)+1,updatedAt=stamp,updatedBy=actor,editReason=reason,editHistory=history[-50:])
+    result=copy.deepcopy(state);result['timesheets'][old['id']]=entry
+    return result,entry

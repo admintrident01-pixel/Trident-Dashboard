@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 const html=fs.readFileSync(new URL('../public/timesheet.html',import.meta.url),'utf8')
 function fn(name){const start=html.indexOf('function '+name+'('),brace=html.indexOf('{',start);let depth=1,index=brace+1;for(;depth&&index<html.length;index++){if(html[index]==='{')depth++;if(html[index]==='}')depth--}return html.slice(start,index)}
-const rows=Array.from({length:7},()=>{const row={badge:null,fields:{}};for(const key of ['status','other','mode','direct','start','finish'])row.fields[key]={value:key==='status'?'Work':key==='mode'?'direct':key==='direct'?'8':'',disabled:false,closest:()=>row};row.querySelector=selector=>selector==='.approved-leave-badge'?row.badge:row.fields[selector.slice(1)];row.querySelectorAll=()=>[row.fields.start,row.fields.finish];row.fields.status.parentNode={append:badge=>{row.badge=badge;badge.remove=()=>row.badge=null}};return row})
+const rows=Array.from({length:7},()=>{const row={badge:null,fields:{}};for(const key of ['status','other','mode','direct','start','finish','unpaid-lunch'])row.fields[key]={value:key==='status'?'Work':key==='mode'?'direct':key==='direct'?'8':'',disabled:false,closest:()=>row};row.querySelector=selector=>selector==='.approved-leave-badge'?row.badge:row.fields[selector.slice(1)];row.querySelectorAll=()=>[row.fields.start,row.fields.finish];row.fields.status.parentNode={append:badge=>{row.badge=badge;badge.remove=()=>row.badge=null}};return row})
 const inputs={tech:{value:'  scott  '},week:{value:'2027-02-01'},download:{hidden:false}}
 const context={document:{getElementById:id=>inputs[id],querySelectorAll:()=>rows,createElement:()=>({})},calc:()=>{},Map,Date,Number,String}
 vm.createContext(context)

@@ -33,3 +33,11 @@ test('invalid margins, quantities and costs block transfer',()=>{
  for(const bad of [row('labour',91,1,100),row('parts',-1),row('mileage',1.2,-1),row('travel',Infinity),row('other',10),{...row('parts',1),qty:''}])assert.throws(()=>calculateLabour([bad],15))
  assert.throws(()=>calculateLabour([row('labour',91)],-1))
 })
+
+test('markup applies before margin and GST and survives transfer rounding',()=>{
+ const result=calculateLabour([{...row('parts',100,2,20),markup:10}],15)
+ assert.equal(result.lines[0].rate,137.5)
+ assert.equal(result.subtotal,27500)
+ assert.equal(result.total,31625)
+ for(const markup of [-1,1001,NaN,Infinity,''])assert.throws(()=>calculateLabour([{...row('parts',100),markup}],15),/Markup/)
+})

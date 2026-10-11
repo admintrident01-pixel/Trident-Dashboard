@@ -15,7 +15,7 @@ class LabourSettingsTests(unittest.TestCase):
     def test_custom_rates_persist_without_changing_quotes(self):
         state={'quotes':{'1754':{'saved':'quote'}},'workbook':'unchanged','pdfs':{'file':'private'}}
         cfg=labour.read(state);cfg['items'][0]['cost']=25;cfg['items'][0]['margin']=20
-        cfg['items'].append({'id':'battery','category':'parts','name':'Replacement battery','cost':160,'margin':25})
+        cfg['items'].append({'id':'battery','category':'parts','name':'Replacement battery','cost':160,'margin':25,'markup':10})
         result=labour.save(state,cfg)
         self.assertEqual(labour.read(result),cfg)
         self.assertEqual(state,{'quotes':{'1754':{'saved':'quote'}},'workbook':'unchanged','pdfs':{'file':'private'}})
@@ -23,12 +23,20 @@ class LabourSettingsTests(unittest.TestCase):
         self.assertEqual(result['workbook'],state['workbook'])
     def test_settings_validation(self):
         valid=labour.defaults()
-        for field,value in [('cost',-1),('margin',100),('margin',float('nan')),('cost',True),('name',''),('category','other')]:
+        for field,value in [('cost',-1),('margin',100),('markup',-1),('markup',1001),('markup',float('nan')), ('margin',float('nan')),('cost',True),('name',''),('category','other')]:
             cfg=copy.deepcopy(valid);cfg['items'][0][field]=value
             with self.assertRaises(Problem,msg=field):labour.save({},cfg)
         with self.assertRaises(Problem):labour.save({}, {'items':valid['items'][1:]})
         duplicate=copy.deepcopy(valid);duplicate['items'].append(duplicate['items'][0])
         with self.assertRaises(Problem):labour.save({},duplicate)
+    def test_old_settings_default_markup_and_save_roundtrip(self):
+        config=labour.defaults()
+        for item in config['items']:item.pop('markup')
+        original=copy.deepcopy(config)
+        self.assertTrue(all(item['markup']==0 for item in labour.read({'labourSettings':config})['items']))
+        self.assertEqual(config,original)
+        config['items'][0]['markup']=12.5
+        self.assertEqual(labour.read(labour.save({},config))['items'][0]['markup'],12.5)
     def test_api_access_and_conflicts(self):
         api=test_accounts.AccountsAPI();api.setUp()
         self.assertEqual(api.call('/api/labour-settings',token='tech')[0],403)

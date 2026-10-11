@@ -198,7 +198,7 @@ class Application:
 
      headers.append(('ETag',f'"{revision}"'))
 
-     admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/leave-decision')
+     admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/leave-decision','/api/timesheet-edit')
 
      if path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
@@ -355,7 +355,7 @@ class Application:
 
       payload=self.objects.get(key);mime='application/pdf'
 
-     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/staff-settings','/api/vehicles','/api/vehicle-checks','/api/leave','/api/leave-decision','/api/time-settings','/api/quote-settings'):
+     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/staff-settings','/api/vehicles','/api/vehicle-checks','/api/leave','/api/leave-decision','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
 
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh and try again.')
 
@@ -384,6 +384,11 @@ class Application:
         state['timeSettings']={'start':p['start'],'finish':p['finish']}
 
        payload={'saved':True}
+
+      elif path=='/api/timesheet-edit':
+       try:p=json.loads(body)
+       except Exception:raise Problem(400,'Invalid time sheet correction.')
+       state,entry=timesheets.edit_submission(state,p,email);payload={'saved':True,'timesheet':entry,'message':'Time sheet correction saved. Labour payables uses the latest submission for that week.'}
 
       elif path in ('/api/leave','/api/leave-decision'):
 

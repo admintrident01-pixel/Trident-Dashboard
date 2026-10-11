@@ -36,7 +36,7 @@ def week_rows(state, week):
             sick=hours if status=='Sick leave' else 0
             annual=hours if status=='Annual leave' else 0
             other=hours if status=='Other' else 0
-            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,'')})
+            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
         rows.append({'name':name,'submitted':bool(sheet),'days':days})
     return rows
 

@@ -1,0 +1,17 @@
+Admin timesheet history and sorting update
+
+Home now shows every submitted timesheet below Admin reminders, with search and sortable headers.
+Admins can open a submission and correct hours, lunch, daily notes and weekly notes. A correction reason is required. Technician, week and original signature stay unchanged.
+Each correction records the editing admin, date, reason and previous values (up to 50 corrections). Record and application revisions prevent overwriting concurrent edits. Technicians cannot read all timesheets or edit submissions.
+Approved leave fills the matching technician/week in both their timesheet and the correction editor. Leave type and approved hours are enforced by the backend. Approved leave is not counted twice in payables.
+The latest signed submission for each person/week feeds labour payables. Corrections to that submission update the report; earlier submissions stay in history. Editing an earlier submission does not displace a later submission. Daily timesheet notes appear in payables unless overridden by separately saved report notes.
+Sorting: click a column heading to toggle ascending/descending. Names sort A-Z/Z-A, numeric hours numerically and dates chronologically. Available on timesheet history, reminders, quotes, leave, vehicle history, labour payables and recycle bin. Email history has sort-field and direction controls and shows all entries.
+Previous lunch, schedule and other cumulative changes included.
+
+DEPLOY BOTH BACKEND AND FRONTEND. Publish backend before staff use the new editor.
+Copy backend files into your Cloud Shell repository and deploy:
+gcloud run deploy trident-quote-api --project=trident-dashboard-511203 --region=australia-southeast1 --source=backend
+Commit extracted files to GitHub, preserving the folders, to trigger the configured Cloudflare frontend deployment. GitHub does not automatically deploy Cloud Run unless a backend workflow was configured.
+No saved business data, credentials or secrets are included.
+
+Validation: 96 backend tests, alphabetical/numeric/date sorting checks, code checks and production build passed. Local browser confirmed history placement, A-Z/Z-A sorting, admin editor rendering and quote sorting. No existing submitted timesheet was changed during browser verification.

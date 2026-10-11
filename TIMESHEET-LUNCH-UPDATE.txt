@@ -1,0 +1,14 @@
+Timesheet lunch update
+
+Each workday has a checked Unpaid lunch checkbox for a 0.5-hour deduction.
+Direct hours are entered before lunch deduction. For example 8 direct hours becomes 7.5 paid hours; 07:30-16:00 becomes 8 paid hours.
+Unchecking includes the full hours. Leave hours are unaffected. Zero-hour days stay zero; short days never become negative.
+Clicking or focusing Start/Finish switches the row to Start / Finish automatically.
+Preview, PDF and backend calculations include lunch consistently. Existing submissions and requests without the new field retain their old totals.
+The saved record contains entered hours, actual lunch deduction and paid hours.
+
+This update requires BOTH backend and frontend deployment. Deploy backend before staff submit from the new frontend to avoid old backend totals.
+Copy backend files into the Cloud Shell repository and deploy:
+gcloud run deploy trident-quote-api --project=trident-dashboard-511203 --region=australia-southeast1 --source=backend
+Commit the extracted files to GitHub, preserving folders, for the configured Cloudflare frontend deployment. GitHub does not automatically update Cloud Run unless you configured a backend deployment workflow.
+Includes previous cumulative updates. No saved business data or secrets included.

@@ -1,3 +1,4 @@
+import TimesheetHistory from './TimesheetHistory'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import './App.css'
@@ -29,7 +30,7 @@ export default function App(){
  useEffect(()=>saveSession(session),[session])
 
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}`)},[page,session])
- useEffect(()=>{const change=()=>setPage(loadPage());window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[])
+ useEffect(()=>{const change=()=>{const next=loadPage();if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}setPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page])
 
  const timesheetFrame=useRef(null),quoteFrame=useRef(null)
 
@@ -85,6 +86,7 @@ export default function App(){
 
  useEffect(()=>{const handler=e=>{if(e.origin===location.origin&&e.data?.type==='trident-signin-expired'){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('Your session expired. Sign in again.')}};window.addEventListener('message',handler);return()=>window.removeEventListener('message',handler)},[])
 
+ useEffect(()=>{const listener=e=>{if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheets-updated')window.dispatchEvent(new Event('trident-timesheets-updated'))};window.addEventListener('message',listener);return()=>window.removeEventListener('message',listener)},[])
  useEffect(()=>{if(page==='timesheet'&&timesheetDocument)timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin)},[page,timesheetDocument])
 
  useEffect(()=>{const refresh=()=>quoteFrame.current?.contentWindow.postMessage({type:'trident-quote-settings-updated'},location.origin);window.addEventListener('trident-settings-saved',refresh);return()=>window.removeEventListener('trident-settings-saved',refresh)},[])
@@ -104,7 +106,8 @@ export default function App(){
 
  const openLocal=async()=>{try{setError('');const r=await fetch(`${api}/api/dev-session`);const data=await r.json();if(!r.ok)throw Error(data.error||'Start the local development server first.');setSession(data)}catch(e){setError(e.message)}}
 
- const signOut=async()=>{try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
+ const navigate=next=>{if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?'))return;setPage(next)}
+ const signOut=async()=>{if(quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before signing out. Sign out anyway?'))return;try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
 
  if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Quote Builder · Version C</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
 
@@ -112,9 +115,9 @@ export default function App(){
 
   <header className="portal-header">
 
-   <button className="portal-brand" aria-label="Trident home" onClick={()=>setPage('home')}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
+   <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate('home')}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
 
-   <nav aria-label="Main navigation">{[['home','Home'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['settings','Settings']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>setPage(key)}>{name}</button>)}</nav>
+   <nav aria-label="Main navigation">{[['home','Home'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['settings','Settings']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
 
    <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button onClick={signOut}>Sign out</button></div>
 
@@ -128,19 +131,19 @@ export default function App(){
 
    <div className="home-intro"><span className="home-eyebrow">Trident Community Equipment</span><h1>Welcome to your workspace</h1><p>Choose where you’d like to work.</p></div>
 
-   {isAdmin&&<ReminderDashboard request={request}/>}<div className="module-grid">{isAdmin&&<button className="module-card" onClick={()=>setPage('quotes')}>
+   {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request}/></>}<div className="module-grid">{isAdmin&&<button className="module-card" onClick={()=>navigate('quotes')}>
 
     <span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M14 3H5v18h14V8l-5-5Z"/><path d="M14 3v5h5M8 12h8M8 16h5"/></svg></span>
 
     <span className="module-heading">Quotes</span><span className="module-description">Create quotes, manage drafts and view completed quotes.</span><span className="module-link">Open quotes <span aria-hidden="true">→</span></span>
 
-   </button>}<button className="module-card" onClick={()=>setPage('timesheet')}>
+   </button>}<button className="module-card" onClick={()=>navigate('timesheet')}>
 
     <span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h4M7 17h4M15 14v3l2 1"/></svg></span>
 
     <span className="module-heading">Time sheet</span><span className="module-description">Record weekly work and leave hours, add notes and generate a PDF.</span><span className="module-link">Open time sheet <span aria-hidden="true">→</span></span>
 
-   </button>{[['schedule','Tech schedule','View technician appointments and plan upcoming visits.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h10M7 17h6'],['leave','Leave forms','Request leave, review approvals and sync approved dates to time sheets.','M8 3v4M16 3v4M3 10h18M8 15l3 3 5-6M3 5h18v16H3Z'],['reports','Labour payables','Review weekly hours, leave and daily notes; download a PDF.','M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7'],['vehicles','Vehicle checks','Open vehicle checks.','M4 15V9l2-5h12l2 5v6M4 9h16M7 15v4M17 15v4M4 13h3M17 13h3'],['settings','Settings','Manage staff access, vehicles, quote defaults and reminders.','M3 6h18M3 12h18M3 18h18M8 3v6M16 9v6M10 15v6']].filter(([key])=>allowed(key)).map(([key,name,description,path])=><button className="module-card" key={key} onClick={()=>setPage(key)}><span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d={path}/></svg></span><span className="module-heading">{name}</span><span className="module-description">{description}</span><span className="module-link">Open {name.toLowerCase()} <span aria-hidden="true">→</span></span></button>)}</div>
+   </button>{[['schedule','Tech schedule','View technician appointments and plan upcoming visits.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h10M7 17h6'],['leave','Leave forms','Request leave, review approvals and sync approved dates to time sheets.','M8 3v4M16 3v4M3 10h18M8 15l3 3 5-6M3 5h18v16H3Z'],['reports','Labour payables','Review weekly hours, leave and daily notes; download a PDF.','M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7'],['vehicles','Vehicle checks','Open vehicle checks.','M4 15V9l2-5h12l2 5v6M4 9h16M7 15v4M17 15v4M4 13h3M17 13h3'],['settings','Settings','Manage staff access, vehicles, quote defaults and reminders.','M3 6h18M3 12h18M3 18h18M8 3v6M16 9v6M10 15v6']].filter(([key])=>allowed(key)).map(([key,name,description,path])=><button className="module-card" key={key} onClick={()=>navigate(key)}><span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d={path}/></svg></span><span className="module-heading">{name}</span><span className="module-description">{description}</span><span className="module-link">Open {name.toLowerCase()} <span aria-hidden="true">→</span></span></button>)}</div>
 
   </main>}
 
