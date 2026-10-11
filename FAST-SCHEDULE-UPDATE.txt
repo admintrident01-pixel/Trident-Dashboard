@@ -1,0 +1,16 @@
+Cumulative update including all previous changes.
+Schedule sync: circular arrows turn green when saved/checked, yellow while syncing and red when offline or a request fails. Hover for the last checked time; click to refresh/retry. Yellow arrows rotate, with reduced-motion support.
+Existing blocks update immediately on move or resize. Failed saves restore the previous snapshot. Changes from other users are checked every five seconds while the schedule is visible and idle. Hidden tabs and open appointment forms pause polling; returning to the page refreshes it.
+Saving uses one database read and one compare-and-swap write, returning the refreshed schedule and travel blocks in the same response. The extra post-save GET and two redundant database reads were removed. Conditional checks return a small unchanged response. Older refresh responses cannot overwrite a pending save. Conflicting saves still fail safely.
+A 30-second network timeout prevents the sync indicator remaining yellow indefinitely. BigQuery query/write latency still affects online save confirmation; this update does not migrate your database or change your hosting settings.
+Checks: 88 backend tests passed, final targeted schedule/CORS tests passed, optimistic move/travel/rollback checks passed, lint and production build passed.
+
+DEPLOY AFTER COMMITTING THIS ZIP'S FILES TO GITHUB:
+Cloudflare frontend deploys automatically if GitHub integration is enabled.
+In Google Cloud Shell:
+cd ~/Trident-Dashboard
+git pull --ff-only
+gcloud run deploy trident-quote-api --project=trident-dashboard-511203 --region=australia-southeast1 --source=backend
+If git pull reports local changes or conflicts, preserve and resolve them before deploying. Do not overwrite the local fixes or reimport the database.
+Do not run the older deploy-api.sh, which targets a previous project.
+Then refresh https://trident-dashboard.admintrident01.workers.dev/

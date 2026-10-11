@@ -51,3 +51,29 @@ class BookingActionsTests(unittest.TestCase):
         self.assertEqual(status,200);self.assertIn('previews',data['message'])
         self.assertEqual(headers['ETag'],f'"{api.store.revision}"')
         self.assertTrue(all(m['status']=='preview' for m in api.store.state['mailOutbox'].values()))
+
+    def test_save_uses_one_read_returns_schedule_and_keeps_cas(self):
+        from unittest.mock import patch
+        api=test_accounts.AccountsAPI();api.setUp()
+        with patch.object(api.store,'read',wraps=api.store.read) as read:
+            status,data,headers=api.call('/api/schedule','POST',{**self.booking,'technicians':['Scott Yearbury']})
+            self.assertEqual(status,200)
+            self.assertEqual(read.call_count,1)
+            self.assertIn(data['appointment'],data['schedule']['appointments'])
+            self.assertEqual(headers['ETag'],f'"{api.store.revision}"')
+        appointment=data['appointment']
+        with patch.object(api.store,'commit',return_value=False):
+            status,_,_=api.call('/api/schedule','POST',{**appointment,'start':'10:00'})
+            self.assertEqual(status,409)
+        self.assertEqual(api.store.state['appointments'][appointment['id']]['start'],appointment['start'])
+
+    def test_conditional_schedule_response_is_small_and_authenticated(self):
+        import io,json
+        api=test_accounts.AccountsAPI();api.setUp()
+        env={'REQUEST_METHOD':'GET','PATH_INFO':'/api/schedule','QUERY_STRING':'date=2027-02-01','HTTP_AUTHORIZATION':'Bearer admin','HTTP_IF_NONE_MATCH':f'"{api.store.revision}"','CONTENT_LENGTH':'0','wsgi.input':io.BytesIO(b'')}
+        meta=[];body=b''.join(api.app(env,lambda status,headers:meta.append(status)))
+        self.assertEqual(meta[0],'200 OK');self.assertEqual(json.loads(body),{'unchanged':True})
+        preflight=api.call('/api/schedule','OPTIONS')[2]
+        self.assertIn('If-None-Match',preflight['Access-Control-Allow-Headers'])
+        env.pop('HTTP_AUTHORIZATION');meta=[];body=b''.join(api.app(env,lambda status,headers:meta.append(status)))
+        self.assertTrue(meta[0].startswith('401'))

@@ -68,11 +68,13 @@ class Application:
 
   return data
 
- def commit(self,revision,state,actor='',capture=True):
+ def commit(self,revision,state,actor='',capture=True,before=None):
 
   if capture:
 
-   current,before=self.store.read()
+   if before is None:
+    current,before=self.store.read()
+   else:current=revision
 
    if current!=revision:raise Problem(409,'Another change was saved. Refresh and try again.')
 
@@ -126,7 +128,7 @@ class Application:
 
     if origin!=self.origin or not origin:raise Problem(403,'Origin is not allowed.')
 
-    headers += [('Access-Control-Allow-Methods','GET,POST,OPTIONS'),('Access-Control-Allow-Headers','Authorization,Content-Type,If-Match,X-Quote-Token')];payload={}
+    headers += [('Access-Control-Allow-Methods','GET,POST,OPTIONS'),('Access-Control-Allow-Headers','Authorization,Content-Type,If-Match,If-None-Match,X-Quote-Token')];payload={}
 
    elif path=='/api/health':payload={'ok':True,'version':'C'}
 
@@ -216,33 +218,33 @@ class Application:
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
 
-     elif path=='/api/schedule' and method=='GET':payload=schedule.read(state,parse_qs(environ.get('QUERY_STRING','')).get('date',[''])[0])
+     elif path=='/api/schedule' and method=='GET':payload={'unchanged':True} if environ.get('HTTP_IF_NONE_MATCH')==f'"{revision}"' else schedule.read(state,parse_qs(environ.get('QUERY_STRING','')).get('date',[''])[0])
 
      elif path=='/api/schedule' and method=='POST':
 
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh the schedule before trying again.')
 
-      p=self.body(environ);state,appointment=schedule.save(state,p,user);mail_ids=[]
+      p=self.body(environ);before=state;state,appointment=schedule.save(state,p,user);mail_ids=[]
 
       if p.get('sendEmail') is True:
 
        reminders.require_mail(self.local);state,mail_ids=schedule.queue_appointment_email(state,appointment)
 
-      self.commit(revision,state,actor=email);payload={'saved':True,'appointment':appointment}
+      self.commit(revision,state,actor=email,before=before);saved_revision=revision+1;payload={'saved':True,'appointment':appointment,'schedule':schedule.read(state,appointment['date'])}
 
       if mail_ids:
 
        reminders.deliver(self.store,self.local)
 
-       _,current=self.store.read();statuses=[current['mailOutbox'][mid]['status'] for mid in mail_ids]
+       saved_revision,current=self.store.read();statuses=[current['mailOutbox'][mid]['status'] for mid in mail_ids];payload['schedule']=schedule.read(current,appointment['date'])
 
        payload['message']='Email previews saved; no emails sent.' if self.local else f"Appointment saved. Emails sent: {statuses.count('sent')}; failed: {statuses.count('failed')}; pending: {len(statuses)-statuses.count('sent')-statuses.count('failed')}."
 
-      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{self.store.read()[0]}"'))
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{saved_revision}"'))
 
      elif path=='/api/schedule/travel' and method=='POST':
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'The schedule changed. Refresh and try again.')
-      p=self.body(environ);state=schedule.save_travel(state,p,user);self.commit(revision,state,actor=email);payload=schedule.read(state,p['date']);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      p=self.body(environ);before=state;state=schedule.save_travel(state,p,user);self.commit(revision,state,actor=email,before=before);payload=schedule.read(state,p['date']);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
      elif path=='/api/schedule-settings' and method=='GET':payload=schedule.settings(state)
 
      elif path=='/api/schedule-settings' and method=='POST':

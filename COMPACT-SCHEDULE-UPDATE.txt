@@ -1,0 +1,14 @@
+Compact schedule update
+
+Schedule fills the available screen with minimal outer margins and lighter grid borders.
+Time column is 32px wide with 12-hour times and am/pm beneath each label.
+Booking labels and hover details also use 12-hour times.
+Sync refresh button is 32x32 with a navy border and green/yellow/red status colours.
+Controls wrap tightly on smaller screens.
+
+Copy the files into your GitHub repository, preserving the folders, then commit.
+Cloudflare will publish the frontend if your GitHub automatic build is configured.
+This package includes the earlier password, staff, travel, leave, quote creator and fast-sync changes.
+If you already deployed the Fast Schedule update backend, this layout update needs no new backend deployment.
+Otherwise deploy the backend using the existing Google Cloud project trident-dashboard-511203 and service trident-quote-api in australia-southeast1.
+No credentials or saved business data are included.

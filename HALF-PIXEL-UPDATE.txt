@@ -1,0 +1,1 @@
+Schedule blocks now have 0.5px gaps on both sides. Existing block borders and column dividers retained. Includes previous cumulative updates. Commit files to GitHub to publish. This spacing change requires no backend deployment.
