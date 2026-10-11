@@ -1,0 +1,19 @@
+Cumulative website update - 11 October 2026
+
+Includes all files from the previous schedule/password update plus:
+- Grey travel blocks automatically fill clear gaps between appointments.
+- Plus/minus changes travel in 0.25-hour (15-minute) steps, with a minimum of 0.25 hours. Travel stays attached before or after its appointment and cannot expand into bookings, lunch or approved leave.
+- Right-click an appointment, a travel block or an empty track to insert travel. Choose the linked appointment and duration.
+- Approved leave fills the matching staff member and date with the approved leave type and exact hours. The approved fields are locked. Changes refresh when returning to the browser and every minute. Choose the correct technician; your linked staff name is selected automatically if the field is blank.
+- Admins can delete staff and standalone sign-in accounts from Staff setup. An on-page confirmation must be explicitly accepted. Own-account and last-admin deletion are blocked.
+- Deleted staff and sign-in accounts appear in separate Recycle bin groups. Bookings, leave and time-sheet history stay saved. Restore both staff and linked accounts together if needed. Restored accounts are disabled and unconfirmed; enable access and send a fresh confirmation before use.
+- Schedule help documents the travel controls.
+
+Publishing:
+1. Extract this ZIP and upload its src, public, backend and work-tests folders and root config files into the existing GitHub repository, keeping their folder structure. Commit the replacements.
+2. Cloudflare's existing GitHub build deploys the frontend automatically.
+3. Pull the latest repository in Google Cloud Shell and run the existing deploy-api.sh using your current SMTP secrets and environment configuration. The backend must also be redeployed for travel, deletion and technician prefill.
+4. Refresh the website after both deployments finish.
+
+This is a source update for the existing repository. Keep existing data and secrets. Do not re-import the database or re-run initial setup.
+Validation: 85 backend tests passed; approved-leave browser logic test passed; lint and production build passed. The local owner account affected by the native-dialog browser test was restored; confirmation now uses an explicit on-page dialog and cancellation was checked.

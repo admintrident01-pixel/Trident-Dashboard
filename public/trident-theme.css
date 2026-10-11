@@ -156,3 +156,18 @@
  .trident-quote .quote-editor-tabs button[aria-selected=true]{background:var(--trident-navy);border-color:var(--trident-navy);color:white}
 }
 @media screen{.trident-portal .portal-header nav{scrollbar-width:none}.trident-portal .portal-header nav::-webkit-scrollbar{display:none}}
+
+/* Keep quote actions aligned and distinguish finalisation on the navy toolbar. */
+@media screen{
+ .trident-quote header.app .actions{align-items:center;gap:8px}
+ .trident-quote header.app .actions button{flex:none;min-height:32px;line-height:16px;white-space:nowrap}
+ .trident-quote header.app #confirmQuote{background:#e78932;color:#182a42;border:1px solid #f4b779;font-weight:700;padding:7px 12px}
+ .trident-quote header.app #confirmQuote:hover:not(:disabled){background:#f0a14f}
+}
+
+@media screen{
+ .trident-portal :is(.settings-tabs,.settings-subtabs) button:hover:not(:disabled){background:#fff;color:var(--trident-navy);border-color:#92a7c3}
+ .trident-portal :is(.settings-tabs,.settings-subtabs) button[aria-current=page]:hover:not(:disabled){background:#244b7d;color:#fff;border-color:#244b7d}
+}
+
+@media screen{.trident-portal .staff-setup button.staff-delete{color:#a32727;border-color:#e4bbbb}}

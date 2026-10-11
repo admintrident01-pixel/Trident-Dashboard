@@ -2,9 +2,9 @@
 import base64, copy, datetime as dt, hashlib, io, json, zipfile
 from xml.etree import ElementTree as ET
 from core import Problem, decode
-import timesheets, vehicles, schedule, leave, labour, quote_settings
+import timesheets, vehicles, schedule, leave, labour, quote_settings, accounts
 
-LABELS={'quote':'Quotes','appointment':'Appointments','lunch':'Lunch breaks','leave':'Leave requests','staff':'Staff','vehicle':'Vehicles','timesheet':'Time sheets','check':'Vehicle checks','appointmentType':'Appointment types','calculator':'Calculator items','quoteType':'Quote types','defaultItem':'Quote default items'}
+LABELS={'account':'Sign-in accounts','quote':'Quotes','appointment':'Appointments','lunch':'Lunch breaks','leave':'Leave requests','staff':'Staff','vehicle':'Vehicles','timesheet':'Time sheets','check':'Vehicle checks','appointmentType':'Appointment types','calculator':'Calculator items','quoteType':'Quote types','defaultItem':'Quote default items'}
 
 def stamp():return dt.datetime.now(dt.timezone.utc).isoformat()
 def identifier(kind,key):return kind+':'+str(key)
@@ -47,6 +47,8 @@ def capture(before,after,actor):
                 extra={'pdfKey':before.get('pdfs',{}).get(old.get('pdfFilename'))} if kind=='quote' else None
                 put(result,actual_kind,key,old,title,actor,extra)
             elif was_deleted and new is not None and not now_deleted:result.get('recycleBin',{}).pop(bin_id,None)
+    for address,user in accounts.users(before).items():
+        if address not in accounts.users(after):put(result,'account',address,accounts.public(user),user.get('name') or address,actor)
     def removed(oldrows,newrows,kind,keyfn,titlefn,extra=None):
         counts={}
         for row in newrows:counts[keyfn(row)]=counts.get(keyfn(row),0)+1
@@ -128,6 +130,10 @@ def restore(state,row,actor):
         rows=timesheets.settings(state)['technicians']
         if any(r['name'].casefold()==value['name'].casefold() for r in rows):raise Problem(409,'A staff member with this name already exists.')
         state=timesheets.save_settings(state,{'technicians':rows+[value]})
+    elif kind=='account':
+        if key in accounts.users(state):raise Problem(409,'This sign-in email is already in use.')
+        state=accounts.save_user(state,{**value,'active':False},actor)
+        state['users'][key]['verified']=False
     elif kind=='vehicle':
         rows=vehicles.fleet(state)
         if any(r['id']==key or (value.get('registration') and r['registration']==value['registration']) for r in rows):raise Problem(409,'This vehicle ID or registration is already in use.')
@@ -164,7 +170,7 @@ def action(state,data,actor):
     result=materialise(state);rows=result.get('recycleBin',{})
     if any(key not in rows for key in ids):raise Problem(409,'The recycle bin changed. Refresh and select the items again.')
     selected=[rows[key] for key in ids];garbage=[]
-    priority={'staff':0,'vehicle':0,'quoteType':0,'defaultItem':1}
+    priority={'staff':0,'vehicle':0,'quoteType':0,'account':1,'defaultItem':1}
     for row in sorted(selected,key=lambda r:priority.get(r['type'],2)):
         key=row['key'];kind=row['type']
         if mode=='restore':result=restore(result,row,actor);continue

@@ -21,3 +21,17 @@
 .tech-schedule{height:calc(100dvh - var(--portal-height) - var(--notice-height));display:flex;flex-direction:column;min-height:0}.tech-schedule>.schedule-toolbar,.tech-schedule>.schedule-error,.tech-schedule>.schedule-message,.tech-schedule>.schedule-empty{flex-shrink:0}.tech-schedule>.schedule-scroll{flex:1;min-height:0;max-height:none}.schedule-vertical .schedule-board{height:100%}.schedule-column-tracks{height:calc(100% - 24px);min-height:0}.tech-schedule .schedule-hours-alert{color:#785519;background:#fff0db;border-color:#e6c991;font-size:11px;padding:4px 6px;white-space:nowrap;min-height:28px;flex-shrink:0}.schedule-cancelled{flex-shrink:0;max-height:150px;overflow:auto}@media(max-width:700px){.tech-schedule{height:auto;min-height:calc(100dvh - var(--portal-height) - var(--notice-height))}.tech-schedule>.schedule-scroll{flex:none}.schedule-vertical .schedule-board{height:auto}.schedule-column-tracks{height:450px}}
 
 .schedule-order-settings{max-width:650px;padding-left:24px;margin:10px 0 20px}.schedule-order-settings li{padding:4px 0;border-bottom:1px solid #d6dfeb}.schedule-order-settings li span{display:inline-block;width:calc(100% - 86px);vertical-align:middle}.schedule-order-settings small{margin-left:10px;color:#64748b}.schedule-order-settings button{padding:3px 10px;margin-left:4px}
+
+.tech-schedule .schedule-tech-name select{width:100%;border:0;background:transparent;padding:1px 2px;font-size:11px;font-weight:bold;color:#17345f;text-align:center;cursor:pointer}
+.schedule-appointment.booking-confirmed,.tech-schedule button.booking-confirmed{background:#e3f2e8;border-color:#72ac85;color:#174829}
+.schedule-appointment.booking-action-needed,.tech-schedule button.booking-action-needed{background:#fff0db;border-color:#d5a260;color:#764300}
+.schedule-appointment.booking-option,.tech-schedule button.booking-option{background:#faf9f4;border-color:#c9c5b8;color:#4b4b42}
+.schedule-status-actions,.schedule-quick-notes{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.schedule-status-actions [aria-pressed=true]{outline:2px solid #17345f;outline-offset:2px}
+.schedule-note-field{display:block;font-size:13px;font-weight:bold;margin:18px 0 8px}.schedule-note-field textarea{display:block;width:100%;min-height:100px;margin-top:8px}
+.schedule-form-actions{flex-wrap:wrap}
+
+.schedule-appointment.travel{background:#e1e3e6;border-color:#adb3bb;color:#39434f;z-index:2;cursor:default;touch-action:auto;padding:1px 3px}
+.schedule-appointment.travel .travel-label{max-width:calc(100% - 36px);line-height:13px;font-size:10px}
+.travel-controls{position:absolute;right:1px;top:0;display:flex;gap:1px}.tech-schedule .travel-controls button{padding:0;width:16px;min-height:13px;height:13px;font-size:11px;line-height:11px;background:#f6f7f8;color:#39434f;border:1px solid #adb3bb;border-radius:2px}
+.schedule-note-field select{display:block;width:100%;margin-top:8px}

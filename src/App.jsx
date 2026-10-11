@@ -15,6 +15,7 @@ import EmailSignIn from './EmailSignIn'
 import ReminderDashboard from './ReminderDashboard'
 import TechSchedule from './TechSchedule'
 import {loadSession,saveSession} from './session'
+import {loadPage,canAccessPage} from './navigation'
 
 const localMode=import.meta.env.DEV&&import.meta.env.VITE_LOCAL_DEVELOPMENT==='true'
 
@@ -22,9 +23,13 @@ const api=localMode?'http://127.0.0.1:18782':(import.meta.env.VITE_API_URL||'htt
 
 export default function App(){
 
- const [session,setSession]=useState(loadSession),[error,setError]=useState(''),[document,setDocument]=useState(''),[timesheetDocument,setTimesheetDocument]=useState(''),[page,setPage]=useState('home')
+ const [session,setSession]=useState(loadSession),[error,setError]=useState(''),[document,setDocument]=useState(''),[timesheetDocument,setTimesheetDocument]=useState(''),[selectedPage,setPage]=useState(loadPage)
+ const page=canAccessPage(selectedPage,session)?selectedPage:'home'
 
  useEffect(()=>saveSession(session),[session])
+
+ useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}`)},[page,session])
+ useEffect(()=>{const change=()=>setPage(loadPage());window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[])
 
  const timesheetFrame=useRef(null),quoteFrame=useRef(null)
 
@@ -89,7 +94,7 @@ export default function App(){
   if(!session)return
 
   let cancelled=false
-  const check=async()=>{try{const r=await fetch(api+'/api/session',{headers:{Authorization:'Bearer '+session.token}}),d=await r.json();if(cancelled)return;if(r.status===401||r.status===403){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');return}if(!r.ok)return;if(d.role!==session.role||d.technician!==session.technician){setSession({...session,...d,token:session.token});setDocument('');setTimesheetDocument('');setPage('home')}}catch{/* Keep the session through temporary connection failures. */}}
+  const check=async()=>{try{const r=await fetch(api+'/api/session',{headers:{Authorization:'Bearer '+session.token}}),d=await r.json();if(cancelled)return;if(r.status===401||r.status===403){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');return}if(!r.ok)return;if(d.role!==session.role||d.technician!==session.technician){setSession({...session,...d,token:session.token});setDocument('');setTimesheetDocument('')}}catch{/* Keep the session through temporary connection failures. */}}
   check()
   const timer=setInterval(check,60000)
 

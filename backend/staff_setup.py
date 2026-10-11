@@ -1,5 +1,5 @@
 """Save staff details and account access together against one snapshot."""
-import accounts, timesheets, vehicles
+import copy, accounts, timesheets, vehicles
 from core import Problem
 
 def read(state):
@@ -35,4 +35,31 @@ def save(state, data, actor):
             result=accounts.save_user(result,public,actor)
     elif original_email:
         raise Problem(400,'Keep the account email; disable account access instead.')
+    return result
+
+
+def delete(state,data,actor):
+    if data.get('confirmed') is not True: raise Problem(400,'Confirm staff deletion first.')
+    name=data.get('originalName','');address=data.get('originalEmail','')
+    staff=timesheets.settings(state)['technicians'];users=accounts.users(state)
+    if name and not any(row['name']==name for row in staff): raise Problem(409,'This staff member changed. Refresh Staff setup.')
+    if address and address not in users: raise Problem(409,'This account changed. Refresh Staff setup.')
+    if name and address and users[address].get('technician')!=name: raise Problem(409,'This account belongs to another staff member.')
+    targets={email for email,user in users.items() if (name and user.get('technician')==name) or email==address}
+    if not name and not targets: raise Problem(400,'Choose a staff member or account.')
+    if actor['email'] in targets: raise Problem(400,'Another administrator must delete your own account.')
+    remaining={email:user for email,user in users.items() if email not in targets}
+    if not any(user.get('active') and user['role']=='admin' for user in remaining.values()): raise Problem(400,'Keep at least one active Admin account.')
+    result=copy.deepcopy(state)
+    if name:
+        result=timesheets.save_settings(result,{'technicians':[row for row in staff if row['name']!=name]})
+        result['vehicles']=copy.deepcopy(vehicles.fleet(state))
+        for vehicle in result['vehicles']:
+            if vehicle.get('driver')==name: vehicle['driver']=''
+    result['users']=copy.deepcopy(remaining)
+    for collection in ('sessions','loginLinks'):
+        result[collection]={key:value for key,value in result.get(collection,{}).items() if value.get('email') not in targets}
+    for email in targets: result.get('passwords',{}).pop(email,None)
+    for item in result.get('mailOutbox',{}).values():
+        if item.get('to') in targets and item.get('status')=='queued': item.update(status='cancelled',body='Cancelled when staff access was removed.')
     return result
