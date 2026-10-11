@@ -1,0 +1,5 @@
+Includes all previous password, schedule, travel, leave and staff updates.
+Adds Created by after Quote type in the quote dashboard.
+New quotes record the authenticated creator name on the server and preserve it when edited. Existing quotes use saved Quoted by when creator metadata is unavailable, or show a dash if neither was recorded.
+Upload source replacements to the existing GitHub repository and redeploy both Cloudflare frontend and Cloud Run backend. Do not reimport data. See TRAVEL-LEAVE-STAFF-UPDATE.txt for publishing steps.
+Validation: 86 backend tests and production build passed. Column and existing quote author checked in local preview.

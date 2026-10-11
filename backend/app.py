@@ -457,7 +457,7 @@ class Application:
 
        except Exception:raise Problem(400,'Invalid quote request.')
 
-       state,entry,upload,garbage=save_quote(state,p,self.objects);payload={'saved':True,'quote':entry}
+       state,entry,upload,garbage=save_quote(state,p,self.objects,user);payload={'saved':True,'quote':entry}
 
       state=recycle.capture(self.store.read()[1],state,email)
 

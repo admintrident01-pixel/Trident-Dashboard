@@ -34,6 +34,17 @@ class TestAPI(unittest.TestCase):
   n=n or self.n;id=id or str(uuid.uuid4());book=base64.b64decode(self.store.read()[1]['workbook']);filename=f'Client - Repair - Scooter - {n} - 09-10-2026.pdf';p={'id':id,'revision':revision,'state':status,'data':{'version':1,'fields':{'number':str(n),'client':'Test client','date':'2026-10-09','job':'Repair'},'lines':[{'description':'Repairs','qty':1,'rate':100}]},'workbook':base64.b64encode(write_row(book,n,id,revision+1,status,filename)).decode()}
   if status=='Finalised':p.update(filename=filename,pdf=base64.b64encode(b'%PDF-test-fixture').decode())
   return p
+ def test_quote_creator_is_authenticated_and_preserved(self):
+  p=self.payload();p['createdByName']='Spoofed';p['data']['fields']['by']='Printed quote author'
+  self.assertEqual(self.call('/api/quote-save','POST',p,1)[0],200)
+  quote=self.store.read()[1]['quotes'][str(self.n)]
+  self.assertEqual(quote['createdByName'],'Existing owner')
+  self.assertEqual(quote['createdByEmail'],'nikita.trident2024@gmail.com')
+  p=self.payload('Finalised',p['id'],1);p['data']['fields']['by']='Changed printed author'
+  self.assertEqual(self.call('/api/quote-save','POST',p,2)[0],200)
+  quote=json.loads(self.call('/api/catalog')[2])['quotes'][0]
+  self.assertEqual(quote['createdByName'],'Existing owner')
+
  def test_auth_and_origin(self):
   self.assertEqual(self.call('/api/catalog',token='')[0],401);self.assertEqual(self.call('/api/catalog',token='wrong')[0],403);self.assertEqual(self.call('/api/catalog',origin='https://evil.example')[0],403);self.assertEqual(self.call('/api/catalog',method='OPTIONS')[0],200);self.assertEqual(self.call('/api/session')[0],200)
  def test_draft_finalise_edit_delete_reserved(self):

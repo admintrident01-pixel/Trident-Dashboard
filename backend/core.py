@@ -44,7 +44,7 @@ def workbook_info(data):
 def safe_pdf(name):
  if not isinstance(name,str) or not name.lower().endswith('.pdf') or len(name)>240 or re.search(r'[\\/:*?"<>|\x00-\x1f]',name):raise Problem(400,'Invalid PDF filename.')
  return name
-def save_quote(state,p,objects):
+def save_quote(state,p,objects,actor=None):
  state=copy.deepcopy(state);data=p.get('data',{});fields=data.get('fields',{})
  try:number=int(fields['number']);uuid.UUID(p['id']);revision=int(p.get('revision',0))
  except Exception:raise Problem(400,'Invalid quote identity or number.')
@@ -80,5 +80,9 @@ def save_quote(state,p,objects):
   recycle.put(state,'quote',str(number),snapshot,'Quote '+str(number),extra={'pdfKey':state['pdfs'].get(previous)})
   state['pdfs'].pop(previous,None) # Object remains available through the recycle-bin snapshot.
  stamp=datetime.datetime.now(datetime.timezone.utc).isoformat();entry={'id':p['id'],'revision':revision+1,'state':status,'createdAt':existing['createdAt'] if existing else stamp,'updatedAt':stamp,'pdfFilename':pdfname,'sourceDraftName':'','data':data}
+ creator=existing.get('createdByName') or existing.get('data',{}).get('fields',{}).get('by','') if existing else rows.get(number,{}).get('C','') if legacy else ''
+ if not creator and not (existing or legacy):creator=(actor or {}).get('technician') or (actor or {}).get('name') or (actor or {}).get('email') or fields.get('by','')
+ entry['createdByName']=creator
+ entry['createdByEmail']=existing.get('createdByEmail','') if existing else (actor or {}).get('email','') if not legacy else ''
  state['quotes'][str(number)]=entry;state['workbook']=base64.b64encode(newbook).decode()
  return state,entry,upload,garbage
