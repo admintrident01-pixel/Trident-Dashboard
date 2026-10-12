@@ -22,18 +22,21 @@ class PeriodTests(unittest.TestCase):
   for changes in [{'start':'2026-09-29'},{'end':'2026-09-21'},{'end':'2027-09-27'},{'end':''}]:
    with self.assertRaises(Problem):weekly_report.selected_period(self.state,{**self.dates,**changes})
  def test_pdf_totals_and_admin_only(self):
-  result=weekly_report.period_pdf(self.state,self.dates);reader=PdfReader(io.BytesIO(base64.b64decode(result['pdf'])));text=' '.join(page.extract_text() for page in reader.pages)
+  result=weekly_report.period_pdf(self.state,self.dates);reader=PdfReader(io.BytesIO(base64.b64decode(result['pdf'])));text=' '.join(' '.join(page.extract_text().split()) for page in reader.pages)
   self.assertEqual(len(reader.pages),1)
+  self.assertLess(float(reader.pages[0].mediabox.width),float(reader.pages[0].mediabox.height))
   for expected in ['Selected week averages','Average payable','Average charged','Scott','Total','14','12']:self.assertIn(expected,text)
   api=test_accounts.AccountsAPI();api.setUp();api.store.state.update(self.state)
   for path in ['/api/report-periods','/api/report-periods-pdf']:
    self.assertEqual(api.call(path,'POST',self.dates,token='tech')[0],403);self.assertEqual(api.call(path,'POST',self.dates)[0],200)
- def test_weekly_pdf_fits_one_page_with_eight_staff_and_notes(self):
+ def test_weekly_pdf_portrait_paginated_with_eight_staff_and_notes(self):
   self.state['staffSettings']['technicians']=[{'name':f'Technician {i}','rego':''} for i in range(8)]
   self.state['weeklyReportNotes']={'2026-10-12':{f'technician {i}':{'2026-10-12':'Daily repair notes. '*12} for i in range(8)}}
   result=weekly_report.pdf(self.state,{'week':'2026-10-12'});reader=PdfReader(io.BytesIO(base64.b64decode(result['pdf'])))
-  self.assertEqual(len(reader.pages),1)
-  for expected in ['Technician 7','Total charged hours','Three-month weekly averages','Daily repair notes.']:self.assertIn(expected,reader.pages[0].extract_text())
+  self.assertGreater(len(reader.pages),1)
+  self.assertTrue(all(float(page.mediabox.width)<float(page.mediabox.height) for page in reader.pages))
+  text=' '.join(' '.join(page.extract_text().split()) for page in reader.pages)
+  for expected in ['Technician 7','Total charged hours','Three-month weekly averages','Daily repair notes.']:self.assertIn(expected,text)
 
  def test_five_weeks_with_zero_and_missing_values_average_to_5_6(self):
   for missing in [False,True]:

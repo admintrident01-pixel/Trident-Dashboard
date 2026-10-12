@@ -117,14 +117,14 @@ def day_label(date): return dt.date.fromisoformat(date).strftime('%d/%m/%Y')
 def pdf(state,data):
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER
-    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, LongTable, KeepInFrame
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, LongTable
     week=data.get('week');rows=week_rows(state,week)
     mode=data.get('mode','all')
     if mode not in ('work','all'): raise Problem(400,'Choose a report type.')
     metric='paid' if mode=='work' else 'all'
-    output=io.BytesIO();page=landscape(A4);width=page[0]-64
+    output=io.BytesIO();page=A4;width=page[0]-64
     styles=getSampleStyleSheet()
     styles['Title'].fontSize=16;styles['Title'].leading=18;styles['Title'].spaceAfter=6
     styles['Heading2'].fontSize=11;styles['Heading2'].leading=13;styles['Heading2'].spaceBefore=6;styles['Heading2'].spaceAfter=4
@@ -154,7 +154,7 @@ def pdf(state,data):
     cells.append([para('Total payable hours')]+[para(number(n),'Hours') for n in totals]+[para(number(sum(totals)),'Hours')])
     charged_totals=[sum(row['chargedHours'][i] or 0 for row in rows) for i in range(7)]
     cells.append([para('Total charged hours')]+[para(number(value),'Hours') for value in charged_totals]+[para(number(sum(charged_totals)),'Hours')])
-    table=LongTable(cells,colWidths=[155]+[(width-211)/7]*7+[56],repeatRows=1,hAlign='LEFT')
+    table=LongTable(cells,colWidths=[110]+[(width-150)/7]*7+[40],repeatRows=1,hAlign='LEFT')
     table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7eef8')),('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#e7eef8')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#ccd5e2')),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),6),('RIGHTPADDING',(0,0),(-1,-1),6),('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
     table.setStyle(TableStyle([('BACKGROUND',(0,index),(-1,index),colors.HexColor('#e0e3e8')) for index in range(2,len(rows)*2+1,2)]+[('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#e0e3e8'))]))
     story.extend([table,Spacer(1,12)])
@@ -162,20 +162,20 @@ def pdf(state,data):
     average_cells=[[para(label) for label in ['Staff member','Average payable/week','Average charged/week','Payable weeks','Charged weeks']]]
     for item in average['rows']:
         value=item['paidAverage'] if mode=='work' else item['allAverage'];average_cells.append([para(item['name']),para(number(value) if value is not None else '—'),para(number(item['chargedAverage']) if item['chargedAverage'] is not None else '—'),para(str(item['workWeeks'])),para(str(item['chargedWeeks']))])
-    average_table=LongTable(average_cells,colWidths=[155]+[(width-155)/4]*4,repeatRows=1,hAlign='LEFT');average_table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7eef8')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#ccd5e2')),('VALIGN',(0,0),(-1,-1),'TOP')]));story.extend([Spacer(1,6),average_table,Spacer(1,12)])
+    average_table=LongTable(average_cells,colWidths=[110]+[(width-110)/4]*4,repeatRows=1,hAlign='LEFT');average_table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7eef8')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#ccd5e2')),('VALIGN',(0,0),(-1,-1),'TOP')]));story.extend([Spacer(1,6),average_table,Spacer(1,12)])
     note_rows=[[para('Staff member'),para('Date'),para('Daily note')]]
     for row in rows:
         for day in row['days']:
             if day['note']: note_rows.append([para(row['name']),para(day_label(day['date'])),para(day['note'])])
     if len(note_rows)>1:
         story.append(Paragraph('Daily notes',styles['Heading2']))
-        notes=LongTable(note_rows,colWidths=[155,80,width-235],repeatRows=1,hAlign='LEFT',splitInRow=1)
+        notes=LongTable(note_rows,colWidths=[110,65,width-175],repeatRows=1,hAlign='LEFT',splitInRow=1)
         notes.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7eef8')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#ccd5e2')),('VALIGN',(0,0),(-1,-1),'TOP'),('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6)]))
         story.append(notes)
     def footer(canvas,doc):
         canvas.setFont('Helvetica',8);canvas.setFillColor(colors.HexColor('#52677e'));canvas.drawString(32,19,'Trident - '+title+' - '+day_label(week));canvas.drawRightString(page[0]-32,19,'Page '+str(doc.page))
     doc=SimpleDocTemplate(output,pagesize=page,rightMargin=32,leftMargin=32,topMargin=26,bottomMargin=34,title=title,author='Trident Community Equipment')
-    doc.build([KeepInFrame(width-12,page[1]-72,story,mode='shrink')],onFirstPage=footer,onLaterPages=footer)
+    doc.build(story,onFirstPage=footer,onLaterPages=footer)
     return {'filename':f'Trident-weekly-{mode}-hours-{week}.pdf','pdf':base64.b64encode(output.getvalue()).decode()}
 
 
@@ -204,12 +204,12 @@ def selected_period(state,data):
 
 def period_pdf(state,data):
     from reportlab.lib import colors
-    from reportlab.lib.pagesizes import A4,landscape
+    from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,LongTable,TableStyle,KeepInFrame
+    from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,LongTable,TableStyle
     result=selected_period(state,data);mode=data.get('mode','all')
     if mode not in ('work','all'):raise Problem(400,'Choose a report type.')
-    metric='all' if mode=='all' else 'paid';styles=getSampleStyleSheet();output=io.BytesIO()
+    metric='all' if mode=='all' else 'paid';styles=getSampleStyleSheet();output=io.BytesIO();styles['Normal'].fontSize=8;styles['Normal'].leading=10
     def cell(text):return Paragraph(escape(str(text)),styles['Normal'])
     story=[Paragraph('Trident - Selected week averages',styles['Title']),cell(day_label(result['start'])+' to '+day_label(result['end'])+' ('+str(result['weeks'])+' weeks)'),Spacer(1,10),cell('Payable hours: '+('work and all leave' if mode=='all' else 'work and sick hours')+'. Weekly averages divide saved totals by all '+str(result['weeks'])+' selected weeks, including weeks with no records.'),Spacer(1,12)]
     cells=[[cell(x) for x in ['Technician','Payable total','Charged total','Average payable / week','Average charged / week','Payable weeks recorded','Charged weeks recorded']]]
@@ -219,7 +219,7 @@ def period_pdf(state,data):
         totals=[x+y for x,y in zip(totals,values)]
         cells.append([cell(row['name'])]+[cell(number(x)) for x in values]+[cell(row['workWeeks']),cell(row['chargedWeeks'])])
     cells.append([cell('Total')]+[cell(number(x)) for x in totals]+[cell(''),cell('')])
-    table=LongTable(cells,colWidths=[160]+[102]*6,repeatRows=1,hAlign='LEFT')
+    table=LongTable(cells,colWidths=[110]+[(A4[0]-56-110)/6]*6,repeatRows=1,hAlign='LEFT')
     table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7eef8')),('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#e7eef8')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#ccd5e2')),('VALIGN',(0,0),(-1,-1),'TOP'),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5)]))
-    story.append(table);doc=SimpleDocTemplate(output,pagesize=landscape(A4),leftMargin=28,rightMargin=28,topMargin=26,bottomMargin=26,title='Trident selected week averages');doc.build([KeepInFrame(landscape(A4)[0]-68,landscape(A4)[1]-64,story,mode='shrink')])
+    story.append(table);doc=SimpleDocTemplate(output,pagesize=A4,leftMargin=28,rightMargin=28,topMargin=26,bottomMargin=26,title='Trident selected week averages');doc.build(story)
     return {'filename':f"Trident-week-averages-{result['start']}-{result['endWeek']}.pdf",'pdf':base64.b64encode(output.getvalue()).decode()}

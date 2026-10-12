@@ -83,3 +83,12 @@
 @media screen{
  .timesheet-form .head h1{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
 }
+/* Compact controls match in both the original sheet and correction dialog. */
+.timesheet-form .time-control{display:flex;align-items:stretch;min-width:106px;gap:3px}
+.timesheet-form .time-control .time{min-width:76px!important;width:76px!important;flex:1;padding-left:6px;padding-right:3px}
+.timesheet-form .time-arrows{display:flex;flex-direction:column;gap:2px;width:22px;flex-shrink:0}
+.timesheet-form .time-step{display:flex;align-items:center;justify-content:center;padding:0!important;min-height:15px!important;height:15px;width:22px;font-size:8px!important;line-height:1;border:1px solid #cad8eb;border-radius:3px;background:#edf3fa;color:#17375e;cursor:pointer}
+.timesheet-form .time-step:hover{background:#d9e6f5}
+.timesheet-form .time-step:disabled{opacity:.45;cursor:default}
+.timesheet-form .unpaid-lunch{min-width:155px;font-size:12px}
+.timesheet-form table{min-width:1220px}
