@@ -25,9 +25,10 @@ function assignedVehicle(v,techs){const tech=techs.find(t=>t.name.toLowerCase()=
 
 const metrics=[
 
+ ['Driver','identity',v=>v.driver],
  ['Check status','check',()=> ''],
 
- ['Registration','identity',v=>v.registration],['Make / Model','identity',v=>v.makeModel],['Driver','identity',v=>v.driver],['Active','active',v=>v.active?'TRUE':'FALSE'],
+ ['Registration','identity',v=>v.registration],['Make / Model','identity',v=>v.makeModel],['Active','active',v=>v.active?'TRUE':'FALSE'],
 
  ['Last Check','check',(_,c)=>dateLabel(c.checkDate)],['Next Check','check',(_,c)=>dateLabel(c.nextCheckDue||addDays(c.checkDate,30)),(_,c)=>!!c.checkDate&&(c.nextCheckDue||addDays(c.checkDate,30))<today()],
 

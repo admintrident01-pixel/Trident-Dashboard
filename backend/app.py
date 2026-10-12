@@ -198,7 +198,7 @@ class Application:
 
      headers.append(('ETag',f'"{revision}"'))
 
-     admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete')
+     admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete','/api/vehicle-order')
 
      if path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
@@ -367,7 +367,7 @@ class Application:
 
       payload=self.objects.get(key);mime='application/pdf'
 
-     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/staff-settings','/api/vehicles','/api/vehicle-checks','/api/leave','/api/leave-decision','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
+     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/staff-settings','/api/vehicles','/api/vehicle-order','/api/vehicle-checks','/api/leave','/api/leave-decision','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
 
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh and try again.')
 
@@ -416,13 +416,15 @@ class Application:
 
        payload={'saved':True,'request':entry}
 
-      elif path in ('/api/vehicles','/api/vehicle-checks'):
+      elif path in ('/api/vehicles','/api/vehicle-order','/api/vehicle-checks'):
 
        try:p=json.loads(body)
 
        except Exception:raise Problem(400,'Invalid vehicle request.')
 
        if path=='/api/vehicles':state=vehicles.save_fleet(state,p);payload={'saved':True}
+
+       elif path=='/api/vehicle-order':state=vehicles.save_order(state,p);payload={'saved':True}
 
        else:
 

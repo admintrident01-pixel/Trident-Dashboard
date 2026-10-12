@@ -4,7 +4,7 @@ from timesheets import text
 
 CHECKLIST = ['Oil level', 'Coolant level', 'Tyre pressure', 'Spare tyre pressure', 'Condition of tyres', 'Visual inspection / walk around', 'Interior clean', 'Windscreen wipers', 'Wiper blades work', 'Windscreen condition', 'Headlights', 'Tail lights', 'Brake lights', 'Indicators', 'Battery condition', 'Water level', 'Condition of drive belts', 'Condition of alternator belt', 'General overlook of motor', 'Safety belts', 'Masks and sanitiser available', 'First aid kit']
 
-def fleet(state):
+def _fleet(state):
     if 'vehicles' in state:
         return state['vehicles']
     regs = ['QEK183','CMT409','LMY240','KWG268','RYZ672','RWB869','','','','']
@@ -14,6 +14,22 @@ def fleet(state):
     rows[0]['baseline'] = {'checkDate':'2026-10-08','wofExpiry':'2027-09-25','wofDueKm':0,'regoExpiry':'2027-09-26','rucCurrent':101020,'odometer':90009,'serviceDueKm':100000,'alignmentDueKm':0,'comments':'Topped up coolant level, 1x chip on windscreen, both rear tyres worn, rusty paint chips above windscreen.'}
     rows[3]['baseline'] = {'checkDate':'2026-10-09','wofExpiry':'2027-09-22','wofDueKm':300415,'regoExpiry':'2027-03-11','rucCurrent':311205,'odometer':300415,'serviceDueKm':311000,'alignmentDueKm':300000,'comments':'No issues'}
     return rows
+
+def fleet(state):
+    rows=_fleet(state)
+    order=state.get('vehicleColumnOrder',[])
+    if not isinstance(order,list):order=[]
+    positions={key:index for index,key in enumerate(order) if isinstance(key,str)}
+    return sorted(rows,key=lambda row:positions.get(row['id'],len(positions)+rows.index(row)))
+
+def save_order(state,data):
+    order=data.get('order') if isinstance(data,dict) else None
+    ids={row['id'] for row in fleet(state)}
+    if not isinstance(order,list) or any(not isinstance(key,str) for key in order) or len(order)!=len(ids) or set(order)!=ids:
+        raise Problem(400,'Include every current vehicle once. Reload vehicle settings and try again.')
+    result=copy.deepcopy(state);result['vehicleColumnOrder']=list(order)
+    return result
+
 
 def save_fleet(state, data):
     rows = data.get('vehicles') if isinstance(data, dict) else None
