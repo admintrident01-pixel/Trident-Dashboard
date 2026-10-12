@@ -34,7 +34,7 @@ def config(state):
     today = datetime.datetime.now(ZoneInfo('Pacific/Auckland')).date()
     monday = today - datetime.timedelta(days=today.weekday())
     technicians = sorted({s['technician'] for s in state.get('timesheets', {}).values()} | {s['name'] for s in settings(state)['technicians']}, key=str.casefold)
-    return {'technicians': technicians, 'weekStart': monday.isoformat(), 'approvedLeave':leave.approved(state), 'defaultTimes':state.get('timeSettings',{'start':'08:00','finish':'16:00'})}
+    return {'technicians': technicians, 'weekStart': monday.isoformat(), 'approvedLeave':leave.approved(state), 'defaultTimes':state.get('timeSettings',{'start':'07:30','finish':'16:00'})}
 
 def text(value, label, limit, required=False):
     if not isinstance(value, str) or len(value) > limit or (required and not value.strip()):
@@ -123,3 +123,17 @@ def edit_submission(state, data, actor):
     entry.update(id=old['id'],submittedAt=old['submittedAt'],submittedBy=old.get('submittedBy',''),revision=old.get('revision',1)+1,updatedAt=stamp,updatedBy=actor,editReason=reason,editHistory=history[-50:])
     result=copy.deepcopy(state);result['timesheets'][old['id']]=entry
     return result,entry
+
+
+def delete_submission(state,data):
+    if not isinstance(data,dict) or data.get('confirmed') is not True:
+        raise Problem(400,'Confirm time sheet deletion.')
+    key=data.get('id')
+    if not isinstance(key,str) or key not in state.get('timesheets',{}):
+        raise Problem(404,'This time sheet no longer exists.')
+    row=state['timesheets'][key]
+    if type(data.get('revision')) is not int or data['revision']!=row.get('revision',1):
+        raise Problem(409,'This time sheet changed. Refresh history before deleting.')
+    result=copy.deepcopy(state)
+    del result['timesheets'][key]
+    return result

@@ -198,7 +198,7 @@ class Application:
 
      headers.append(('ETag',f'"{revision}"'))
 
-     admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit')
+     admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete')
 
      if path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
@@ -285,6 +285,9 @@ class Application:
 
      elif path=='/api/reminder-dashboard' and method=='GET':payload={'items':reminders.dashboard(state),'emailMode':reminders.mail_mode(self.local)}
 
+     elif path=='/api/timesheet-delete' and method=='POST':
+      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh history before deleting.')
+      state=timesheets.delete_submission(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True,'message':'Time sheet moved to the Recycle bin. Labour payables now uses the remaining current submission.'};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
      elif path=='/api/mail-archive' and method=='POST':
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh emails and try again.')
       state=reminders.archive_mail(state,self.body(environ),email);self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
@@ -332,7 +335,7 @@ class Application:
 
      elif path=='/api/staff-settings' and method=='GET':payload=timesheets.settings(state)
 
-     elif path=='/api/time-settings' and method=='GET':payload=state.get('timeSettings',{'start':'08:00','finish':'16:00'})
+     elif path=='/api/time-settings' and method=='GET':payload=state.get('timeSettings',{'start':'07:30','finish':'16:00'})
 
      elif path=='/api/quote-settings' and method=='GET':payload=quote_settings.read(state)
 

@@ -1,0 +1,7 @@
+Lunch checkbox clarity — 12 October 2026
+
+New time sheets keep unpaid lunch checked by default. A dedicated Unpaid lunch column sits next to Payable hours. Checked says 30 min unpaid and deducts 0.5 hours; unchecked says No deduction and includes those 30 minutes in payable hours. 07:30-16:00 gives 8 paid hours checked or 8.5 unchecked. Hours before lunch clearly labels the gross input. Existing submitted sheets retain their saved lunch choice. Admin correction popup uses the same clearer wording.
+
+Verified in both entry methods with tests, and in the browser: Monday unchecked changed 8.00 to 8.50 and weekly 40.00 to 40.50. Rechecking restored 40.00. No saved submission was changed. Frontend lint/build passed.
+
+Current cumulative package includes all previous frontend/backend updates. This clarity change itself is frontend-only; publish both components if previous packages have not yet been deployed. See Master Web App/README.md.

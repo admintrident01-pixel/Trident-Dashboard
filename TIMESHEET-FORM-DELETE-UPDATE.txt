@@ -1,0 +1,9 @@
+Timesheet matching form and admin deletion — 12 October 2026
+
+The admin popup now matches the original timesheet form: identical shared base/theme stylesheet, original column order with separate dates, native time dropdowns, row spacing, lunch checkbox, payable hours, and Weekly total / Target hours / Variance panels. Technician, Monday date and original signature are shown read-only; weekly notes and daily entries remain editable. The required correction reason and update-submission action remain. Both forms load public/timesheet-form.css.
+
+Admins can Delete any submitted sheet from history after confirmation. The endpoint requires admin role, explicit confirmation, current record revision and current state ETag. Deletion moves the complete record into Settings > Recycle bin with deleting admin and date. Restore selected recovers the sheet. Labour payables uses the remaining current submission for the week; restoring recalculates it. Approved leave remains independent of deleting a timesheet. Existing historical record contents are preserved in the recycle snapshot. No business sheet was deleted during verification.
+
+Checks: 7 backend deletion/history tests passed, covering permissions, confirmation, conflicts, recycle capture, restoration and payable fallback. Frontend lunch/default checks and approved-leave refresh checks passed. Lint and production build passed. Browser verified popup matching original layout and admin Delete action. The restarted local API rejects unconfirmed deletion.
+
+This package is cumulative. Publish frontend and backend using Master Web App/README.md. After the local backend refresh, local Admin may need to sign in again.

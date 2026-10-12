@@ -1,0 +1,9 @@
+Timesheet defaults and popup update — 12 October 2026
+
+New weekday gross hours now follow the saved start/finish span. 07:30-16:00 is 8.5 hours before lunch, so the default checked unpaid lunch gives 8 paid hours and a 40-hour weekday week. Weekends stay 0; changing time defaults updates untouched weekday hours while preserving manually adjusted values. Direct hours remain gross hours before lunch. Existing submitted sheets are not changed automatically. Fresh installations default to 07:30-16:00.
+
+Admin history View / Edit now opens a native modal dialog with navy header, theme controls and close icon. Start/finish dropdowns use 12-hour labels in 15-minute steps; stored values remain 24-hour strings. Old submissions without start/finish display saved time defaults. Original hours and lunch choice remain saved. Closing or Escape warns before discarding edited values. Correction save behavior, admin permission checks, approved leave and labour payables syncing remain unchanged.
+
+Publish both frontend and backend, following Master Web App/README.md. This cumulative update includes all previous changes.
+
+Checks: 9 backend lunch/history tests, frontend lunch/default-update checks, lint and production build passed. Browser verified 8 paid hours per weekday / 40 total and themed popup open/close. Existing submitted sheets were not modified during verification.
