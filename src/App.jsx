@@ -28,7 +28,7 @@ export default function App(){
  const page=canAccessPage(selectedPage,session)?selectedPage:'home'
 
  useEffect(()=>saveSession(session),[session])
- useEffect(()=>{const titles={home:'Home',quotes:'Quotes',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',settings:'Settings'};window.document.title=(titles[page]||'Workspace')+' | Trident'},[page])
+ useEffect(()=>{window.document.title='Trident Dashboard'},[])
 
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}`)},[page,session])
  useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}setPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page])
@@ -111,7 +111,7 @@ export default function App(){
  const navigate=next=>{if(next===page)return;if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Save them before leaving. Leave anyway?'))return;if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?'))return;setPage(next);window.scrollTo({top:0,behavior:'instant'})}
  const signOut=async()=>{if(window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Sign out anyway?'))return;if(quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before signing out. Sign out anyway?'))return;try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
 
- if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Quote Builder · Version C</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
+ if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Dashboard</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
 
  return session?<div className={`workspace${localMode?' is-local':''}`}>
 
