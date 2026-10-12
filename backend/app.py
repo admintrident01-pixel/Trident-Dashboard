@@ -200,7 +200,7 @@ class Application:
 
      admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete')
 
-     if path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
+     if path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
      if path=='/api/recycle-bin' and method=='GET':payload=recycle.read(state)
 
@@ -261,8 +261,14 @@ class Application:
 
       state=labour.save(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
 
-     elif path=='/api/weekly-report' and method=='GET':payload=weekly_report.read(state,parse_qs(environ.get('QUERY_STRING','')).get('week',[''])[0])
+     elif path=='/api/weekly-report' and method=='GET':payload=weekly_report.read(state,parse_qs(environ.get('QUERY_STRING','')).get('week',[''])[0],parse_qs(environ.get('QUERY_STRING','')).get('comparison',[None])[0])
 
+     elif path=='/api/report-periods' and method=='POST':payload=weekly_report.selected_period(state,self.body(environ))
+     elif path=='/api/report-periods-pdf' and method=='POST':payload=weekly_report.period_pdf(state,self.body(environ))
+
+     elif path=='/api/weekly-report-save' and method=='POST':
+      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh the report before saving.')
+      state=weekly_report.save_report(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
      elif path=='/api/weekly-report-notes' and method=='POST':
 
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh this report before saving notes.')

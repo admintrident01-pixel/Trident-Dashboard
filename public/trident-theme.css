@@ -171,3 +171,144 @@
 }
 
 @media screen{.trident-portal .staff-setup button.staff-delete{color:#a32727;border-color:#e4bbbb}}
+
+/* Consistent workspace hierarchy, action alignment and responsive navigation. */
+@media screen{
+ :root{--trident-line:#dbe3ee;--trident-bg:#f4f6fa;--trident-radius:6px}
+ .trident-portal .portal-header{background:#14283f;padding-left:20px;padding-right:20px;gap:16px}
+ .trident-portal .portal-brand{flex-shrink:0}
+ .trident-portal .portal-account{flex-shrink:0;gap:10px;white-space:nowrap}
+ .trident-portal .portal-header nav{min-width:0;overflow-x:auto;flex:1;scrollbar-width:thin;scrollbar-color:#6c809b transparent;align-items:flex-end}
+ .trident-portal .portal-header nav button{flex-shrink:0;white-space:nowrap}
+ .trident-portal .portal-header nav::-webkit-scrollbar{display:block;height:3px}
+ .trident-portal .portal-header nav::-webkit-scrollbar-thumb{background:#6c809b;border-radius:4px}
+ .trident-portal .portal-account button{border-color:#718297;font-size:12px;padding:6px 10px}
+ .trident-portal .development-notice{font-size:11px;letter-spacing:.1px}
+ .trident-portal .workspace-page:not(.reports){max-width:1480px}
+ .trident-portal .workspace-page.settings-page{max-width:1280px}
+ .trident-portal .page-heading{align-items:center;margin-bottom:18px;flex-wrap:wrap}
+ .trident-portal .page-heading>div:first-child{min-width:0}
+ .trident-portal .page-heading .settings-actions{justify-content:flex-end;margin-left:auto}
+ .trident-portal .home-intro h1,.trident-portal :is(.leave-page,.vehicle-page,.settings-page,.staff-setup) h1{position:static!important;width:auto!important;height:auto!important;padding:0!important;margin:0 0 6px!important;overflow:visible!important;clip-path:none!important;white-space:normal!important;border:0!important;font-size:22px;line-height:1.25}
+ .trident-portal .portal-home{max-width:1480px;padding-top:22px;padding-bottom:32px}
+ .trident-portal .home-eyebrow{display:none}
+ .trident-portal .module-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}
+ .trident-portal .module-card{min-height:148px;padding:16px 16px 16px 66px;border-radius:9px;box-shadow:0 1px 2px #17345f06}
+ .trident-portal .module-card:hover{transform:none;border-color:#94aac5;box-shadow:0 3px 12px #17345f0d}
+ .trident-portal .module-icon{top:16px;left:16px;background:#eef3fa}
+ .trident-portal .module-description{font-size:12px;line-height:1.5}
+ .trident-portal .module-link{margin-top:auto;padding-top:12px}
+ .trident-portal .portal-home>.timesheet-history{order:3;margin-top:18px}
+ .trident-portal .settings-tabs,.trident-portal .settings-subtabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
+ .trident-portal :is(.settings-tabs,.settings-subtabs) button{white-space:nowrap;flex-shrink:0}
+ .trident-portal .settings-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+ .trident-portal :is(form.settings-section,form.leave-form,.vehicle-check-form,.staff-setup-dialog form)>.settings-actions{justify-content:flex-end;border-top:1px solid var(--trident-line);padding-top:14px;margin-top:16px}
+ .trident-portal :is(form.settings-section,form.leave-form,.vehicle-check-form)>.settings-actions [role=status]{margin-right:auto;order:-1}
+ .trident-portal .settings-section,.trident-portal .vehicle-form-card,.trident-portal .timesheet-history,.trident-portal .reminder-dashboard{box-shadow:0 1px 2px #17345f05;border:1px solid var(--trident-line);border-radius:9px}
+ .trident-portal .settings-section{padding:20px}
+ .trident-portal .settings-section .report-hint:last-child{margin-bottom:0}
+ .trident-portal :is(.table-scroll,.fleet-scroll){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+ .trident-portal :is(.settings-table,.vehicle-history table) td:last-child{white-space:nowrap}
+ .trident-portal :is(.settings-table,.vehicle-history table) tbody tr:hover{background:#edf3fb}
+ .trident-portal .save-message{color:#215c30;background:#edf6ef;border:1px solid #c9e0d0;padding:9px 12px;border-radius:6px;line-height:1.45}
+ .trident-portal .history-tools{gap:10px;align-items:center}
+ .trident-portal .history-tools input{flex:1;max-width:330px}
+ .trident-portal .leave-summary{padding:0 0 12px;border-bottom:1px solid var(--trident-line)}
+ .trident-portal .leave-detail{padding:20px;background:#fff;border:1px solid var(--trident-line);border-radius:9px}
+ .trident-portal .leave-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .trident-portal .leave-form .leave-weekends,.trident-portal .leave-form .leave-total,.trident-portal .leave-form>.vehicle-field,.trident-portal .leave-form>.report-hint,.trident-portal .leave-form>.settings-actions{grid-column:1/-1}
+ .trident-portal .vehicle-steps{display:flex;flex-wrap:wrap;gap:8px;padding:0;list-style:none}
+ .trident-portal .vehicle-steps li{flex:1;min-width:190px;border-radius:6px;font-size:12px}
+ .trident-portal .staff-setup-dialog{max-height:calc(100dvh - 32px);overflow:auto}
+ .trident-timesheet .head p{line-height:1.5}
+ .trident-timesheet .actions{justify-content:flex-end;gap:8px}
+ .trident-timesheet .actions .msg{flex-basis:100%;font-size:12px}
+ .trident-timesheet #pdf{background:#fff;color:var(--trident-navy);border-color:var(--trident-line)}
+ .trident-timesheet .fields,.trident-timesheet .foot{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .trident-quote header.app{align-items:center}
+ .trident-quote header.app .actions{gap:6px}
+ .trident-quote .editor{border-radius:9px}
+ .trident-quote :is(.pair,.calculator-row)>*{min-width:0}
+ .trident-quote .home-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+ .trident-quote .home-table{min-width:650px}
+ .trident-quote .home-table td:last-child{white-space:nowrap}
+ .trident-quote .draft-dialog-actions,.trident-quote .custom-dialog-actions{justify-content:flex-end;gap:8px;flex-wrap:wrap}
+ @media(max-width:1100px){
+  .trident-portal .portal-brand img{width:120px}
+  .trident-portal .portal-account span{max-width:135px;overflow:hidden;text-overflow:ellipsis}
+  .trident-portal .module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .trident-quote header.app{flex-wrap:wrap}
+  .trident-quote header.app .actions{width:100%;justify-content:flex-end}
+ }
+ @media(max-width:760px){
+  .trident-portal .workspace{--portal-height:100px}
+  .trident-portal .portal-header{height:100px;flex-wrap:wrap;gap:0 12px;padding:0 12px;align-content:space-between}
+  .trident-portal .portal-brand{order:1;height:48px}
+  .trident-portal .portal-account{order:2;margin-left:auto;height:48px}
+  .trident-portal .portal-account span{display:none}
+  .trident-portal .portal-header nav{order:3;flex:0 0 100%;width:100%;height:48px;justify-content:flex-start;align-self:auto;padding-top:4px}
+  .trident-portal .portal-header nav button{padding:8px 10px;font-size:12px}
+  .trident-portal .module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .trident-portal .module-card{padding:14px;min-height:160px}
+  .trident-portal .module-icon{position:static;margin-bottom:10px}
+  .trident-portal .page-heading .settings-actions{width:100%;justify-content:flex-end}
+  .trident-portal .leave-field-grid{grid-template-columns:1fr}
+  .trident-portal .settings-section,.trident-portal .timesheet-history{padding:14px}
+  .trident-timesheet .fields,.trident-timesheet .foot{grid-template-columns:1fr}
+  .trident-timesheet .tablewrap{overflow:auto}
+  .trident-timesheet .tablewrap table{min-width:1000px}
+  .trident-timesheet .actions{justify-content:flex-start}
+  .trident-quote .pair{grid-template-columns:1fr}
+  .trident-quote header.app .actions{justify-content:flex-start}
+ }
+ @media(max-width:430px){.trident-portal .module-card{min-height:174px}.trident-portal .module-heading{font-size:15px}}
+ @media(prefers-reduced-motion:reduce){.trident-portal *{scroll-behavior:auto!important;transition:none!important}}
+}
+
+@media screen{.trident-portal main.workspace-page:not(.reports) h1{position:static!important;width:auto!important;height:auto!important;padding:0!important;margin:0 0 6px!important;overflow:visible!important;clip-path:none!important;white-space:normal!important;border:0!important;font-size:22px;line-height:1.25}}
+
+@media screen{.trident-portal .leave-form .leave-field-grid{grid-column:1/-1}.trident-portal .leave-form .leave-weekends{margin-bottom:8px}.trident-portal .leave-form .leave-total{margin:8px 0 14px}}
+
+@media screen{
+ .trident-quote .last-quote{min-width:180px;max-width:330px;overflow-wrap:anywhere}
+ .trident-quote .last-quote span{display:block;font-size:11px;color:#ccd8ed;margin-bottom:3px}
+ .trident-quote .last-quote strong{display:block;font-size:13px}
+ .trident-quote #homePage{margin:8px;padding:16px;background:#fff;border:1px solid var(--trident-line);border-radius:9px;overflow:auto}
+ .trident-quote #homePage .home-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+ .trident-quote #homePage .home-top h2{position:static!important;width:auto!important;height:auto!important;margin:0!important;padding:0!important;overflow:visible!important;clip-path:none!important;white-space:normal!important;font-size:20px;color:var(--trident-navy)}
+ .trident-quote .home-tools{justify-content:space-between;margin:14px 0}
+ .trident-quote .home-tools input{margin:0;max-width:100%;width:330px}
+ .trident-quote .home-table{min-width:0;max-width:100%;overflow:auto}
+ .trident-quote .home-table table{min-width:900px;width:100%;border-collapse:collapse;text-align:left;font-size:12px}
+ .trident-quote .home-table th{background:var(--trident-soft);color:var(--trident-navy);font-size:11px}
+ .trident-quote .home-table :is(th,td){padding:8px 10px;border-bottom:1px solid var(--trident-line);vertical-align:top}
+ .trident-quote .home-table td{max-width:240px;overflow-wrap:anywhere}
+ .trident-quote .home-table tbody tr:nth-child(even){background:#f7f9fc}
+ .trident-quote .home-table td button{padding:5px 8px;font-size:12px}
+ .trident-quote #confirmationBar{padding-top:8px;margin-top:6px;border-top:1px solid #506789;width:100%}
+ @media(max-width:1100px){.trident-timesheet .tablewrap table{min-width:1050px}}
+ @media(max-width:900px){
+  .trident-quote .last-quote{margin:6px 0}
+  .trident-quote .home-tools input{width:100%}
+  .trident-quote #calculatorRows{overflow-x:auto;max-width:100%}
+  .trident-quote :is(.calculator-columns,.calculator-line){min-width:630px}
+  .trident-quote .calculator-transfer{flex-wrap:wrap}
+ }
+}
+
+@media screen and (max-width:1100px){.trident-timesheet .tablewrap table{min-width:1180px}.trident-timesheet .tablewrap .time{min-width:86px}.trident-timesheet .tablewrap .mode{min-width:128px}.trident-timesheet .tablewrap .status{min-width:120px}}
+
+/* Improvement A: compact, accessible history controls. */
+@media screen{
+ :is(.trident-portal,.trident-quote) .history-pagination{display:flex;align-items:center;flex-wrap:wrap;gap:10px 16px;margin:12px 0;padding:10px 12px;background:#f7f9fc;border:1px solid var(--trident-line);border-radius:6px;color:var(--trident-muted);font:12px Arial,sans-serif}
+ :is(.trident-portal,.trident-quote) .pagination-size{display:flex;align-items:center;gap:7px;margin:0;white-space:nowrap;font-size:12px;font-weight:normal;color:var(--trident-text)}
+ :is(.trident-portal,.trident-quote) .pagination-size select{width:66px;min-width:66px;margin:0;padding:5px 7px;border:1px solid var(--trident-line);border-radius:5px;background:#fff;color:var(--trident-navy);font:12px Arial,sans-serif}
+ :is(.trident-portal,.trident-quote) .pagination-count{white-space:nowrap;font-variant-numeric:tabular-nums}
+ :is(.trident-portal,.trident-quote) .pagination-pages{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-left:auto}
+ :is(.trident-portal,.trident-quote) .pagination-pages button{border:1px solid var(--trident-line);border-radius:5px;padding:5px 8px;min-height:28px;min-width:28px;background:#fff;color:var(--trident-navy);font:12px Arial,sans-serif;margin:0;line-height:1.25}
+ :is(.trident-portal,.trident-quote) .pagination-pages button[aria-current=page]{background:var(--trident-navy);border-color:var(--trident-navy);color:#fff;font-weight:bold}
+ :is(.trident-portal,.trident-quote) .pagination-pages button:hover:not(:disabled):not([aria-current=page]){background:var(--trident-soft);border-color:#9bb0ca}
+ :is(.trident-portal,.trident-quote) .pagination-pages button:disabled{opacity:.45;cursor:default}
+ :is(.trident-portal,.trident-quote) .pagination-pages>span{padding:0 3px}
+ @media(max-width:600px){:is(.trident-portal,.trident-quote) .history-pagination{gap:9px 12px;padding:9px}:is(.trident-portal,.trident-quote) .pagination-pages{margin-left:0;width:100%;justify-content:flex-end}}
+}

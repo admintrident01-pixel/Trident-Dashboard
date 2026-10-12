@@ -1,0 +1,19 @@
+.trident-portal .reports table .charged-hours-row>:is(th,td){background:#e0e3e8!important;color:#17345f}.charged-hours-row input{width:100%;min-width:54px;max-width:85px;padding:5px;border:1px solid #abb8c9;border-radius:4px;background:#fff;color:#17345f;font:inherit;text-align:right}.report-comparison-controls{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:22px 0 10px}.report-comparison-controls label{display:grid;gap:5px;font-weight:bold}.report-comparison-controls input{padding:7px;border:1px solid #cbd6e4;border-radius:5px;color:#17345f}.report-averages{margin-top:24px}.report-table th small{display:block;font-weight:normal}.report-table textarea{max-width:100%;min-width:55px}
+
+.period-comparison{margin-top:24px}.period-date-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end}.period-date-controls fieldset{display:flex;gap:12px;border:1px solid #cbd6e4;border-radius:6px;padding:10px;margin:0}.period-date-controls legend{font-weight:bold;color:#17345f}.period-date-controls label{display:grid;gap:5px}.period-date-controls input{padding:7px;border:1px solid #cbd6e4;border-radius:5px;color:#17345f;min-width:145px}
+
+/* Compact report tables keep more staff visible without changing page zoom. */
+.trident-portal .reports .report-table table{font-size:11px;line-height:1.2}
+.trident-portal .reports .report-table :is(th,td){padding:3px 6px}
+.trident-portal .reports .report-table th:first-child{min-width:145px}
+.trident-portal .reports .report-table small{font-size:9px;line-height:1.1;margin-top:1px}
+.trident-portal .reports .report-table h2{font-size:17px;margin-bottom:6px}
+.trident-portal .reports .report-table .charged-hours-row input{font-size:11px;line-height:1.2;padding:2px 4px;height:22px;min-height:0;min-width:42px;max-width:66px;border-radius:3px;box-sizing:border-box}
+.trident-portal .reports .report-table textarea{font-size:10px;padding:3px;margin-top:3px}
+
+.report-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.trident-portal .reports .report-section-heading h2{margin:0}
+.report-section-heading .report-actions{margin:0;gap:6px}
+.trident-portal .reports .report-section-heading .report-actions button{font-size:12px;padding:5px 9px;min-height:28px}
+.trident-portal .reports .period-date-controls button.primary-action{background:#17345f;color:#fff;border-color:#17345f}
+.report-unsaved{font-size:12px;margin:6px 0;color:#65758a}

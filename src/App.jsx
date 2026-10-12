@@ -28,9 +28,10 @@ export default function App(){
  const page=canAccessPage(selectedPage,session)?selectedPage:'home'
 
  useEffect(()=>saveSession(session),[session])
+ useEffect(()=>{const titles={home:'Home',quotes:'Quotes',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',settings:'Settings'};window.document.title=(titles[page]||'Workspace')+' | Trident'},[page])
 
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}`)},[page,session])
- useEffect(()=>{const change=()=>{const next=loadPage();if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}setPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page])
+ useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}setPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page])
 
  const timesheetFrame=useRef(null),quoteFrame=useRef(null)
  const [timesheetHeight,setTimesheetHeight]=useState(900)
@@ -107,8 +108,8 @@ export default function App(){
 
  const openLocal=async()=>{try{setError('');const r=await fetch(`${api}/api/dev-session`);const data=await r.json();if(!r.ok)throw Error(data.error||'Start the local development server first.');setSession(data)}catch(e){setError(e.message)}}
 
- const navigate=next=>{if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?'))return;setPage(next)}
- const signOut=async()=>{if(quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before signing out. Sign out anyway?'))return;try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
+ const navigate=next=>{if(next===page)return;if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Save them before leaving. Leave anyway?'))return;if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?'))return;setPage(next);window.scrollTo({top:0,behavior:'instant'})}
+ const signOut=async()=>{if(window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Sign out anyway?'))return;if(quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before signing out. Sign out anyway?'))return;try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
 
  if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Quote Builder · Version C</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
 
@@ -132,19 +133,15 @@ export default function App(){
 
    <div className="home-intro"><span className="home-eyebrow">Trident Community Equipment</span><h1>Welcome to your workspace</h1><p>Choose where you’d like to work.</p></div>
 
-   {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request}/></>}<div className="module-grid">{isAdmin&&<button className="module-card" onClick={()=>navigate('quotes')}>
-
-    <span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M14 3H5v18h14V8l-5-5Z"/><path d="M14 3v5h5M8 12h8M8 16h5"/></svg></span>
-
-    <span className="module-heading">Quotes</span><span className="module-description">Create quotes, manage drafts and view completed quotes.</span><span className="module-link">Open quotes <span aria-hidden="true">→</span></span>
-
-   </button>}<button className="module-card" onClick={()=>navigate('timesheet')}>
-
-    <span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h4M7 17h4M15 14v3l2 1"/></svg></span>
-
-    <span className="module-heading">Time sheet</span><span className="module-description">Record weekly work and leave hours, add notes and generate a PDF.</span><span className="module-link">Open time sheet <span aria-hidden="true">→</span></span>
-
-   </button>{[['schedule','Tech schedule','View technician appointments and plan upcoming visits.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h10M7 17h6'],['leave','Leave forms','Request leave, review approvals and sync approved dates to time sheets.','M8 3v4M16 3v4M3 10h18M8 15l3 3 5-6M3 5h18v16H3Z'],['reports','Labour payables','Review weekly hours, leave and daily notes; download a PDF.','M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7'],['vehicles','Vehicle checks','Open vehicle checks.','M4 15V9l2-5h12l2 5v6M4 9h16M7 15v4M17 15v4M4 13h3M17 13h3'],['settings','Settings','Manage staff access, vehicles, quote defaults and reminders.','M3 6h18M3 12h18M3 18h18M8 3v6M16 9v6M10 15v6']].filter(([key])=>allowed(key)).map(([key,name,description,path])=><button className="module-card" key={key} onClick={()=>navigate(key)}><span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d={path}/></svg></span><span className="module-heading">{name}</span><span className="module-description">{description}</span><span className="module-link">Open {name.toLowerCase()} <span aria-hidden="true">→</span></span></button>)}</div>
+   {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request}/></>}<div className="module-grid">{[
+ ['quotes','Quotes','Create quotes, manage drafts and view completed quotes.','M14 3H5v18h14V8l-5-5ZM14 3v5h5M8 12h8M8 16h5'],
+ ['schedule','Tech schedule','Plan appointments and see the whole team’s day.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h10M7 17h6'],
+ ['timesheet','Time sheet','Enter weekly hours, review leave and submit your time sheet.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h4M7 17h4M15 14v3l2 1'],
+ ['leave','Leave forms','Request leave and review approvals.','M8 3v4M16 3v4M3 10h18M8 15l3 3 5-6M3 5h18v16H3Z'],
+ ['reports','Labour payables','Review payable and charged hours, averages and reports.','M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7'],
+ ['vehicles','Vehicle checks','Review due dates, complete checks and view vehicle history.','M4 15V9l2-5h12l2 5v6M4 9h16M7 15v4M17 15v4M4 13h3M17 13h3'],
+ ['settings','Settings','Manage staff, defaults and email reminders.','M3 6h18M3 12h18M3 18h18M8 3v6M16 9v6M10 15v6']
+ ].filter(([key])=>allowed(key)).map(([key,name,description,path])=><button className="module-card" key={key} onClick={()=>navigate(key)}><span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d={path}/></svg></span><span className="module-heading">{name}</span><span className="module-description">{description}</span><span className="module-link">Open {name.toLowerCase()} <span aria-hidden="true">→</span></span></button>)}</div>
 
   </main>}
 
