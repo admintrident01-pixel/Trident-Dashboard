@@ -137,3 +137,17 @@ def deliver(store, local=False):
             if store.commit(rev, current): break
         processed += 1
     return processed
+
+
+def archive_mail(state,data,actor):
+    if not isinstance(data,dict) or type(data.get('archived')) is not bool:
+        raise Problem(400,'Choose whether to archive or restore this email.')
+    mid=data.get('id')
+    if not isinstance(mid,str) or mid not in state.get('mailOutbox',{}):
+        raise Problem(404,'This email no longer exists.')
+    result=copy.deepcopy(state)
+    message=result['mailOutbox'][mid]
+    message['archived']=data['archived']
+    message['archivedAt']=dt.datetime.now(dt.timezone.utc).isoformat() if data['archived'] else ''
+    message['archivedBy']=actor if data['archived'] else ''
+    return result

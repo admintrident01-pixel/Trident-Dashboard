@@ -198,7 +198,7 @@ class Application:
 
      headers.append(('ETag',f'"{revision}"'))
 
-     admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/leave-decision','/api/timesheet-edit')
+     admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit')
 
      if path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
@@ -285,6 +285,9 @@ class Application:
 
      elif path=='/api/reminder-dashboard' and method=='GET':payload={'items':reminders.dashboard(state),'emailMode':reminders.mail_mode(self.local)}
 
+     elif path=='/api/mail-archive' and method=='POST':
+      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh emails and try again.')
+      state=reminders.archive_mail(state,self.body(environ),email);self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
      elif path=='/api/mail-outbox' and method=='GET':payload={'messages':[{k:v for k,v in m.items() if k!='body' or self.local} for m in reversed(list(state.get('mailOutbox',{}).values()))]}
 
      elif path in ('/api/users','/api/user-invite','/api/reminder-settings','/api/send-reminder') and method=='POST':
@@ -388,7 +391,7 @@ class Application:
       elif path=='/api/timesheet-edit':
        try:p=json.loads(body)
        except Exception:raise Problem(400,'Invalid time sheet correction.')
-       state,entry=timesheets.edit_submission(state,p,email);payload={'saved':True,'timesheet':entry,'message':'Time sheet correction saved. Labour payables uses the latest submission for that week.'}
+       state,entry=timesheets.edit_submission(state,p,email);payload={'saved':True,'timesheet':entry,'message':'Updated time sheet submitted. Labour payables now uses these corrected values for the week.'}
 
       elif path in ('/api/leave','/api/leave-decision'):
 

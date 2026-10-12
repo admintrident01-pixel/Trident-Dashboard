@@ -13,7 +13,7 @@ def week_rows(state, week):
     start=week_date(week)
     dates=[(start+dt.timedelta(days=i)).isoformat() for i in range(7)]
     latest={}
-    for sheet in sorted(state.get('timesheets',{}).values(),key=lambda s:s.get('submittedAt','')):
+    for sheet in sorted(state.get('timesheets',{}).values(),key=lambda s:s.get('updatedAt') or s.get('submittedAt','')):
         if sheet['weekStart']==week: latest[sheet['technician'].casefold()]=sheet
     approved={}
     names={r['name'].casefold():r['name'] for r in timesheets.settings(state)['technicians']}

@@ -1,0 +1,17 @@
+Admin histories, schedule preview and reminder archive
+
+1. Submitted timesheet history is below the Time sheet form as well as on Home. Only admins see this history and can view/edit/resubmit it. Both history GET and edit POST reject technicians. All saved submissions are listed; names, dates and hours sort using navy up/down controls. The time sheet form expands to its content height so one page scroll reaches history below the footer.
+
+2. Submit updated time sheet saves the correction and makes that submission the current sheet for that person/week in labour payables, including when correcting an earlier submission. This supersedes the earlier history update's rule that only the latest original submission could feed payables. Original signature, original submitted time and prior corrections remain saved. Approved leave is filled/locked and enforced server-side. Latest original submission or latest admin correction wins. Hours, unpaid lunch and day notes feed payables; explicitly saved report notes retain their override. Conflicting updates are rejected.
+
+3. Schedule settings now show staff columns horizontally like the schedule, with aligned headings, arrows and a small grid/lunch preview. Office staff remain on the far right. The preview scrolls horizontally on smaller screens. Save schedule settings applies the order.
+
+4. Email history entries have Archive reminder inside the expanded entry. Archived emails move to Archived reminders at the very bottom of Email reminders. Restore to email history reverses this. Archive state/date/admin persist on the server; contents and delivery status remain saved. Sorting applies to active and archived entries. Archiving does not disable automatic reminders or cancel queued delivery.
+
+Cumulative source update includes prior quote autosave, markup, sorting and timesheet changes. Publish BOTH backend and frontend. Upload source to GitHub; in Cloud Shell:
+cd ~/Trident-Dashboard
+git pull --ff-only
+gcloud run deploy trident-quote-api --project=trident-dashboard-511203 --region=australia-southeast1 --source=backend
+Verify the connected Cloudflare frontend build succeeds, then refresh the browser. Preserve any Cloud Shell local changes before pulling if Git reports a conflict.
+
+Checks: 8 backend history/archive tests passed, including permissions, conflicts, older-sheet correction selection, exact approved leave, and archive/restore persistence. Frontend lint and production build passed. Browser verified history below form, horizontal staff preview, and archived section at the bottom. Existing business timesheets, schedule order and email history were not modified during verification.

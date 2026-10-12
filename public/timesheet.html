@@ -94,5 +94,10 @@ document.querySelector('.card').addEventListener('input',function(){document.get
 
 document.getElementById('week').addEventListener('change',function(){updateDates();applyApprovedLeave()});document.getElementById('tech').addEventListener('input',applyApprovedLeave);document.getElementById('tech').addEventListener('change',applyApprovedLeave);window.addEventListener('focus',function(){reloadConfig(true)});setInterval(function(){if(!document.hidden)reloadConfig(true)},60000);render();reloadConfig();
 
+</script><script>
+const sheetWrap=document.querySelector('.wrap');
+const reportSheetHeight=()=>{const rect=sheetWrap.getBoundingClientRect();if(rect.height>0)parent.postMessage({type:'trident-timesheet-height',height:Math.ceil(rect.height+24)},location.origin)};
+new ResizeObserver(reportSheetHeight).observe(sheetWrap);
+window.addEventListener('load',reportSheetHeight);
 </script></body></html>
 

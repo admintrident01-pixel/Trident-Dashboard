@@ -35,3 +35,14 @@ class HistoryTests(unittest.TestCase):
         status,payload,_=api.call('/api/timesheet-edit','POST',self.change)
         self.assertEqual(status,200);self.assertEqual(payload['timesheet']['total'],8.5)
         self.assertEqual(api.call('/api/timesheet-edit','POST',self.change)[0],409)
+
+    def test_editing_earlier_submission_becomes_current_report(self):
+        state,later=timesheets.save(self.state,self.payload)
+        later['submittedAt']='2027-02-02T00:00:00+00:00'
+        state['timesheets'][self.row['id']]['submittedAt']='2027-02-01T00:00:00+00:00'
+        state,row=timesheets.edit_submission(state,self.change,'admin@example.nz')
+        row['updatedAt']='2027-02-03T00:00:00+00:00'
+        report=next(r for r in weekly_report.read(state,'2027-02-01')['rows'] if r['name']=='Scott Yearbury')
+        self.assertEqual(report['days'][0]['work'],8.5)
+        self.assertEqual(row['submittedAt'],'2027-02-01T00:00:00+00:00')
+        self.assertEqual(len(state['timesheets']),2)
