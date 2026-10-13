@@ -39,4 +39,30 @@ class StaffSetupTests(unittest.TestCase):
         self.assertEqual(api.call('/api/staff-setup','POST',{'staff':self.staff,'account':self.account})[0],200)
         self.assertEqual(api.call('/api/staff-setup')[0],200)
 
+class VehicleAllocationTests(unittest.TestCase):
+    def setUp(self):
+        self.actor={'email':accounts.FIRST_ADMIN}
+        self.state={'staffSettings':{'technicians':[{'name':'Scott','rego':'AAA111','hasVehicle':True},{'name':'Andrew','rego':'BBB222','hasVehicle':True}]},'vehicles':[{'id':'VEH-01','registration':'AAA111','makeModel':'Toyota','driver':'Scott','active':True},{'id':'VEH-02','registration':'BBB222','makeModel':'Toyota','driver':'Andrew','active':True}],'vehicleChecks':{'old':{'vehicleId':'VEH-02','driver':'Andrew'}}}
+    def test_allocate_and_release_vehicle_without_changing_history(self):
+        before=copy.deepcopy(self.state)
+        result=staff_setup.save(self.state,{'originalName':'Scott','staff':{'name':'Scott','hasVehicle':True,'rego':'BBB222','vehicleId':'VEH-02'}},self.actor)
+        self.assertEqual(result['vehicles'][0]['driver'],'');self.assertEqual(result['vehicles'][1]['driver'],'Scott')
+        self.assertEqual(result['staffSettings']['technicians'][0]['rego'],'BBB222');self.assertFalse(result['staffSettings']['technicians'][1]['hasVehicle'])
+        self.assertEqual(result['vehicleChecks'],self.state['vehicleChecks']);self.assertEqual(self.state,before)
+        result=staff_setup.save(result,{'originalName':'Scott','staff':{'name':'Scott','hasVehicle':False,'rego':'','vehicleId':''}},self.actor)
+        self.assertEqual(result['vehicles'][1]['driver'],'');self.assertFalse(result['staffSettings']['technicians'][0]['hasVehicle'])
+    def test_invalid_vehicle_is_atomic(self):
+        for target in ['', 'missing']:
+            before=copy.deepcopy(self.state)
+            with self.assertRaises(Problem):staff_setup.save(self.state,{'originalName':'Scott','staff':{'name':'Scott','hasVehicle':True,'vehicleId':target}},self.actor)
+            self.assertEqual(self.state,before)
+    def test_fleet_registration_and_removal_sync_staff(self):
+        import vehicles
+        rows=copy.deepcopy(self.state['vehicles']);rows[0]['registration']='NEW123'
+        result=vehicles.save_fleet(self.state,{'vehicles':rows})
+        self.assertEqual(result['staffSettings']['technicians'][0]['rego'],'NEW123')
+        result=vehicles.save_fleet(result,{'vehicles':rows[1:]})
+        self.assertFalse(result['staffSettings']['technicians'][0]['hasVehicle']);self.assertEqual(result['staffSettings']['technicians'][0]['rego'],'')
+        self.assertEqual(result['vehicleChecks'],self.state['vehicleChecks'])
+
 if __name__=='__main__': unittest.main()

@@ -277,7 +277,7 @@ class Application:
 
      elif path=='/api/weekly-report-pdf' and method=='POST':payload=weekly_report.pdf(state,self.body(environ))
 
-     elif path=='/api/staff-setup' and method=='GET':payload=staff_setup.read(state)
+     elif path=='/api/staff-setup' and method=='GET':payload={**staff_setup.read(state),'emailMode':reminders.mail_mode(self.local)}
 
      elif path=='/api/staff-setup' and method=='POST':
 
@@ -323,6 +323,10 @@ class Application:
 
        if not row:raise Problem(404,'This reminder is no longer due or the vehicle was removed.')
 
+       if p.get('recipient'):
+        recipient=accounts.email(p['recipient']);target=accounts.users(state).get(recipient)
+        if row['kind']!='vehicle' or not target or not target.get('active') or target.get('technician')!=row['name']:raise Problem(400,'Choose the email linked to this vehicle’s staff member.')
+        row={**row,'recipient':recipient}
        reminders.enqueue_reminder(state,row);payload={'saved':True,'message':'Reminder queued.'}
 
       self.commit(revision,state)
@@ -347,7 +351,7 @@ class Application:
 
      elif path=='/api/leave' and method=='GET':payload={'requests':[r for r in state.get('leaveRequests',{}).values() if user['role']=='admin' or r['technician']==user['technician']],'technicians':[t for t in timesheets.settings(state)['technicians'] if user['role']=='admin' or t['name']==user['technician']]}
 
-     elif path=='/api/vehicles' and method=='GET':payload={'vehicles':vehicles.fleet(state),'removedVehicles':list(state.get('removedVehicles',{}).values()),'checks':list(state.get('vehicleChecks',{}).values()),'technicians':timesheets.settings(state)['technicians'],'checklist':vehicles.CHECKLIST}
+     elif path=='/api/vehicles' and method=='GET':payload={'vehicles':vehicles.fleet(state),'activeVehicles':vehicles.active_fleet(state),'removedVehicles':list(state.get('removedVehicles',{}).values()),'checks':list(state.get('vehicleChecks',{}).values()),'technicians':timesheets.settings(state)['technicians'],'checklist':vehicles.CHECKLIST,'colourSettings':vehicles.colour_settings(state)}
 
      elif path=='/api/timesheets' and method=='GET':
 
@@ -439,6 +443,9 @@ class Application:
          if p.get('checkDate')!=datetime.datetime.now(ZoneInfo('Pacific/Auckland')).date().isoformat():raise Problem(403,'Technicians can submit checks for today. Ask an Admin to change previous values.')
 
          accounts.own(user,p.get('driver'))
+
+         owner=next((vehicle for vehicle in vehicles.active_fleet(state) if vehicle['id']==p.get('vehicleId')),None)
+         if not owner or owner['driver']!=user.get('technician'):raise Problem(403,'Choose your active allocated vehicle.')
 
         state,entry=vehicles.save_check(state,p);entry['submittedBy']=email;payload={'saved':True,'check':entry}
 

@@ -50,7 +50,7 @@ def dashboard(state, now=None):
         for user in active_users:
             if any(s['technician'] == user['technician'] and s['weekStart'] == week.isoformat() for s in state.get('timesheets', {}).values()): continue
             rows.append({'id': 'sheet:' + user['email'] + ':' + week.isoformat(), 'kind': 'timesheet', 'recipient': user['email'], 'name': user['technician'], 'weekStart': week.isoformat(), 'due': due.isoformat(), 'hoursRemaining': round((due - now).total_seconds() / 3600, 1)})
-    for vehicle in vehicles.fleet(state):
+    for vehicle in vehicles.active_fleet(state):
         if not vehicle['active']: continue
         checks = [c for c in state.get('vehicleChecks', {}).values() if c['vehicleId'] == vehicle['id']]
         check = max(checks, key=lambda c: (c['checkDate'], c['createdAt'])) if checks else {}

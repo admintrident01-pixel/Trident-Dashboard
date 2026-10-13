@@ -35,6 +35,7 @@ export default function App(){
 
  const timesheetFrame=useRef(null),quoteFrame=useRef(null)
  const [timesheetHeight,setTimesheetHeight]=useState(900)
+ const [managementSection,setManagementSection]=useState('staff')
 
  const isAdmin=session?.role==='admin'
 
@@ -158,9 +159,9 @@ export default function App(){
   {isAdmin&&page==='reports'&&<WeeklyReport request={request}/>}
   <section hidden={page!=='schedule'}><TechSchedule request={request} isAdmin={isAdmin} active={page==='schedule'}/></section>
 
-  <section hidden={page!=='vehicles'}><VehicleChecks isAdmin={isAdmin} technician={session.technician} request={request} active={page==='vehicles'}/></section>
+  <section hidden={page!=='vehicles'}><VehicleChecks onManage={()=>{setManagementSection('fleet');navigate('settings')}} isAdmin={isAdmin} technician={session.technician} request={request} active={page==='vehicles'}/></section>
 
-  {isAdmin&&<section hidden={page!=='settings'}>{page==='settings'&&<SettingsPage request={request} onSaved={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-staff-updated'},location.origin);window.dispatchEvent(new Event('trident-settings-saved'))}}/>}</section>}
+  {isAdmin&&<section hidden={page!=='settings'}>{page==='settings'&&<SettingsPage initialManagementSection={managementSection} request={request} onSaved={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-staff-updated'},location.origin);window.dispatchEvent(new Event('trident-settings-saved'))}}/>}</section>}
 
  </div>:<EmailSignIn api={api} localMode={localMode} onLocal={openLocal} onSignedIn={setSession}/>
 

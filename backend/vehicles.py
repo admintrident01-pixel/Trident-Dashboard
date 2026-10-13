@@ -1,4 +1,4 @@
-import copy, datetime, uuid
+import copy, datetime, uuid, re
 from core import Problem
 from timesheets import text
 
@@ -22,12 +22,63 @@ def fleet(state):
     positions={key:index for index,key in enumerate(order) if isinstance(key,str)}
     return sorted(rows,key=lambda row:positions.get(row['id'],len(positions)+rows.index(row)))
 
+def active_fleet(state):
+    from timesheets import settings
+    staff={row['name'].casefold():row for row in settings(state)['technicians'] if row.get('hasVehicle',True)}
+    result=[]
+    for vehicle in fleet(state):
+        person=staff.get(vehicle.get('driver','').casefold())
+        if vehicle.get('active') and person:result.append({**vehicle,'driver':person['name']})
+    return result
+
+
+COLOUR_DEFAULTS = {
+    'checkDays': {'red':7,'orange':14,'yellow':21},
+    'km': {'red':500,'yellow':2000,'green':4000},
+    'rucKm': {'red':500,'yellow':2000,'green':4000},
+    'colours': {'red':'#f9d4d1','orange':'#ffd8ae','yellow':'#fff1a3','green':'#cdebd3'},
+    'followUp': {'yes':'orange','no':'green'},
+}
+
+def colour_settings(state):
+    result=copy.deepcopy(COLOUR_DEFAULTS)
+    saved=state.get('vehicleColourSettings',{})
+    for group,values in result.items():values.update(saved.get(group,{}))
+    return result
+
+def clean_colours(data):
+    if not isinstance(data,dict):raise Problem(400,'Enter valid vehicle colour settings.')
+    result=copy.deepcopy(COLOUR_DEFAULTS)
+    for group in ['checkDays','km','rucKm']:
+        raw=data.get(group)
+        if not isinstance(raw,dict):raise Problem(400,'Complete every colour threshold.')
+        for key in result[group]:
+            value=raw.get(key)
+            if isinstance(value,bool):raise Problem(400,'Thresholds must be whole non-negative numbers.')
+            try:value=int(str(value))
+            except (ValueError,TypeError):raise Problem(400,'Thresholds must be whole non-negative numbers.')
+            if not 0<=value<=10000000:raise Problem(400,'Enter a threshold from 0 to 10,000,000.')
+            result[group][key]=value
+        values=list(result[group].values())
+        if not all(a<b for a,b in zip(values,values[1:])):raise Problem(400,'Colour thresholds must increase from red to green.')
+    palette=data.get('colours',{});follow=data.get('followUp',{})
+    for key in result['colours']:
+        value=palette.get(key)
+        if not isinstance(value,str) or not re.fullmatch(r'#[0-9a-fA-F]{6}',value):raise Problem(400,'Choose a valid colour for each shade.')
+        result['colours'][key]=value
+    for key in ['yes','no']:
+        value=follow.get(key)
+        if value not in COLOUR_DEFAULTS['colours']:raise Problem(400,'Choose a follow-up colour.')
+        result['followUp'][key]=value
+    return result
+
 def save_order(state,data):
     order=data.get('order') if isinstance(data,dict) else None
     ids={row['id'] for row in fleet(state)}
     if not isinstance(order,list) or any(not isinstance(key,str) for key in order) or len(order)!=len(ids) or set(order)!=ids:
         raise Problem(400,'Include every current vehicle once. Reload vehicle settings and try again.')
     result=copy.deepcopy(state);result['vehicleColumnOrder']=list(order)
+    if 'colourSettings' in data:result['vehicleColourSettings']=clean_colours(data['colourSettings'])
     return result
 
 
@@ -49,6 +100,17 @@ def save_fleet(state, data):
         cleaned.append({'id':key,'registration':reg,'makeModel':text(row.get('makeModel',''),'make/model',160),'driver':text(row.get('driver',''),'driver',160),'active':row['active'],'baseline':old.get(key,{}).get('baseline',{})})
     result=copy.deepcopy(state);result['vehicles']=cleaned
     result.setdefault('removedVehicles', {}).update({key:row for key,row in old.items() if key not in seen})
+    # Staff allocation and fleet details share the same source of truth.
+    from timesheets import settings
+    people=copy.deepcopy(settings(result)['technicians'])
+    assigned={v['driver'].casefold():v for v in cleaned if v['driver'] and v['active']}
+    previous={v.get('driver','').casefold() for v in old.values() if v.get('driver')}
+    for person in people:
+        vehicle=assigned.get(person['name'].casefold())
+        if vehicle:person.update(hasVehicle=True,rego=vehicle['registration'])
+        elif person['name'].casefold() in previous:person.update(hasVehicle=False,rego='')
+    result['staffSettings']={'technicians':people}
+
     return result
 
 def date(value, label, required=False):
@@ -80,6 +142,8 @@ def save_check(state,data):
         raise Problem(400,'Choose an existing vehicle. Removed vehicles cannot receive new checks.')
     if (old and data.get('revision')!=old['revision']) or (not old and data.get('revision',0)!=0):raise Problem(409,'This check has changed. Reopen it from history.')
     if old and old['vehicleId']!=vehicle_id:raise Problem(400,'An existing check must stay with its original vehicle.')
+    eligible={vehicle['id']:vehicle for vehicle in active_fleet(state)}
+    if not old and vehicle_id not in eligible:raise Problem(400,'Activate and allocate this vehicle in Staff & vehicles before submitting a new check.')
     overall=data.get('overall')
     if overall not in ('All OK','Issues found'):raise Problem(400,'Choose an overall check result.')
     answers=data.get('checklist')
@@ -88,13 +152,18 @@ def save_check(state,data):
         if any(a not in ('','Pass') for a in answers):raise Problem(400,'Choose Issues found for failed or not-applicable checks.')
         answers=['Pass']*len(CHECKLIST)
     elif any(a not in ('Pass','Fail','N/A') for a in answers):raise Problem(400,'Complete all checklist rows with Pass, Fail or N/A.')
-    entry={'id':key,'revision':old['revision']+1 if old else 1,'vehicleId':vehicle_id,'driver':text(data.get('driver'),'driver / inspector name',160,True),'registration':text(data.get('registration'),'vehicle registration',30,True).upper(),'makeModel':text(data.get('makeModel',''),'make/model',160),'vehicleYear':text(data.get('vehicleYear',''),'vehicle year',4),'checkDate':date(data.get('checkDate'),'check date',True),'overall':overall,'checklist':answers,'comments':text(data.get('comments'),'damage / comments',4000,True),'signature':text(data.get('signature'),'signed inspector name',160,True)}
+    entry={'id':key,'revision':old['revision']+1 if old else 1,'vehicleId':vehicle_id,'driver':text(data.get('driver'),'driver / inspector name',160,True),'registration':text(data.get('registration'),'vehicle registration',30,True).upper(),'makeModel':text(data.get('makeModel',old.get('makeModel','') if old else ''),'make/model',160),'vehicleYear':text(data.get('vehicleYear',''),'vehicle year',4),'checkDate':date(data.get('checkDate'),'check date',True),'overall':overall,'checklist':answers,'comments':text(data.get('comments'),'damage / comments',4000,True),'signature':text(data.get('signature'),'signed inspector name',160,True)}
+    if not old:entry['driver']=eligible[vehicle_id]['driver']
     expiry=data.get('nextCheckDue') or (datetime.date.fromisoformat(entry['checkDate'])+datetime.timedelta(days=30)).isoformat()
     entry['nextCheckDue']=date(expiry,'next vehicle check due',True)
     if entry['nextCheckDue']<=entry['checkDate']:raise Problem(400,'The next vehicle check must be due after this check date.')
     if entry['vehicleYear'] and (not entry['vehicleYear'].isdigit() or not 1900<=int(entry['vehicleYear'])<=2100):raise Problem(400,'Enter a valid vehicle year.')
-    for field,label,required in [('serviceDue','service due date',True),('wofExpiry','WOF due date',False),('alignmentDue','wheel alignment due date',True),('regoExpiry','registration due date',True)]:entry[field]=date(data.get(field,''),label,required)
-    for field,label,required in [('serviceDueKm','service due KM',True),('wofDueKm','WOF due KM',False),('alignmentDueKm','wheel alignment due KM',True),('odometer','odometer reading',True),('rucCurrent','road user charge KM',True),('rucDue','RUC due KM',False)]:entry[field]=km(data.get(field),label,required)
+    for field,label,required in [('serviceDue','service due date',True),('wofExpiry','WOF due date',False),('alignmentDue','wheel alignment due date',False),('regoExpiry','registration due date',True)]:entry[field]=date(data.get(field,''),label,required)
+    for field,label,required in [('serviceDueKm','service due KM',True),('wofDueKm','WOF due KM',False),('alignmentDueKm','wheel alignment due KM',False),('odometer','odometer reading',True),('rucCurrent','road user charge KM',True),('rucDue','RUC due KM',False)]:entry[field]=km(data.get(field),label,required)
+    follow=data.get('followUpNeeded',old.get('followUpNeeded') if old else None)
+    if follow is not None and not isinstance(follow,bool):raise Problem(400,'Choose Yes or No for follow-up needed.')
+    entry['followUpNeeded']=follow
+    entry['followUpNotes']=text(data.get('followUpNotes',old.get('followUpNotes','') if old else ''),'follow-up needed',4000,True) if follow else ''
     now=datetime.datetime.now(datetime.timezone.utc).isoformat()
     entry['createdAt']=old['createdAt'] if old else now;entry['updatedAt']=now
     result=copy.deepcopy(state);result.setdefault('vehicleChecks',{})[key]=entry

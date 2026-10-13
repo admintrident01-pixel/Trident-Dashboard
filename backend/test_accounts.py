@@ -149,7 +149,7 @@ class AccountsAPI(unittest.TestCase):
 class ReminderRules(unittest.TestCase):
     def setUp(self):
         self.now=dt.datetime(2026,10,9,12,tzinfo=ZoneInfo('Pacific/Auckland'))
-        self.state={'users':{'test@example.nz':{'email':'test@example.nz','name':'Test','role':'tech','active':True,'verified':True,'technician':'Scott'}},'vehicles':[{'id':'V1','driver':'Scott','active':True,'registration':'ABC123','baseline':{'checkDate':'2026-09-16'}}]}
+        self.state={'staffSettings':{'technicians':[{'name':'Scott','rego':'ABC123','hasVehicle':True}]},'users':{'test@example.nz':{'email':'test@example.nz','name':'Test','role':'tech','active':True,'verified':True,'technician':'Scott'}},'vehicles':[{'id':'V1','driver':'Scott','active':True,'registration':'ABC123','baseline':{'checkDate':'2026-09-16'}}]}
     def test_weekly_deadline_and_vehicle_due(self):
         rows=reminders.dashboard(self.state,self.now)
         vehicle=next(r for r in rows if r['kind']=='vehicle')
