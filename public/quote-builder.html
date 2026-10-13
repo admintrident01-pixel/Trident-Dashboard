@@ -401,7 +401,7 @@ function recordToDraft(r){
  if(!items.length)items=[{description:text||fields.job||'Quote item',qty:1,rate:Number(r['Subtotal NZD'])||0}];
  return {version:1,fields,lines:items};
 }
-var quoteHistorySort=null,quoteHistoryPage=1,quoteHistorySize=20,quoteHistoryKey='';
+var quoteHistorySort=null,quoteHistoryPage=1,quoteHistorySize=10,quoteHistoryKey='';
 function quoteSortValue(q,i){const f=q.data.fields;return [Number(f.number),f.client||f.to||'',f.job||'',f.type||'',q.createdByName||f.by||'',f.date||'',q.state==='Draft'?'Draft':'Completed'][i]}
 function renderHome(){
  const headers=document.querySelectorAll('#homePage thead th');headers.forEach((th,i)=>{if(i>=7)return;if(!th.dataset.sortReady){const title=th.textContent;th.dataset.sortReady='true';th.textContent='';const b=document.createElement('button');b.type='button';b.className='history-sort';b.dataset.title=title;b.onclick=()=>{quoteHistoryPage=1;quoteHistorySort={index:i,direction:quoteHistorySort?.index===i&&quoteHistorySort.direction==='asc'?'desc':'asc'};renderHome()};th.append(b)}const active=quoteHistorySort?.index===i;th.setAttribute('aria-sort',active?(quoteHistorySort.direction==='asc'?'ascending':'descending'):'none');const b=th.querySelector('button');b.textContent=b.dataset.title;const icon=document.createElement('span');icon.className='sort-triangles '+(active?quoteHistorySort.direction:'neutral');icon.setAttribute('aria-hidden','true');const up=document.createElement('i');up.className='sort-up';const down=document.createElement('i');down.className='sort-down';icon.append(up,down);b.append(icon);b.setAttribute('aria-label','Sort by '+b.dataset.title+' '+(active&&quoteHistorySort.direction==='asc'?'descending':'ascending'))});

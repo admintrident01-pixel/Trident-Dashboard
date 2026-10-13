@@ -7,6 +7,7 @@ from core import Problem,decode,save_quote,workbook_info
 from storage import BigQueryStore,CloudObjects
 
 import timesheets
+import timesheet_drafts
 
 import vehicles
 
@@ -355,7 +356,7 @@ class Application:
 
      elif path=='/api/timesheets' and method=='GET':
 
-      accounts.admin(user);payload={'timesheets':list(state.get('timesheets',{}).values())}
+      payload={'timesheets':[r for r in state.get('timesheets',{}).values() if user['role']=='admin' or r['technician']==user['technician']],'drafts':timesheet_drafts.visible(state,user)}
 
      elif path=='/api/catalog' and method=='GET':payload={'quotes':list(state['quotes'].values()),'pdfs':list(state['pdfs'])}
 
@@ -371,7 +372,7 @@ class Application:
 
       payload=self.objects.get(key);mime='application/pdf'
 
-     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/staff-settings','/api/vehicles','/api/vehicle-order','/api/vehicle-checks','/api/leave','/api/leave-decision','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
+     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/timesheet-drafts','/api/staff-settings','/api/vehicles','/api/vehicle-order','/api/vehicle-checks','/api/leave','/api/leave-decision','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
 
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh and try again.')
 
@@ -457,13 +458,18 @@ class Application:
 
        state=timesheets.save_settings(state,p);payload={'saved':True}
 
+      elif path=='/api/timesheet-drafts':
+       try:p=json.loads(body)
+       except Exception:raise Problem(400,'Invalid draft request.')
+       state,entry=timesheet_drafts.save(state,p,user);payload={'saved':True,'draft':entry,'message':'Draft saved. Continue it from your time sheet history.'}
+
       elif path=='/api/timesheets':
 
        try:p=json.loads(body)
 
        except Exception:raise Problem(400,'Invalid time sheet request.')
 
-       accounts.own(user,p.get('technician'));state,entry=timesheets.save(state,p);entry['submittedBy']=email;payload={'saved':True,'id':entry['id'],'total':entry['total'],'message':'Signed time sheet saved.'}
+       accounts.own(user,p.get('technician'));state,entry=timesheet_drafts.submit(state,p,user);entry['submittedBy']=email;payload={'saved':True,'id':entry['id'],'total':entry['total'],'message':'Signed time sheet saved.'}
 
       elif path=='/api/workbook':
 

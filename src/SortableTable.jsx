@@ -7,7 +7,7 @@ const elements=node=>Children.toArray(node).filter(isValidElement)
 const text=node=>typeof node==='string'||typeof node==='number'?String(node):isValidElement(node)?text(node.props.children):Array.isArray(node)?node.map(text).join(' '):''
 function cellValue(cell){return cell?.props['data-sort-value']??text(cell?.props.children)}
 export default function SortableTable({children,groupSize=1,paginate=false,paginationLabel='records',paginationReset='',...props}){
- const [sort,setSort]=useState(null),[paging,setPaging]=useState({key:'',page:1,size:20})
+ const [sort,setSort]=useState(null),[paging,setPaging]=useState({key:'',page:1,size:10})
  const parts=elements(children),head=parts.find(p=>p.type==='thead'),headRow=head&&elements(head.props.children)[0],headers=headRow?elements(headRow.props.children):[]
  const body=parts.find(part=>part.type==='tbody'),bodyRows=body?elements(body.props.children):[],datasetKey=JSON.stringify([paginationReset,bodyRows.map(row=>row.key)])
  const range=pageWindow(Math.ceil(bodyRows.length/groupSize),paging.key===datasetKey?paging.page:1,paging.size)

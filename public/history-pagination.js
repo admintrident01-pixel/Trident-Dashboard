@@ -1,8 +1,8 @@
 /* Improvement A: shared pagination for React histories and the quote workspace. */
 ;(function(root){
- const sizes=[20,50,100]
- function pageWindow(total,page=1,size=20){
-  size=sizes.includes(Number(size))?Number(size):20
+ const sizes=[10,20,50,100]
+ function pageWindow(total,page=1,size=10){
+  size=sizes.includes(Number(size))?Number(size):10
   total=Math.max(0,Math.floor(Number(total)||0))
   const pages=Math.max(1,Math.ceil(total/size));page=Math.min(pages,Math.max(1,Math.floor(Number(page)||1)))
   const offset=(page-1)*size

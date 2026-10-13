@@ -191,7 +191,7 @@ class TestAPI(unittest.TestCase):
   bad=copy.deepcopy(cfg);bad['types'][0]['message']='bad\x00text';self.assertEqual(self.call('/api/quote-settings','POST',bad,3)[0],400)
   self.assertEqual(self.call('/api/quote-settings','POST',cfg,2)[0],409)
  def test_time_defaults(self):
-  self.assertEqual(json.loads(self.call('/api/time-settings')[2]),{'start':'08:00','finish':'16:00'})
+  self.assertEqual(json.loads(self.call('/api/time-settings')[2]),{'start':'07:30','finish':'16:00'})
   self.assertEqual(self.call('/api/time-settings','POST',{'start':'09:00','finish':'17:30'},1)[0],200)
   self.assertEqual(json.loads(self.call('/api/timesheets/config')[2])['defaultTimes'],{'start':'09:00','finish':'17:30'})
   self.assertEqual(self.call('/api/time-settings','POST',{'start':'09:10','finish':'17:30'},2)[0],400)

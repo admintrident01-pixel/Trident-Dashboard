@@ -30,7 +30,7 @@ class AccountsAPI(unittest.TestCase):
         return meta[0][0], json.loads(result), meta[0][1]
     def test_admin_and_technician_permissions(self):
         self.assertEqual(self.call('/api/session',token='tech')[1]['role'],'tech')
-        for path in ['/api/users','/api/time-settings','/api/staff-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/timesheets','/api/reminder-dashboard','/api/reminder-settings','/api/mail-outbox']:
+        for path in ['/api/users','/api/time-settings','/api/staff-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/reminder-dashboard','/api/reminder-settings','/api/mail-outbox']:
             self.assertEqual(self.call(path,token='tech')[0],403,path)
         for path in ['/api/users','/api/user-invite','/api/send-reminder','/api/reminder-settings','/api/leave-decision','/api/quote-save','/api/vehicles']:
             self.assertEqual(self.call(path,'POST',{},token='tech')[0],403,path)

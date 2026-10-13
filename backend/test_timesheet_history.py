@@ -29,7 +29,8 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(row['total'],4);self.assertEqual(report['days'][0]['annual'],4);self.assertEqual(report['days'][0]['work'],0)
     def test_api_admin_only_and_conflicts(self):
         api=test_accounts.AccountsAPI();api.setUp();api.store.state.update(copy.deepcopy(self.state))
-        self.assertEqual(api.call('/api/timesheets',token='tech')[0],403)
+        self.assertEqual(api.call('/api/timesheets',token='tech')[0],200)
+        self.assertTrue(all(r['technician']=='Scott Yearbury' for r in api.call('/api/timesheets',token='tech')[1]['timesheets']))
         self.assertEqual(api.call('/api/timesheet-edit','POST',self.change,token='tech')[0],403)
         self.assertEqual(api.call('/api/timesheet-edit','POST',self.change,match=False)[0],409)
         status,payload,_=api.call('/api/timesheet-edit','POST',self.change)

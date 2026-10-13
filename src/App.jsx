@@ -33,7 +33,8 @@ export default function App(){
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}`)},[page,session])
  useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}setPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page])
 
- const timesheetFrame=useRef(null),quoteFrame=useRef(null)
+ const timesheetFrame=useRef(null),quoteFrame=useRef(null),pendingDraft=useRef('')
+ function continueTimesheetDraft(id){navigate('timesheet');pendingDraft.current=id;if(timesheetFrame.current){timesheetFrame.current.contentWindow.postMessage({type:'trident-resume-timesheet-draft',id},location.origin);pendingDraft.current='';timesheetFrame.current.scrollIntoView({block:'start',behavior:'smooth'})}}
  const [timesheetHeight,setTimesheetHeight]=useState(900)
  const [managementSection,setManagementSection]=useState('staff')
 
@@ -134,7 +135,7 @@ export default function App(){
 
    <div className="home-intro"><span className="home-eyebrow">Trident Community Equipment</span><h1>Welcome to your workspace</h1><p>Choose where you’d like to work.</p></div>
 
-   {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request}/></>}<div className="module-grid">{[
+   {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/></>}<div className="module-grid">{[
  ['quotes','Quotes','Create quotes, manage drafts and view completed quotes.','M14 3H5v18h14V8l-5-5ZM14 3v5h5M8 12h8M8 16h5'],
  ['schedule','Tech schedule','Plan appointments and see the whole team’s day.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h10M7 17h6'],
  ['timesheet','Time sheet','Enter weekly hours, review leave and submit your time sheet.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h4M7 17h4M15 14v3l2 1'],
@@ -152,7 +153,7 @@ export default function App(){
 
   {page==='timesheet'&&!timesheetDocument&&<p className="module-loading" role="status">Loading your time sheet…</p>}
 
-  {timesheetDocument&&<section className="quote-module timesheet-module" hidden={page!=='timesheet'} aria-label="Time sheet"><iframe ref={timesheetFrame} title="Trident time sheet" style={{height:timesheetHeight}} srcDoc={timesheetDocument}/>{isAdmin&&page==='timesheet'&&<TimesheetHistory request={request}/>}</section>}
+  {timesheetDocument&&<section className="quote-module timesheet-module" hidden={page!=='timesheet'} aria-label="Time sheet"><iframe ref={timesheetFrame} title="Trident time sheet" onLoad={()=>{if(pendingDraft.current){timesheetFrame.current.contentWindow.postMessage({type:'trident-resume-timesheet-draft',id:pendingDraft.current},location.origin);pendingDraft.current=''}}} style={{height:timesheetHeight}} srcDoc={timesheetDocument}/>{page==='timesheet'&&<TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/>}</section>}
 
   <section hidden={page!=='leave'}><LeaveForms isAdmin={isAdmin} request={request} active={page==='leave'} onChanged={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin);window.dispatchEvent(new Event('trident-leave-updated'))}}/></section>
 

@@ -25,3 +25,14 @@ class MailArchiveTests(unittest.TestCase):
         self.assertTrue(api.call('/api/mail-outbox')[1]['messages'][0]['archived'])
         self.assertEqual(api.call('/api/mail-archive','POST',{'id':'one','archived':False})[0],200)
         self.assertFalse(api.call('/api/mail-outbox')[1]['messages'][0]['archived'])
+
+    def test_bulk_archive_is_atomic_and_keeps_delivery_state(self):
+        self.state['mailOutbox']['two']={**self.state['mailOutbox']['one'],'id':'two','status':'queued'}
+        archived=reminders.archive_mail(self.state,{'ids':['one','two'],'archived':True},'admin@example.nz')
+        self.assertTrue(all(r['archived'] for r in archived['mailOutbox'].values()))
+        self.assertEqual(archived['mailOutbox']['two']['status'],'queued')
+        self.assertNotIn('archived',self.state['mailOutbox']['one'])
+        with self.assertRaises(Problem):reminders.archive_mail(self.state,{'ids':['one','missing'],'archived':True},'admin@example.nz')
+        self.assertNotIn('archived',self.state['mailOutbox']['one'])
+        again=reminders.archive_mail(archived,{'ids':['one','two'],'archived':True},'another@example.nz')
+        self.assertEqual(again,archived)

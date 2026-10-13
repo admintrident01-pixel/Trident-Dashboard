@@ -142,12 +142,15 @@ def deliver(store, local=False):
 def archive_mail(state,data,actor):
     if not isinstance(data,dict) or type(data.get('archived')) is not bool:
         raise Problem(400,'Choose whether to archive or restore this email.')
-    mid=data.get('id')
-    if not isinstance(mid,str) or mid not in state.get('mailOutbox',{}):
-        raise Problem(404,'This email no longer exists.')
+    ids=data.get('ids') if 'ids' in data else [data.get('id')]
+    if not isinstance(ids,list) or not ids or any(not isinstance(mid,str) or mid not in state.get('mailOutbox',{}) for mid in ids):
+        raise Problem(404,'One or more emails no longer exist. Refresh emails and try again.')
+    if 'ids' in data and data['archived'] is not True:
+        raise Problem(400,'Bulk archive requires Archive all emails.')
     result=copy.deepcopy(state)
-    message=result['mailOutbox'][mid]
-    message['archived']=data['archived']
-    message['archivedAt']=dt.datetime.now(dt.timezone.utc).isoformat() if data['archived'] else ''
-    message['archivedBy']=actor if data['archived'] else ''
+    stamp=dt.datetime.now(dt.timezone.utc).isoformat()
+    for mid in set(ids):
+        message=result['mailOutbox'][mid]
+        if bool(message.get('archived'))==data['archived']:continue
+        message.update(archived=data['archived'],archivedAt=stamp if data['archived'] else '',archivedBy=actor if data['archived'] else '')
     return result
