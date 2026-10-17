@@ -27,3 +27,29 @@
 .report-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 16px}.report-actions button{padding:8px 12px;border:1px solid #ccd5e2;border-radius:5px}.report-actions .primary-action{background:#17345f;color:white}.report-table .report-leave{display:block;color:#44647b;white-space:nowrap;font-size:10px;margin-top:4px}.report-table textarea{width:100%;min-width:80px;padding:5px;font-size:11px;resize:vertical;margin-top:6px;border:1px solid #cbd5e2;border-radius:4px;box-sizing:border-box}.report-table .report-daily-note{display:block;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;font-size:10px;margin-top:5px}.weekly-layout.editing-report-notes{display:block}.editing-report-notes .weekly-chart{display:none}.reports .report-controls input,.reports .report-controls select{min-width:140px}
 .report-table textarea{display:block}
 .reports .weekly-layout{display:block}
+
+/* Shared, readable controls and predictable keyboard navigation. */
+.skip-content{position:fixed;top:-80px;left:16px;z-index:300;background:white;color:#17345f;border:2px solid #17345f;border-radius:5px;padding:10px 15px}
+.skip-content:focus{top:8px}
+#workspace-content:focus{outline:none}
+.portal-header nav button{min-height:32px;border-radius:5px 5px 0 0}
+.portal-header nav button[aria-current=page]{font-weight:bold;box-shadow:inset 0 -3px #f3bd58}
+.portal-header nav{scrollbar-width:thin;scrollbar-color:#7489a3 transparent}
+.workspace-page .page-heading{gap:16px;align-items:flex-start;margin-bottom:20px}
+.workspace-page .page-heading h1{font-size:23px;line-height:1.25;margin-bottom:8px}
+.workspace-page .page-heading p{font-size:13px;line-height:1.55;max-width:820px}
+.workspace-page .settings-actions,.workspace-page .stock-actions{gap:8px;flex-wrap:wrap}
+.workspace-page button:not(.table-sort):not(.stock-tree-toggle):not(.history-page-button){min-height:32px}
+.workspace-page input:not([type=checkbox]):not([type=radio]),.workspace-page select{min-height:34px}
+.workspace-page input:focus-visible,.workspace-page select:focus-visible,.workspace-page textarea:focus-visible{outline:2px solid #4278b5;outline-offset:1px}
+.workspace-page>p[role=alert]{padding:10px 12px;border:1px solid #e1b0b0;border-radius:5px;background:#fff2f2;color:#8d2525;line-height:1.5}
+.module-card{transition:box-shadow .15s ease,transform .15s ease}.module-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px #17345f18}
+.module-description{line-height:1.6}.module-grid{margin-bottom:28px}
+.trident-portal button:disabled{cursor:not-allowed}
+@media(prefers-reduced-motion:reduce){.module-card{transition:none}.module-card:hover{transform:none}}
+@media(max-width:700px){.workspace-page .page-heading{gap:12px}.workspace-page .page-heading h1{font-size:21px}.portal-header nav button{min-height:34px}}
+
+.workspace-page .page-heading{margin-bottom:12px}.workspace-page .page-heading h1{margin-bottom:5px}.module-grid{margin-bottom:18px}
+
+/* Keep navigation beside the Trident logo without large side gaps. */
+.portal-header{padding-left:4px;padding-right:6px;gap:4px}.portal-brand{margin:0;padding:0}.portal-header nav{margin:0;gap:2px}.portal-account{margin-left:auto;gap:7px}@media(max-width:800px){.portal-header{padding-left:3px;padding-right:4px;gap:3px}}

@@ -1,5 +1,7 @@
+import Icon from './Icon'
+import StockPage from './StockPage'
 import TimesheetHistory from './TimesheetHistory'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import './App.css'
 
@@ -18,6 +20,8 @@ import TechSchedule from './TechSchedule'
 import {loadSession,saveSession} from './session'
 import {loadPage,canAccessPage} from './navigation'
 
+const OfficeFiles=lazy(()=>import('./OfficeFiles'))
+
 const localMode=import.meta.env.DEV&&import.meta.env.VITE_LOCAL_DEVELOPMENT==='true'
 
 const api=localMode?'http://127.0.0.1:18782':(import.meta.env.VITE_API_URL||'https://trident-quote-api-dsn2tnnc3q-ts.a.run.app').replace(/\/$/,'')
@@ -28,7 +32,7 @@ export default function App(){
  const page=canAccessPage(selectedPage,session)?selectedPage:'home'
 
  useEffect(()=>saveSession(session),[session])
- useEffect(()=>{window.document.title='Trident Dashboard'},[])
+ useEffect(()=>{const titles={home:'Home',quotes:'Quotes',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
 
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}`)},[page,session])
  useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}setPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page])
@@ -117,11 +121,11 @@ export default function App(){
 
  return session?<div className={`workspace${localMode?' is-local':''}`}>
 
-  <header className="portal-header">
+  <a className="skip-content" href="#workspace-content" onClick={e=>{e.preventDefault();window.document.getElementById('workspace-content')?.focus()}}>Skip to page content</a><header className="portal-header">
 
    <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate('home')}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
 
-   <nav aria-label="Main navigation">{[['home','Home'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['settings','Settings']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
+   <nav aria-label="Main navigation">{[['home','Home'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
 
    <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button onClick={signOut}>Sign out</button></div>
 
@@ -131,20 +135,24 @@ export default function App(){
 
   {error&&<p role="alert">{error}</p>}
 
+  <div id="workspace-content" tabIndex={-1}>
   {page==='home'&&<main className="portal-home">
 
    <div className="home-intro"><span className="home-eyebrow">Trident Community Equipment</span><h1>Welcome to your workspace</h1><p>Choose where you’d like to work.</p></div>
 
-   {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/></>}<div className="module-grid">{[
- ['quotes','Quotes','Create quotes, manage drafts and view completed quotes.','M14 3H5v18h14V8l-5-5ZM14 3v5h5M8 12h8M8 16h5'],
- ['schedule','Tech schedule','Plan appointments and see the whole team’s day.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h10M7 17h6'],
- ['timesheet','Time sheet','Enter weekly hours, review leave and submit your time sheet.','M3 5h18v16H3ZM7 3v4M17 3v4M3 10h18M7 14h4M7 17h4M15 14v3l2 1'],
- ['leave','Leave forms','Request leave and review approvals.','M8 3v4M16 3v4M3 10h18M8 15l3 3 5-6M3 5h18v16H3Z'],
- ['reports','Labour payables','Review payable and charged hours, averages and reports.','M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7'],
- ['vehicles','Vehicle checks','Review due dates, complete checks and view vehicle history.','M4 15V9l2-5h12l2 5v6M4 9h16M7 15v4M17 15v4M4 13h3M17 13h3'],
- ['settings','Settings','Manage staff, defaults and email reminders.','M3 6h18M3 12h18M3 18h18M8 3v6M16 9v6M10 15v6']
- ].filter(([key])=>allowed(key)).map(([key,name,description,path])=><button className="module-card" key={key} onClick={()=>navigate(key)}><span className="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d={path}/></svg></span><span className="module-heading">{name}</span><span className="module-description">{description}</span><span className="module-link">Open {name.toLowerCase()} <span aria-hidden="true">→</span></span></button>)}</div>
+   <div className="module-grid">{[
+ ['quotes','Quotes','Create quotes, manage drafts and view completed quotes.','file-text'],
+ ['schedule','Tech schedule','Plan appointments and see the whole team’s day.','calendar'],
+ ['timesheet','Time sheet','Enter weekly hours, review leave and submit your time sheet.','clock'],
+ ['leave','Leave forms','Request leave and review approvals.','calendar'],
+ ['reports','Labour payables','Review payable and charged hours, averages and reports.','bar-chart-2'],
+ ['vehicles','Vehicle checks','Review due dates, complete checks and view vehicle history.','truck'],
+ ['stock','Stock','Receive equipment, manage assets, allocate to POs and track refurbishment.','package'],
+ ['office','Shared resources','Find SOPs, browse process folders and preview documents.','folder'],
+ ['settings','Settings','Manage staff, defaults and email reminders.','sliders']
+ ].filter(([key])=>allowed(key)).map(([key,name,description,icon])=><button className="module-card" key={key} onClick={()=>navigate(key)}><span className="module-icon" aria-hidden="true"><Icon name={icon} size={29}/></span><span className="module-heading">{name}</span><span className="module-description">{description}</span><span className="module-link">Open {name.toLowerCase()} <Icon name="arrow-right" size={18}/></span></button>)}</div>
 
+   {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/></>}
   </main>}
 
   {page==='quotes'&&!document&&<p className="module-loading" role="status">Loading your quotes…</p>}
@@ -157,6 +165,8 @@ export default function App(){
 
   <section hidden={page!=='leave'}><LeaveForms isAdmin={isAdmin} request={request} active={page==='leave'} onChanged={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin);window.dispatchEvent(new Event('trident-leave-updated'))}}/></section>
 
+  {page==='office'&&<Suspense fallback={<p className="module-loading" role="status">Opening shared resources…</p>}><OfficeFiles request={request} isAdmin={isAdmin}/></Suspense>}
+  {isAdmin&&page==='stock'&&<StockPage request={request}/>}
   {isAdmin&&page==='reports'&&<WeeklyReport request={request}/>}
   <section hidden={page!=='schedule'}><TechSchedule request={request} isAdmin={isAdmin} active={page==='schedule'}/></section>
 
@@ -164,6 +174,7 @@ export default function App(){
 
   {isAdmin&&<section hidden={page!=='settings'}>{page==='settings'&&<SettingsPage initialManagementSection={managementSection} request={request} onSaved={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-staff-updated'},location.origin);window.dispatchEvent(new Event('trident-settings-saved'))}}/>}</section>}
 
+ </div>
  </div>:<EmailSignIn api={api} localMode={localMode} onLocal={openLocal} onSignedIn={setSession}/>
 
 }

@@ -2,5 +2,7 @@ __pycache__/
 *.pyc
 .env
 *.xlsx
+!standard_soh_template.xlsx
+!stock_take_template.xlsx
 *.pdf
 *.db

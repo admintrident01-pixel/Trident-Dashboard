@@ -1,4 +1,4 @@
-const pages=['home','quotes','schedule','timesheet','leave','reports','vehicles','settings']
+const pages=['home','quotes','schedule','timesheet','leave','reports','vehicles','stock','settings','office']
 const staffPages=['home','schedule','timesheet','leave','vehicles']
 export function loadPage(){
  const page=window.location.hash.slice(1)

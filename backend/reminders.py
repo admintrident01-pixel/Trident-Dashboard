@@ -3,7 +3,7 @@ import copy, datetime as dt, os, smtplib, ssl, uuid
 from email.message import EmailMessage
 from zoneinfo import ZoneInfo
 from core import Problem
-import accounts, vehicles
+import accounts, vehicles, stocktake_sessions
 
 DEFAULTS = {'timesheetWeekday': 4, 'timesheetTime': '17:00', 'timesheetLeadHours': 24, 'vehicleLeadDays': 7, 'automaticTimesheets': False, 'automaticVehicles': False}
 
@@ -60,6 +60,10 @@ def dashboard(state, now=None):
         due = check.get('nextCheckDue') or ((dt.date.fromisoformat(checkdate) + dt.timedelta(days=30)).isoformat() if checkdate else '')
         user = next((u for u in active_users if u['technician'] == vehicle['driver']), None)
         rows.append({'id': 'vehicle:' + vehicle['id'], 'kind': 'vehicle', 'vehicleId': vehicle['id'], 'registration': vehicle['registration'], 'name': vehicle['driver'], 'recipient': user['email'] if user else '', 'due': due, 'daysRemaining': (dt.date.fromisoformat(due) - now.date()).days if due else None})
+    take=stocktake_sessions.status(state,now.date())
+    for user in accounts.users(state).values():
+        if user['active'] and user.get('role')=='admin':
+            rows.append({'id':'stocktake:'+user['email'],'kind':'stocktake','recipient':user['email'],'name':user.get('name') or user['email'],'due':take['nextDue'],'daysRemaining':take['daysRemaining'],'lastCompleted':take['lastCompleted']})
     return rows
 
 def enqueue_reminder(state, row, automatic=False, now=None):
@@ -67,7 +71,10 @@ def enqueue_reminder(state, row, automatic=False, now=None):
     from accounts import users
     if not users(state)[row['recipient']].get('verified'): raise Problem(400, 'The recipient must confirm their email before receiving reminders.')
     now = now or dt.datetime.now(ZoneInfo('Pacific/Auckland'))
-    if row['kind'] == 'vehicle':
+    if row['kind'] == 'stocktake':
+        subject='Stocktake reminder · '+row['due']
+        body=f"Hello {row['name']},\n\nA stocktake is due on {row['due']}. Last completed: {row['lastCompleted'] or 'Not yet recorded'}.\n\nSign in to Trident, open Stock and choose Start stock take.\n\nTrident Community Equipment"
+    elif row['kind'] == 'vehicle':
         remaining = row['daysRemaining']
         timing = 'has no recorded check; please complete one' if remaining is None else f'is overdue by {abs(remaining)} days' if remaining < 0 else 'is due today' if remaining == 0 else f'is due in {remaining} days'
         subject = 'Vehicle check reminder · ' + (row['registration'] or row['vehicleId'])
@@ -92,7 +99,9 @@ def due_reminders(state, now=None):
     count = 0
     for row in dashboard(state, now):
         enabled = cfg['automaticVehicles'] if row['kind'] == 'vehicle' else cfg['automaticTimesheets']
-        due = (row['daysRemaining'] is None or row['daysRemaining'] <= cfg['vehicleLeadDays']) if row['kind'] == 'vehicle' else row['hoursRemaining'] <= cfg['timesheetLeadHours']
+        due = (row['daysRemaining'] is None or row['daysRemaining'] <= cfg['vehicleLeadDays']) if row['kind'] == 'vehicle' else row.get('hoursRemaining',0) <= cfg['timesheetLeadHours']
+        if row['kind']=='stocktake':
+            enabled=stocktake_sessions.config(state)['automatic'];due=row['daysRemaining']<=0
         if enabled and due and row['recipient'] and accounts.users(state)[row['recipient']].get('verified'):
             count += enqueue_reminder(result, row, True, now)
     return result, count

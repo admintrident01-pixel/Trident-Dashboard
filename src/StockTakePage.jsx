@@ -1,0 +1,65 @@
+import {useEffect,useState,useRef} from 'react'
+
+import Icon from './Icon'
+
+import './StockTakePage.css'
+
+const blank=()=>({count:'',decisions:{},numbers:[],notes:''})
+
+export default function StockTakePage({request,onBack}){
+
+ const [data,setData]=useState(null),[entries,setEntries]=useState({}),[selected,setSelected]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[review,setReview]=useState(false),[adding,setAdding]=useState(false),[newProduct,setNewProduct]=useState({code:'',description:'',condition:''}),[completed,setCompleted]=useState(false)
+
+ const reviewDialog=useRef(null)
+ useEffect(()=>{if(review)reviewDialog.current?.showModal()},[review])
+ const draft=data?.draft,rows=draft?.rows||[],row=rows.find(r=>r.id===selected),entry=entries[selected]||blank(),dirty=JSON.stringify(entries)!==JSON.stringify(draft?.entries||{})
+
+ useEffect(()=>{let alive=true;request('/api/stocktake').then(r=>{if(alive){setData(r.data);setEntries(r.data.draft?.entries||{});setSelected(r.data.draft?.rows[0]?.id||'')}}).catch(e=>{if(alive)setError(e.message)});return()=>{alive=false}},[request])
+
+ useEffect(()=>{const warn=e=>{if(dirty){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[dirty])
+
+ function back(){if(dirty&&!window.confirm('Leave without saving your latest count changes?'))return;onBack()}
+
+ function change(values){setEntries(prev=>({...prev,[selected]:{...(prev[selected]||blank()),...values}}))}
+
+ async function act(action,extra={}){setBusy(true);setError('');try{const response=await request('/api/stocktake',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,id:draft?.id,version:draft?.version,...extra})});setData(response.data);setEntries(response.data.draft?.entries||{});if(action==='complete'){setCompleted(true);setReview(false)}else if(action==='add_product'){setAdding(false);setNewProduct({code:'',description:'',condition:''});setSelected(response.data.draft.rows.at(-1).id)}else if(!response.data.draft?.rows.some(r=>r.id===selected))setSelected(response.data.draft?.rows[0]?.id||'');return true}catch(e){setError(e.message);return false}finally{setBusy(false)}}
+
+ function ready(r){const e=entries[r.id];return e&&e.count!=null&&e.count!==''&&Number.isInteger(Number(e.count))&&Number(e.count)>=0&&Number(e.count)<=10000&&r.assets.every(a=>['found','missing','retire'].includes(e.decisions[a.id]))&&Number(e.count)>=Object.values(e.decisions).filter(v=>v==='found').length+e.numbers.length}
+
+ function payload(){return Object.fromEntries(Object.entries(entries).map(([id,e])=>[id,{...e,numbers:e.numbers.map(n=>n.trim()).filter(Boolean),count:e.count===''?null:Number(e.count)}]))}
+
+ const verified=rows.filter(ready).length
+
+ const shown=rows.filter(r=>[r.code,r.description,r.condition,...r.assets.map(a=>a.number)].join(' ').toLowerCase().includes(query.toLowerCase()))
+
+ const retired=rows.flatMap(r=>r.assets.filter(a=>['missing','retire'].includes(entries[r.id]?.decisions[a.id])).map(a=>a.number))
+
+ return <main className="workspace-page stocktake-page"><div className="page-heading"><div><h1>Stock take</h1><p>{completed?'Stocktake completed. Your counts and asset history have been saved.':'Count physical stock in store, receiving and workshop. Equipment with clients is excluded.'}</p></div><div className="stock-actions"><button onClick={back} disabled={busy}><Icon name="arrow-left" size={16}/>Back to stock</button>{draft&&<><button disabled={busy||!dirty} onClick={()=>act('save',{entries:payload()})}><Icon name="save" size={16}/>Save draft</button><button className="primary-action" disabled={busy||verified!==rows.length||!rows.length} onClick={()=>setReview(true)}>Review & finish</button></>}</div></div>
+
+ {error&&<p role="alert" className="stock-alert">{error}</p>}
+
+ {data?.stockChanged&&<p role="alert" className="stock-alert">Stock has changed since this count started. Your draft is kept, but you need a fresh count before applying it. <button disabled={busy} onClick={()=>{if(window.confirm('Keep this old draft in history and start a fresh count?'))act('refresh')}}>Start fresh count</button></p>}
+
+ {!data&&!error&&<p role="status">Loading stocktake…</p>}
+
+ {data&&!draft&&!completed&&<button className="primary-action" disabled={busy} onClick={()=>act('start')}>Start stock take</button>}
+
+ {completed&&<div className="stocktake-complete"><Icon name="check-circle" size={32}/><h2>Stocktake saved</h2><p>Last completed: {data.stockTakeStatus.lastCompleted} · Next due: {data.stockTakeStatus.nextDue}</p><button onClick={onBack}>Return to stock</button></div>}
+
+ {draft&&<><div className="stocktake-progress"><strong>{verified} / {rows.length} products verified</strong><progress max={rows.length||1} value={verified}/><span role="status">{busy?'Saving…':dirty?'Unsaved changes':'Draft saved'}</span><button disabled={busy} onClick={()=>setAdding(!adding)}><Icon name="plus" size={16}/>Add unlisted product</button></div>
+
+ {adding&&<form className="stocktake-add" onSubmit={e=>{e.preventDefault();if(dirty){setError('Save your draft before adding another product.');return}act('add_product',newProduct)}}><label>Product code<input required maxLength={100} value={newProduct.code} onChange={e=>setNewProduct({...newProduct,code:e.target.value})}/></label><label>Description<input required maxLength={400} value={newProduct.description} onChange={e=>setNewProduct({...newProduct,description:e.target.value})}/></label><label>Condition<select value={newProduct.condition} onChange={e=>setNewProduct({...newProduct,condition:e.target.value})}><option value="">Unspecified</option><option>NEW</option><option>REFURB</option></select></label><button disabled={busy}>Add to count</button><button type="button" onClick={()=>setAdding(false)}>Cancel</button></form>}
+
+ <div className="stocktake-layout"><aside><label className="stocktake-search"><Icon name="search" size={16}/><input aria-label="Search product or asset" placeholder="Search product or scan asset number" value={query} onChange={e=>setQuery(e.target.value)}/></label><div className="stocktake-products">{shown.map(r=><button key={r.id} aria-current={selected===r.id?'true':undefined} onClick={()=>setSelected(r.id)}><Icon name={ready(r)?'check-circle':'circle'} size={17}/><span><strong>{r.code}</strong> · {r.condition||'Unspecified'}<small>{r.description}</small></span><b>{r.expected??'?'}</b></button>)}{!shown.length&&<p>No matching products.</p>}</div></aside>
+
+ {row&&<section className="stocktake-editor" key={row.id}><div className="stocktake-product-heading"><h2>{row.code} · {row.description}</h2><span>Expected onsite: <strong>{row.expected??'Not recorded'}</strong></span></div><p className="stock-hint">Check each asset. Not found and Retire both keep its number and history as retired.</p><div className="stocktake-assets">{row.assets.length>0&&<button className="stocktake-found-all" disabled={busy} onClick={()=>change({decisions:Object.fromEntries(row.assets.map(a=>[a.id,'found'])),count:Math.max(Number(entry.count)||0,row.assets.length+entry.numbers.length)})}>I have checked all listed assets — mark Found</button>}{row.assets.map(a=><div className="stocktake-asset" key={a.id}><div><strong>{a.number}</strong><small>{a.status} · {a.location}</small></div><div className="stocktake-decisions" role="group" aria-label={'Check asset '+a.number}>{[['found','Found'],['missing','Not found'],['retire','Retire']].map(([value,label])=><button key={value} disabled={busy} className={entry.decisions[a.id]===value?'is-'+value:''} aria-pressed={entry.decisions[a.id]===value} onClick={()=>{const decisions={...entry.decisions,[a.id]:value};change({decisions,count:Object.values(decisions).filter(v=>v==='found').length+entry.numbers.length})}}>{label}</button>)}</div></div>)}</div>
+
+ <div className="stocktake-count-fields"><label>Counted total<input aria-label="Counted total" type="number" min="0" max="10000" step="1" value={entry.count} onChange={e=>change({count:e.target.value})}/><small>Include found assets, additional numbered items and unnumbered items.</small></label><label>Additional asset numbers<textarea rows={3} maxLength={81000} placeholder="One number per line" value={entry.numbers.join('\n')} onChange={e=>change({numbers:e.target.value.split('\n')})} onBlur={()=>change({numbers:entry.numbers.map(n=>n.trim()).filter(Boolean)})}/><small>Only enter extra items that are physically present.</small></label><label>Notes<textarea rows={2} maxLength={4000} value={entry.notes} placeholder="Explain any difference, damage or missing stock" onChange={e=>change({notes:e.target.value})}/></label></div><div className="stock-actions"><button disabled={busy||!ready(row)} className="primary-action" onClick={async()=>{if(await act('save',{entries:payload()})){const next=rows.find(r=>r.id!==row.id&&!ready(r));if(next)setSelected(next.id)}}}>Save & next product</button><span>{ready(row)?'Ready to save':'Enter total and check each listed asset.'}</span></div></section>}</div>
+
+ <div className="stocktake-footer"><span>Draft belongs to {draft.createdBy}. Live stock changes only when you finish.</span><button disabled={busy} onClick={()=>{if(window.confirm('Discard this draft? Live stock will stay unchanged.'))act('discard')}}>Discard draft</button></div></>}
+
+ {review&&<dialog ref={reviewDialog} onCancel={()=>setReview(false)} className="stocktake-review-backdrop" aria-labelledby="stocktake-review-title"><section className="stocktake-review" role="dialog" aria-modal="true" aria-labelledby="stocktake-review-title"><h2 id="stocktake-review-title">Review stocktake changes</h2><p>{verified} products counted. {retired.length} assets will be retired, keeping all numbers and history.</p>{retired.length>0&&<p className="stock-alert">Retire: {retired.join(', ')}</p>}<div className="table-scroll"><table className="settings-table"><thead><tr><th>Product</th><th>Expected</th><th>Counted</th><th>Difference</th><th>Additional assets / notes</th></tr></thead><tbody>{rows.map(r=><tr key={r.id}><td>{r.code} · {r.condition}</td><td>{r.expected??'Unknown'}</td><td>{entries[r.id]?.count}</td><td>{r.expected===null?'New baseline':Number(entries[r.id]?.count)-r.expected}</td><td>{[entries[r.id]?.numbers.join(', '),entries[r.id]?.notes].filter(Boolean).join(' · ')}</td></tr>)}</tbody></table></div>{error&&<p role="alert" className="stock-alert">{error}</p>}<div className="stock-actions"><button disabled={busy} onClick={()=>setReview(false)}>Back to count</button><button disabled={busy||data.stockChanged} className="primary-action" onClick={()=>act('complete',{entries:payload(),confirmed:true})}>{busy?'Applying…':'Apply changes & finish stocktake'}</button></div></section></dialog>}
+
+ </main>
+
+}

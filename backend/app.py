@@ -7,6 +7,7 @@ from core import Problem,decode,save_quote,workbook_info
 from storage import BigQueryStore,CloudObjects
 
 import timesheets
+import stock, stock_import, stock_reports, stocktake_sessions
 import timesheet_drafts
 
 import vehicles
@@ -18,6 +19,8 @@ import quote_settings
 import labour
 
 import schedule
+import office_files
+import schedule_history
 
 import staff_setup
 
@@ -47,7 +50,7 @@ def google_user(token):
 
 class Application:
 
- def __init__(self,store=None,objects=None,verify=google_user,origin=None,local=False):self.store=store;self.objects=objects;self.verify=verify;self.origin=origin or os.environ.get('FRONTEND_ORIGIN','');self.local=local
+ def __init__(self,store=None,objects=None,verify=google_user,origin=None,local=False,stock_source=None):self.stock_source=stock_source;self.store=store;self.objects=objects;self.verify=verify;self.origin=origin or os.environ.get('FRONTEND_ORIGIN','');self.local=local
 
  def body(self,environ):
 
@@ -201,9 +204,44 @@ class Application:
 
      admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete','/api/vehicle-order')
 
-     if path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
+     if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
-     if path=='/api/recycle-bin' and method=='GET':payload=recycle.read(state)
+     if path=='/api/office-files' and method=='GET':payload=office_files.listing(state)
+     elif path=='/api/office-files/content' and method=='GET':payload=office_files.read(state,parse_qs(environ.get('QUERY_STRING','')).get('id',[''])[0],self.objects)
+     elif path=='/api/office-files' and method=='POST':
+      accounts.admin(user)
+      payload=office_files.action(state,self.body(environ),user,self.objects,lambda result:self.commit(revision,result,actor=email))
+     elif path=='/api/stock' and method=='GET':payload=stock.read(state)
+     elif path=='/api/stocktake' and method=='GET':payload=stocktake_sessions.read(state,email)
+     elif path=='/api/stocktake' and method=='POST':
+      state=stocktake_sessions.action(state,self.body(environ),email);self.commit(revision,state,actor=email);payload=stocktake_sessions.read(state,email)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+     elif path=='/api/stock-report' and method=='POST':payload=stock_reports.create(state,self.body(environ),self.stock_source if self.local else None)
+     elif path=='/api/stock-export' and method=='GET':
+      raw=stock_import.export(state,self.stock_source if self.local else None);payload={'name':'Trident Community Equipment SOH '+stock.dt.datetime.now(stock.ZoneInfo('Pacific/Auckland')).strftime('%d.%m.%Y')+'.xlsx','workbook':base64.b64encode(raw).decode()}
+     elif path=='/api/stock-source-preview' and method=='GET':
+      if not self.local or not self.stock_source:raise Problem(404,'Choose an XLSX workbook to preview.')
+      payload=stock_import.preview(self.stock_source,'Trident Community Equipment SOH 09.10.2026.xlsx')
+     elif path in ('/api/stock-import-preview','/api/stock-import') and method=='POST':
+      p=self.body(environ)
+      if p.get('useLocalSource'):
+       if not self.local or not self.stock_source:raise Problem(404,'The local stock source is unavailable.')
+       raw=self.stock_source
+      else:
+       try:raw=base64.b64decode(p.get('workbook',''),validate=True)
+       except Exception:raise Problem(400,'Choose a valid XLSX workbook.')
+      candidate=stock_import.preview(raw,p.get('name','Stock workbook.xlsx'))
+      if path=='/api/stock-import-preview':payload=candidate
+      else:
+       if p.get('confirmed') is not True:raise Problem(400,'Confirm importing product rows for review.')
+       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Stock changed. Refresh before importing.')
+       state=stock_import.apply(state,candidate,email,raw);self.commit(revision,state,actor=email);payload={'saved':True,'message':'Opening product quantities loaded. Assign their existing asset numbers before allocation.'};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+     elif path=='/api/stock' and method=='POST':
+      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Stock changed. Refresh and try again.')
+      state=stock.action(state,self.body(environ),email)
+      if self.local and self.stock_source and not state['stock'].get('workbookTemplate'):state['stock']['workbookTemplate']=base64.b64encode(self.stock_source).decode()
+      self.commit(revision,state,actor=email);payload={'saved':True,'message':'Stock record saved.'};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+     elif path=='/api/recycle-bin' and method=='GET':payload=recycle.read(state)
 
      elif path=='/api/recycle-bin' and method=='POST':
 
@@ -219,7 +257,7 @@ class Application:
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
 
-     elif path=='/api/schedule' and method=='GET':payload={'unchanged':True} if environ.get('HTTP_IF_NONE_MATCH')==f'"{revision}"' else schedule.read(state,parse_qs(environ.get('QUERY_STRING','')).get('date',[''])[0])
+     elif path=='/api/schedule' and method=='GET':payload={'unchanged':True} if environ.get('HTTP_IF_NONE_MATCH')==f'"{revision}"' and not schedule.schedule_links.active(state) else schedule_history.read(state,parse_qs(environ.get('QUERY_STRING','')).get('date',[''])[0],user)
 
      elif path=='/api/schedule' and method=='POST':
 
@@ -231,13 +269,13 @@ class Application:
 
        reminders.require_mail(self.local);state,mail_ids=schedule.queue_appointment_email(state,appointment)
 
-      self.commit(revision,state,actor=email,before=before);saved_revision=revision+1;payload={'saved':True,'appointment':appointment,'schedule':schedule.read(state,appointment['date'])}
+      state=schedule_history.record(before,state,email,appointment['date'],'Appointment '+p.get('action','save'));self.commit(revision,state,actor=email,before=before);saved_revision=revision+1;payload={'saved':True,'appointment':appointment,'schedule':schedule_history.read(state,appointment['date'],user)}
 
       if mail_ids:
 
        reminders.deliver(self.store,self.local)
 
-       saved_revision,current=self.store.read();statuses=[current['mailOutbox'][mid]['status'] for mid in mail_ids];payload['schedule']=schedule.read(current,appointment['date'])
+       saved_revision,current=self.store.read();statuses=[current['mailOutbox'][mid]['status'] for mid in mail_ids];payload['schedule']=schedule_history.read(current,appointment['date'],user)
 
        payload['message']='Email previews saved; no emails sent.' if self.local else f"Appointment saved. Emails sent: {statuses.count('sent')}; failed: {statuses.count('failed')}; pending: {len(statuses)-statuses.count('sent')-statuses.count('failed')}."
 
@@ -245,7 +283,11 @@ class Application:
 
      elif path=='/api/schedule/travel' and method=='POST':
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'The schedule changed. Refresh and try again.')
-      p=self.body(environ);before=state;state=schedule.save_travel(state,p,user);self.commit(revision,state,actor=email,before=before);payload=schedule.read(state,p['date']);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      p=self.body(environ);before=state
+      if p.get('action') in ('undo','redo'):state=schedule_history.apply(state,email,schedule.day(p.get('date')),p['action'])
+      else:
+       state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
+      self.commit(revision,state,actor=email,before=before);payload=schedule_history.read(state,p['date'],user);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
      elif path=='/api/schedule-settings' and method=='GET':payload=schedule.settings(state)
 
      elif path=='/api/schedule-settings' and method=='POST':

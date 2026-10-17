@@ -312,3 +312,8 @@
  :is(.trident-portal,.trident-quote) .pagination-pages>span{padding:0 3px}
  @media(max-width:600px){:is(.trident-portal,.trident-quote) .history-pagination{gap:9px 12px;padding:9px}:is(.trident-portal,.trident-quote) .pagination-pages{margin-left:0;width:100%;justify-content:flex-end}}
 }
+
+@media screen{.trident-portal .portal-header{padding-left:4px;padding-right:6px;gap:4px}.trident-portal .portal-brand{margin:0;padding:0}.trident-portal .portal-header nav{gap:2px;margin:0}}
+
+@media screen{.trident-portal .portal-header nav{overflow:visible;flex-wrap:wrap;height:auto;align-content:center;gap:2px}.trident-portal .portal-header nav button{padding:5px 6px;font-size:12px;min-height:28px;line-height:16px}.trident-portal .portal-header{height:auto;min-height:44px}}
+@media screen and (max-width:1100px){.trident-portal .portal-header{flex-wrap:wrap;gap:0 4px;align-content:center}.trident-portal .portal-brand{order:1;height:38px}.trident-portal .portal-account{order:2}.trident-portal .portal-header nav{order:3;flex:0 0 100%;width:100%;padding:0;justify-content:flex-start;align-self:auto}.trident-portal .portal-header nav button{padding:4px 6px}.trident-portal .portal-account span{display:none}}

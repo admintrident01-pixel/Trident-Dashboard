@@ -14,10 +14,12 @@ class BookingActionsTests(unittest.TestCase):
         state,a=schedule.save(self.state,{**self.booking,'bookingStatus':'confirmed'},self.user)
         self.assertEqual(a['bookingStatus'],'confirmed')
         update={**a,'start':'10:00'};update.pop('bookingStatus')
-        state,a=schedule.save(state,update,self.user)
-        self.assertEqual(a['bookingStatus'],'confirmed')
+        with self.assertRaisesRegex(Problem,'Unbook'):schedule.save(state,update,self.user)
+        state,a=schedule.save(state,{**a,'bookingStatus':'action-needed'},self.user)
+        state,a=schedule.save(state,{**a,'start':'10:00'},self.user)
+        self.assertEqual(a['bookingStatus'],'action-needed')
         self.assertEqual(a['timing'],'flexible')
-        for status in ('option','action-needed'):
+        for status in ('option','action-needed','high-priority'):
             state,a=schedule.save(state,{**a,'bookingStatus':status},self.user)
             self.assertEqual(a['bookingStatus'],status)
         with self.assertRaises(Problem):schedule.save(state,{**a,'bookingStatus':'invalid'},self.user)
@@ -77,3 +79,14 @@ class BookingActionsTests(unittest.TestCase):
         self.assertIn('If-None-Match',preflight['Access-Control-Allow-Headers'])
         env.pop('HTTP_AUTHORIZATION');meta=[];body=b''.join(api.app(env,lambda status,headers:meta.append(status)))
         self.assertTrue(meta[0].startswith('401'))
+
+    def test_high_priority_survives_move_and_undo(self):
+        import schedule_history
+        state,a=schedule.save(self.state,{**self.booking,'bookingStatus':'high-priority'},self.user)
+        after,b=schedule.save(state,{**a,'start':'10:00'},self.user)
+        self.assertEqual(b['bookingStatus'],'high-priority')
+        after=schedule_history.record(state,after,self.user['email'],a['date'],'Move priority booking')
+        restored=schedule_history.apply(after,self.user['email'],a['date'],'undo')
+        self.assertEqual(restored['appointments'][a['id']]['bookingStatus'],'high-priority')
+        self.assertEqual(restored['appointments'][a['id']]['start'],'09:00')
+        self.assertEqual(schedule.BOOKING_STATUS_LABELS['option'],'Optional')

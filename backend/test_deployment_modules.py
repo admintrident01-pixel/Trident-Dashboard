@@ -1,6 +1,12 @@
 import ast,unittest
 from pathlib import Path
 class DeploymentModules(unittest.TestCase):
+ def test_report_templates_are_in_the_build_context(self):
+  root=Path(__file__).resolve().parent
+  rules=(root/'.dockerignore').read_text().splitlines()
+  for name in ['standard_soh_template.xlsx','stock_take_template.xlsx']:
+   self.assertTrue((root/name).is_file())
+   self.assertIn('!'+name,rules)
  def test_every_local_import_is_in_the_backend_container(self):
   root=Path(__file__).resolve().parent
   copied=set()

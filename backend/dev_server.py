@@ -5,13 +5,14 @@ from wsgiref.simple_server import make_server
 from app import Application, OWNER
 from core import workbook_info
 from storage import SQLiteStore, LocalObjects
-import accounts, reminders
+import accounts, reminders, os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=Path, required=True)
 parser.add_argument('--seed-folder', type=Path, required=True)
 args = parser.parse_args()
 args.data.mkdir(parents=True, exist_ok=True)
+os.environ['TRIDENT_LOCAL_DATA']=str(args.data.resolve())
 store = SQLiteStore(str(args.data / 'quotes.db'))
 objects = LocalObjects(args.data / 'pdfs')
 if not (args.data / 'quotes.db').exists():
@@ -31,9 +32,28 @@ if not (args.data / 'quotes.db').exists():
         state['pdfs'][path.name] = key
     store.initialise(state)
 
-token = secrets.token_urlsafe(32)
+# The supplied workbook is the one-time starting dataset, not an ongoing upload workflow.
+stock_path = args.data / 'stock-source.xlsx'
+if stock_path.exists():
+    import stock_import
+    revision, state = store.read()
+    raw_stock = stock_path.read_bytes()
+    candidate = stock_import.preview(raw_stock, 'Trident Community Equipment SOH 09.10.2026.xlsx')
+    if not state.get('stock', {}).get('products'):
+        seeded = stock_import.apply(state, candidate, 'Local starting workbook', raw_stock)
+        if not store.commit(revision, seeded):raise SystemExit('Stock changed during setup. Restart to retry safely.')
+    elif not state['stock'].get('workbookTemplate') and any(i['fingerprint'] == candidate['fingerprint'] for i in state['stock'].get('imports', [])):
+        state['stock']['workbookTemplate'] = base64.b64encode(raw_stock).decode()
+        if not store.commit(revision, state):raise SystemExit('Stock changed while saving its export format. Restart to retry safely.')
+
+# User confirmed on 14 October: column E is the opening stock quantity.
+revision, state = store.read()
+confirmed_stock = stock_import.confirm_quantities(state, 'User confirmation: column E quantity') if stock_path.exists() else state
+if confirmed_stock != state and not store.commit(revision, confirmed_stock):raise SystemExit('Stock changed during quantity confirmation. Restart to retry safely.')
+
+token = os.environ.get('TRIDENT_DEV_TOKEN') or secrets.token_urlsafe(32)
 origin = 'http://127.0.0.1:18780'
-api = Application(store, objects, lambda value: accounts.FIRST_ADMIN if secrets.compare_digest(value, token) else '', origin, local=True)
+api = Application(store, objects, lambda value: accounts.FIRST_ADMIN if secrets.compare_digest(value, token) else '', origin, local=True, stock_source=(args.data / "stock-source.xlsx").read_bytes() if (args.data / "stock-source.xlsx").exists() else None)
 
 def local_app(env, start_response):
     if env.get('REMOTE_ADDR') != '127.0.0.1':

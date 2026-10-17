@@ -4,7 +4,7 @@ import copy, datetime as dt, re, uuid
 
 from core import Problem
 
-import timesheets, leave
+import timesheets, leave, schedule_routes, schedule_links
 
 
 
@@ -38,7 +38,8 @@ def leave_blocks(state,date):
 
 DEFAULT_QUICK_NOTES=['Left Text','Left Vmail','Left Email']
 
-BOOKING_STATUSES=('action-needed','confirmed','option')
+BOOKING_STATUSES=('action-needed','confirmed','option','high-priority')
+BOOKING_STATUS_LABELS={'confirmed':'Confirmed','action-needed':'Action needed','option':'Optional','high-priority':'High priority'}
 
 
 
@@ -214,7 +215,7 @@ def read(state,date):
 
     names.sort(key=lambda name:types.get(name,'technician')=='office')
 
-    return {'date':date,'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':travel_blocks(state,date),'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
+    return {'date':date,'depotAddress':schedule_routes.configuration()['depot'],'routeTotals':schedule_routes.itinerary_totals(appointments,names),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
 
 
 
@@ -228,7 +229,7 @@ def save(state,data,user):
 
     if identifier and not old and isinstance(identifier,str) and identifier.startswith('lunch:'):
 
-        old=next((block for block in lunch_blocks(state,day(data.get('date'))) if block['id']==identifier),None)
+        old=next((block for block in lunch_blocks(state,day(data.get('originalDate',data.get('date')))) if block['id']==identifier),None)
 
     if identifier and not old: raise Problem(404,'This appointment is no longer available. Refresh the schedule.')
 
@@ -290,6 +291,14 @@ def save(state,data,user):
 
         if len(appointment['notes'])>4000: raise Problem(400,'Keep appointment notes under 4,000 characters.')
 
+    relocating=old and action=='save' and (old['date']!=appointment['date'] or old['start']!=appointment['start'] or old['duration']!=appointment['duration'] or assigned(old)!=assigned(appointment))
+    if relocating:
+        schedule_links.require_movable(old)
+        if old['date']!=appointment['date']:
+            ids=schedule_links.connected_ids(state,old)
+            result=schedule_links.move_to_date(state,{'date':old['date'],'targetDate':appointment['date'],'ids':list(ids)},user,edited=appointment)
+            return result,next(a for a in result['appointments'].values() if a.get('source')=='lunch' and a['date']==appointment['date'] and assigned(a)==assigned(appointment) and not a.get('cancelled')) if appointment.get('source')=='lunch' else result['appointments'][appointment['id']]
+
     if not appointment['cancelled']:
 
         if any(overlaps(appointment,block) for block in leave_blocks(state,appointment['date'])):
@@ -302,6 +311,7 @@ def save(state,data,user):
 
             if appointment.get('source')=='lunch' or other.get('source')=='lunch': continue
 
+            if old and old['start']!=appointment['start'] and other['id'] in schedule_links.connected_ids(state,old):continue
             if other['id']==appointment['id'] or other.get('cancelled') or other['date']!=appointment['date'] or not set(assigned(other)) & set(assigned(appointment)): continue
 
             other_start=minutes(other['start'])
@@ -318,6 +328,7 @@ def save(state,data,user):
 
     result.setdefault('appointments',{})[appointment['id']]=appointment
 
+    result=schedule_links.move_connected(state,result,old,appointment,user)
     return result,appointment
 
 
@@ -360,7 +371,7 @@ def queue_appointment_email(state,appointment):
 
         seen.add(email)
 
-        body=f"Hello {name},\n\nAppointment details\nClient: {appointment['client']}\nType: {appointment['type']}\nAddress: {appointment['address']}\nDate: {appointment['date']}\nTime: {appointment['start']}–{end//60:02d}:{end%60:02d} (Pacific/Auckland)\nDuration: {appointment['duration']} minutes\nBooking status: {appointment.get('bookingStatus','action-needed')}\nTime preference: {appointment['timing']}\nTechnicians: {', '.join(assigned(appointment))}\nNotes: {appointment.get('notes') or 'None'}\n\nTrident Community Equipment"
+        body=f"Hello {name},\n\nAppointment details\nClient: {appointment['client']}\nType: {appointment['type']}\nAddress: {appointment['address']}\nDate: {appointment['date']}\nTime: {appointment['start']}–{end//60:02d}:{end%60:02d} (Pacific/Auckland)\nDuration: {appointment['duration']} minutes\nBooking status: {BOOKING_STATUS_LABELS.get(appointment.get('bookingStatus','action-needed'),'Action needed')}\nTime preference: {appointment['timing']}\nTechnicians: {', '.join(assigned(appointment))}\nNotes: {appointment.get('notes') or 'None'}\n\nTrident Community Equipment"
 
         reminders.queue(result,email,'Appointment · '+appointment['date']+' · '+appointment['client'],body,'appointment')
 
@@ -377,6 +388,7 @@ def travel_candidates(state,date):
     bookings=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')!='lunch']
     barriers=leave_blocks(state,date)+lunch_blocks(state,date)+[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')=='lunch']
     result=[]
+    config=schedule_routes.configuration()
     names={name for a in bookings for name in assigned(a)}
     for name in names:
         rows=sorted([a for a in bookings if name in assigned(a)],key=lambda a:minutes(a['start']))
@@ -391,15 +403,19 @@ def travel_candidates(state,date):
                 if be>end and bs<right:right=min(right,max(end,bs))
             previous_after=state.get('travelBlocks',{}).get(travel_id(date,name,rows[index-1]['id'],'after')) if index else None
             next_before=state.get('travelBlocks',{}).get(travel_id(date,name,rows[index+1]['id'],'before')) if index+1<len(rows) else None
+            if index and state.get('scheduleHiddenTravel',{}).get(travel_id(date,name,rows[index-1]['id'],'after')):previous_after=None
+            if index+1<len(rows) and state.get('scheduleHiddenTravel',{}).get(travel_id(date,name,rows[index+1]['id'],'before')):next_before=None
             if previous_after:left=max(left,minutes(rows[index-1]['start'])+rows[index-1]['duration']+previous_after['duration'])
             if next_before:right=min(right,minutes(rows[index+1]['start'])-next_before['duration'])
-            result.append({'id':travel_id(date,name,a['id'],'before'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'before','edge':start,'maxDuration':max(0,start-left),'automatic':index>0 and not previous_after,'client':'Travel to '+a['client'],'address':a['address']})
-            result.append({'id':travel_id(date,name,a['id'],'after'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'after','edge':end,'maxDuration':max(0,right-end),'automatic':False,'client':'Travel from '+a['client'],'address':a['address']})
+            result.append({'id':travel_id(date,name,a['id'],'before'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'before','edge':start,'maxDuration':max(0,start-left),'automatic':(bool(config['key']) or index>0) and not previous_after,'origin':rows[index-1]['address'] if index else config['depot'],'destination':a['address'],'client':'Travel to '+a['client'],'address':a['address']})
+            result.append({'id':travel_id(date,name,a['id'],'after'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'after','edge':end,'maxDuration':max(0,right-end),'automatic':bool(config['key']) and index==len(rows)-1,'origin':a['address'],'destination':rows[index+1]['address'] if index+1<len(rows) else config['depot'],'client':'Travel from '+a['client'],'address':a['address']})
     return result
 
 def travel_blocks(state,date):
+    if schedule_links.active(state):return schedule_links.travel_blocks(state,date)
     rows=[]
     for candidate in travel_candidates(state,date):
+        if state.get('scheduleHiddenTravel',{}).get(candidate['id']):continue
         saved=state.get('travelBlocks',{}).get(candidate['id'])
         if not saved and not candidate['automatic']: continue
         duration=min(saved['duration'] if saved else candidate['maxDuration'],candidate['maxDuration'])
@@ -410,9 +426,17 @@ def travel_blocks(state,date):
 
 def save_travel(state,data,user):
     date=day(data.get('date'));name=data.get('technician');action=data.get('action')
+    if action=='delete_selection':return schedule_links.delete_selection(state,data,user)
+    if action=='move_to_date':return schedule_links.move_to_date(state,data,user)
+    if action=='move_selection':return schedule_links.move_selection(state,data,user)
+    if action=='travel_next':return schedule_links.travel_next(state,data,user)
+    if action=='snap_gap':return schedule_links.snap_gap(state,data,user)
+    if action in ('lock','link','link_block','move','recalculate') or action=='resize' and schedule_links.active(state):return schedule_links.save_control(state,data,user)
     candidates=travel_candidates(state,date)
     if action=='insert':
         anchor=data.get('anchorId');side=data.get('side','before')
+        existing=next((b for b in travel_blocks(state,date) if b['anchorId']==anchor and b['side']==side and b['technician']==name),None)
+        if schedule_links.active(state) and existing and existing.get('locked',True):raise Problem(400,'Unlock the existing travel block before setting its time manually.')
         candidate=next((c for c in candidates if c['technician']==name and c['anchorId']==anchor and c['side']==side),None)
         duration=data.get('duration',15)
     elif action=='resize':
@@ -426,5 +450,11 @@ def save_travel(state,data,user):
     if not candidate:raise Problem(409,'The linked appointment changed. Refresh the schedule.')
     if type(duration) is not int or duration<15 or duration%15 or duration>candidate['maxDuration']:raise Problem(400,'Travel must fit between appointments, lunch and approved leave in 15-minute increments.')
     result=copy.deepcopy(state);old=result.get('travelBlocks',{}).get(candidate['id'],{})
-    result.setdefault('travelBlocks',{})[candidate['id']]={'duration':duration,'version':old.get('version',0)+1,'updatedBy':user['email']}
+    result.setdefault('travelBlocks',{})[candidate['id']]={'duration':duration,'version':old.get('version',0)+1,'updatedBy':user['email'],**({'locked':False,'linked':True,'date':date} if schedule_routes.configuration()['key'] else {})}
     return result
+
+
+def time_string(value):return f'{value//60:02d}:{value%60:02d}'
+
+def read_without_travel(state,date):
+    return [a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled')]+lunch_blocks(state,date)+leave_blocks(state,date)

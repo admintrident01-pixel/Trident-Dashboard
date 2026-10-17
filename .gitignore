@@ -6,6 +6,8 @@ backend/.env
 __pycache__/
 *.pyc
 *.xlsx
+!backend/standard_soh_template.xlsx
+!backend/stock_take_template.xlsx
 *.pdf
 Drafts/
 Quote Records/

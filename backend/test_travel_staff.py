@@ -21,7 +21,8 @@ class TravelStaffTests(unittest.TestCase):
         state=schedule.save_travel(state,{**block,'action':'resize','delta':15},self.actor)
         self.assertEqual(schedule.travel_blocks(state,self.booking['date'])[0]['duration'],60)
         with self.assertRaises(Problem):schedule.save_travel(state,{**block,'action':'resize','delta':15},self.actor)
-        state,_=schedule.save(state,{**moved,'date':'2027-02-02'},self.actor)
+        with self.assertRaisesRegex(Problem,'Lunch'):schedule.save(state,{**moved,'date':'2027-02-02'},self.actor)
+        state,_=schedule.save(state,{**moved,'date':'2027-02-02','start':'10:30'},self.actor)
         self.assertEqual(schedule.travel_blocks(state,'2027-02-02')[0]['duration'],60)
     def test_travel_respects_lunch_and_insert_constraints(self):
         state,a=schedule.save(self.state,{**self.second,'start':'13:00'},self.actor)

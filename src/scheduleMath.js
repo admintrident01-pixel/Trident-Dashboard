@@ -28,3 +28,45 @@ export function reassignTechnician(appointment,from,to){
  const technicians=[...new Set(assignedTechs(appointment).map(name=>name===from?to:name))]
  return {...appointment,technician:technicians[0],technicians}
 }
+
+// Sum each assigned technician's full bookings and travel for the selected day.
+export function technicianBookedMinutes(appointments,travelBlocks,technician){
+ return [...appointments,...travelBlocks].filter(a=>!a.cancelled&&!['lunch','leave'].includes(a.source)&&assignedTechs(a).includes(technician)).reduce((total,a)=>total+Math.max(0,Number(a.duration)||0),0)
+}
+export function bookedTimeLabel(minutes){
+ return `${Number((minutes/60).toFixed(2))}h`
+}
+
+
+export function scheduleGaps(blocks,technician,range){
+ const rows=blocks.filter(b=>!b.cancelled&&assignedTechs(b).includes(technician)).slice().sort((a,b)=>timeMinutes(a.start)-timeMinutes(b.start)||a.id.localeCompare(b.id))
+ const gaps=[];let upper=null,end=0
+ for(const lower of rows){
+  const start=timeMinutes(lower.start)
+  if(upper&&start>end&&Math.min(start,range.end)>Math.max(end,range.start))gaps.push({upperId:upper.id,lowerId:lower.id,start:end,end:start,visibleStart:Math.max(end,range.start),visibleEnd:Math.min(start,range.end)})
+  const nextEnd=start+lower.duration
+  if(!upper||nextEnd>end){upper=lower;end=nextEnd}
+ }
+ return gaps
+}
+
+// Keep intersecting time blocks visible without changing their start or duration.
+export function overlapLanes(blocks,technician,range){
+ const rows=blocks.filter(b=>!b.cancelled&&assignedTechs(b).includes(technician)&&blockPosition(b,range).width>0).slice().sort((a,b)=>timeMinutes(a.start)-timeMinutes(b.start)||a.id.localeCompare(b.id))
+ const result=new Map();let group=[],ends=[],groupEnd=-1
+ function finish(){for(const row of group)result.set(row.id,{lane:row.lane,count:ends.length})}
+ for(const row of rows){
+  const start=timeMinutes(row.start),end=start+row.duration
+  if(start>=groupEnd){finish();group=[];ends=[];groupEnd=-1}
+  let lane=ends.findIndex(value=>value<=start);if(lane<0)lane=ends.length
+  ends[lane]=end;group.push({id:row.id,lane});groupEnd=Math.max(groupEnd,end)
+ }
+ finish();return result
+}
+export function travelSourceLabel(block){
+ if(block.locked===false)return 'Manual travel'
+ return block.estimatedSeconds!=null&&!block.routeError?'Calculated by Google Maps':'Automatic travel — calculation needs review'
+}
+export function travelTooltip(block){
+ return `${travelSourceLabel(block)}\nFrom: ${block.origin||'Not recorded'}\nTo: ${block.destination||'Not recorded'}\n${block.start}–${timeText(timeMinutes(block.start)+block.duration)} · ${(block.duration/60).toFixed(2)} hours${block.routeError?'\n'+block.routeError:''}${block.routeConflict?'\nOverlaps another block or exceeds the available gap.':''}`
+}

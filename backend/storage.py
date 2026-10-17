@@ -42,6 +42,6 @@ class CloudObjects:
  def __init__(self):
   from google.cloud import storage
   self.bucket=storage.Client().bucket(os.environ['PDF_BUCKET'])
- def put(self,key,data):self.bucket.blob(key).upload_from_string(data,content_type='application/pdf',if_generation_match=0)
+ def put(self,key,data):self.bucket.blob(key).upload_from_string(data,content_type='application/octet-stream' if key.startswith('office-files/') else 'application/pdf',if_generation_match=0)
  def get(self,key):return self.bucket.blob(key).download_as_bytes()
  def delete(self,key):self.bucket.blob(key).delete()

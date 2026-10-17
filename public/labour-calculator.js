@@ -68,6 +68,6 @@ document.getElementById('reloadCalculator').onclick=load
 transfer.onclick=()=>{const result=recompute();if(!result||transfer.disabled)return;document.dispatchEvent(new CustomEvent('trident-calculator-transfer',{detail:{subtotal:result.subtotal,target:Number(target.value),mode:'total',gst}}))}
 individual.onclick=()=>{const result=recompute();if(!result||individual.disabled)return;document.dispatchEvent(new CustomEvent('trident-calculator-transfer',{detail:{lines:result.lines,mode:'append',gst}}))}
 document.addEventListener('trident-calculator-transferred',()=>activate(false))
-window.tridentCalculator={getState:()=>pendingCalculation??(configured&&calculatorChanged?{gst,rows:rows.map(({key,...row})=>row)}:null)}
+window.tridentCalculator={getState:()=>pendingCalculation??(configured&&calculatorChanged?{gst,rows:rows.map(row=>{const saved={...row};delete saved.key;return saved})}:null)}
 document.addEventListener('trident-quote-loaded',e=>{rows=[];configured=false;calculatorChanged=false;pendingCalculation=e.detail?.calculation??null;activate(false);if(pendingCalculation)load()})
 window.addEventListener('message',e=>{if(e.source===parent&&e.origin===parent.location.origin&&e.data?.type==='trident-quote-settings-updated'&&configured)load()})
