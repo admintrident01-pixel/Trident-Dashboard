@@ -87,7 +87,7 @@
 .trident-portal .tech-schedule .schedule-appointment.travel{padding-right:3px;overflow:visible}
 .trident-portal .tech-schedule .schedule-edge-link{position:absolute;left:auto;right:1px;transform:translateY(-50%);z-index:8;display:flex;align-items:center;justify-content:center;width:16px;height:16px;min-height:0;padding:0;border-radius:0;color:#325d89;border:0;background:transparent;box-shadow:none}
 .trident-portal .tech-schedule .schedule-edge-link.is-unlinked{color:#976028;background:transparent}
-.trident-portal .tech-schedule .schedule-appointment.travel-warning{border-color:#bc7e26;background:#fff5df}
+.trident-portal .tech-schedule .schedule-appointment.travel-warning{border-color:#adb3bb;background:#e1e3e6;color:#39434f}
 .schedule-route-warning{padding:7px 10px;margin:0 0 6px;font-size:12px;color:#79551d;background:#fff6e1;border:1px solid #e7cea0;border-radius:5px}
 
 .trident-portal .tech-schedule button.schedule-edge-link{opacity:0;transition:opacity .12s ease,background .12s ease}
@@ -180,3 +180,18 @@
 .trident-portal .tech-schedule .schedule-history-actions button{padding:4px 6px;font-size:10px}
 .trident-portal .tech-schedule .schedule-help{font-size:10px;padding:4px 6px}
 .trident-portal .tech-schedule .schedule-route-warning{padding:4px 7px;margin:2px 0 4px;font-size:11px;line-height:1.25}
+
+.schedule-appointment-dialog{width:min(860px,calc(100vw - 24px));padding:12px;box-sizing:border-box;max-height:calc(100dvh - 24px)}
+.schedule-appointment-dialog>form{display:flex;flex-direction:column;max-height:calc(100dvh - 50px)}
+.schedule-appointment-dialog .schedule-dialog-heading{margin:0 0 8px;flex-shrink:0}.schedule-appointment-dialog h2{font-size:18px}
+.schedule-appointment-dialog .schedule-form-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;overflow-y:auto;min-height:0;padding:1px}
+.schedule-appointment-dialog .schedule-half{grid-column:span 2}.schedule-appointment-dialog .schedule-wide{grid-column:1/-1}
+.schedule-appointment-dialog .schedule-form-grid label{gap:3px}.schedule-appointment-dialog :is(input,select,textarea){box-sizing:border-box;width:100%;font-size:12px;padding:5px 7px;min-height:29px}
+.schedule-appointment-dialog .schedule-form-grid .schedule-quick-entry{padding:0;border:0;background:transparent}
+.schedule-appointment-dialog .schedule-form-grid textarea{min-height:42px}.schedule-appointment-dialog .schedule-technicians{padding:5px 8px}.schedule-appointment-dialog .schedule-technicians>div{grid-template-columns:repeat(8,minmax(0,1fr));gap:5px}
+.schedule-appointment-dialog .schedule-technicians input{width:auto;min-height:0}.schedule-appointment-dialog .schedule-technicians small{margin-top:5px;font-size:10px}
+.schedule-appointment-dialog .schedule-form-actions{margin-top:8px;padding-top:8px;border-top:1px solid #dce3ed;flex-shrink:0;flex-wrap:wrap;gap:6px}.schedule-appointment-dialog>form>p{margin:6px 0;padding:6px 8px;font-size:11px;flex-shrink:0}
+.schedule-appointment-dialog input:disabled{background:#eef1f5;color:#61718a;opacity:1}.schedule-appointment-dialog .schedule-form-actions button{min-height:30px}
+.trident-portal .tech-schedule .schedule-appointment.travel,.trident-portal .tech-schedule .schedule-appointment.travel.travel-warning{background:#e1e3e6;border-color:#adb3bb;color:#39434f}
+.schedule-vertical .schedule-resize.end{height:9px}.schedule-resize.end:after{content:'';position:absolute;background:#52657e;border-radius:2px;opacity:0}.schedule-vertical .schedule-resize.end:after{width:22px;height:2px;left:calc(50% - 11px);bottom:2px}.schedule-appointment:hover .schedule-resize.end:after,.schedule-resize.end:focus-visible:after{opacity:.65}
+@media(max-width:700px){.schedule-appointment-dialog .schedule-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.schedule-appointment-dialog .schedule-half{grid-column:span 1}.schedule-appointment-dialog .schedule-technicians>div{grid-template-columns:repeat(4,minmax(0,1fr))}}

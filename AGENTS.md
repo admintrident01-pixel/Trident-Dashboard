@@ -13,3 +13,7 @@
 
 - Check account usage during sustained work. At 3% remaining or less in a usage window, stop work until that window resets. Resume when the user returns after reset. Requested on 18 October 2026.
 - The user explicitly authorized publishing the current stocktake update after local completion and testing on 18 October 2026; this authorization applies to this release only.
+
+## Online data preservation
+
+- Online business values are authoritative and must survive every release. Before and after updating, back up and compare the live register and uploaded files; do not replace online state with a local database or seed values. Preserve quotes, schedules, stock and asset identities/history, Shared resources, settings, users and all other online records. Merge missing local content only when requested, keeping existing online values and retaining recoverable backups. Requested on 18 October 2026.

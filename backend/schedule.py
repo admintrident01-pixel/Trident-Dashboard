@@ -275,13 +275,16 @@ def save(state,data,user):
 
         if timing not in ('fixed','flexible'): raise Problem(400,'Choose Fixed time or Flexible time.')
 
+        time_basis=data.get('timeBasis',(old or {}).get('timeBasis','start'))
+        if time_basis not in ('start','end'):raise Problem(400,'Choose whether to plan from the start or end time.')
+
         booking_status=data.get('bookingStatus',(old or {}).get('bookingStatus','action-needed'))
 
         if booking_status not in BOOKING_STATUSES: raise Problem(400,'Choose a valid booking status.')
 
         is_lunch=str(data.get('type','')).strip().casefold()=='lunch'
 
-        appointment={'id':identifier or str(uuid.uuid4()),'date':date,'technician':technician,'technicians':technicians,'start':start,'duration':duration,'timing':timing,
+        appointment={'id':identifier or str(uuid.uuid4()),'date':date,'technician':technician,'technicians':technicians,'start':start,'duration':duration,'timing':timing,'timeBasis':time_basis,
 
                      'client':'Lunch' if is_lunch else text(data.get('client'),'a client name',160),'address':'' if is_lunch else text(data.get('address'),'an address',500),
 
@@ -291,7 +294,7 @@ def save(state,data,user):
 
         if len(appointment['notes'])>4000: raise Problem(400,'Keep appointment notes under 4,000 characters.')
 
-    relocating=old and action=='save' and (old['date']!=appointment['date'] or old['start']!=appointment['start'] or old['duration']!=appointment['duration'] or assigned(old)!=assigned(appointment))
+    relocating=old and action=='save' and (old['date']!=appointment['date'] or old['start']!=appointment['start'] or assigned(old)!=assigned(appointment))
     if relocating:
         schedule_links.require_movable(old)
         if old['date']!=appointment['date']:
