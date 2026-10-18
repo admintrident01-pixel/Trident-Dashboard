@@ -73,6 +73,11 @@ def action(state,p,actor):
         # Keep old draft as an audit record; changed stock needs a fresh physical review.
         session.update(status='cancelled',version=session['version']+1)
         return action(result,{'action':'start'},actor)
+    if kind=='remove_product':
+        row=next((r for r in session['rows'] if r['id']==p.get('productId')),None)
+        if not row or not row.get('newProduct'):raise Problem(400,'Only a product added during this count can be removed. Existing stock must still be checked.')
+        session['rows'].remove(row);session['entries'].pop(row['id'],None);session['version']+=1
+        return result
     if kind=='add_product':
         code=stock.text(p.get('code'),'product code',100,True);description=stock.text(p.get('description'),'description',400,True);condition=p.get('condition','')
         if condition not in ('','NEW','REFURB'):raise Problem(400,'Choose a valid condition.')

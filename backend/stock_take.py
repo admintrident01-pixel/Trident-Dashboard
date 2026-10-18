@@ -12,7 +12,7 @@ ONSITE=('Available','Allocated','Incoming','Refurbishing','Awaiting new asset nu
 def rows(state):
     snap=stock_standard.snapshot(state);quantities=[];assets=[]
     for p,items,known in snap['groups']:
-        pending=sum(max(0,r['quantity']-len(r['assetIds'])) for r in snap['data']['receipts'].values() if r['productId']==p['id'] and not r.get('openingBalance'))
+        pending=sum(max(0,r['quantity']-len(r['assetIds'])) for r in snap['data']['receipts'].values() if r['productId']==p['id'] and not r.get('openingBalance') and (r['pool']!='Trident refurb stock' or not r.get('refurbComplete')))
         other=pending+sum(a['status'] in ONSITE and a['status'] not in ('Available','Allocated') for a in items)
         quantities.append([p['code'],stock_standard.condition(p),p['description'],'\n'.join(a['number'] for a in items if a['status'] in ONSITE),p['onHandQuantity']+other if known else 'Not recorded','','',''])
         for a in items:

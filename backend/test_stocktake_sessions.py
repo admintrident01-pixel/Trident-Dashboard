@@ -55,6 +55,14 @@ class StocktakeTests(unittest.TestCase):
   d=self.start();self.state=takes.action(self.state,dict(action='add_product',id=d['id'],version=1,code='NEW',description='Found unlisted',condition='REFURB'),'admin');self.assertEqual(len(self.state['stock']['products']),1)
   d=takes.read(self.state,'admin')['draft'];pid=d['rows'][-1]['id'];e=self.entry();e[pid]=dict(count=1,decisions={},numbers=['UNLISTED'],notes='');result=self.complete(e)
   self.assertEqual(len(result['stock']['products']),2);self.assertIn('UNLISTED',[a['number'] for a in result['stock']['assets'].values()])
+ def test_remove_accidentally_added_product_preserves_register_and_existing_counts(self):
+  d=self.start();before=copy.deepcopy(self.state['stock'])
+  self.state=takes.action(self.state,dict(action='add_product',id=d['id'],version=d['version'],code='OOPS',description='Mistake',condition=''),'admin')
+  d=takes.read(self.state,'admin')['draft'];added=d['rows'][-1]['id']
+  result=takes.action(self.state,dict(action='remove_product',id=d['id'],version=d['version'],productId=added),'admin')
+  self.assertEqual(result['stock'],before);self.assertEqual([r['id'] for r in takes.read(result,'admin')['draft']['rows']],[self.pid])
+  with self.assertRaises(Problem):takes.action(result,dict(action='remove_product',id=d['id'],version=d['version']+1,productId=self.pid),'admin')
+  with self.assertRaises(Problem):takes.action(result,dict(action='remove_product',id=d['id'],version=d['version'],productId=added),'admin')
  def test_admin_only_reminders_interval_and_daily_dedupe(self):
   self.start();result=self.complete(self.entry());result['users']={accounts.FIRST_ADMIN:accounts.users({})[accounts.FIRST_ADMIN]};result['users'][accounts.FIRST_ADMIN].update(verified=True,active=True)
   result['users']['staff@example.nz']=dict(email='staff@example.nz',name='Staff',role='tech',active=True,verified=True,technician='Rick')
