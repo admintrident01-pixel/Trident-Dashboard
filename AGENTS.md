@@ -11,7 +11,7 @@
 
 ## Usage
 
-- Check account usage during sustained work. At 3% remaining or less in a usage window, stop work until that window resets. Resume when the user returns after reset. Requested on 18 October 2026.
+- Check account usage during sustained work. At 2% remaining or less in a usage window, stop work until that window resets. Resume when the user returns after reset. Requested on 18 October 2026.
 - The user explicitly authorized publishing the current stocktake update after local completion and testing on 18 October 2026; this authorization applies to this release only.
 
 ## Online data preservation

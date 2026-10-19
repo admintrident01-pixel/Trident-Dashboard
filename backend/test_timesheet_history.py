@@ -17,7 +17,7 @@ class HistoryTests(unittest.TestCase):
         report=next(r for r in weekly_report.read(state,'2027-02-01')['rows'] if r['name']=='Scott Yearbury')
         self.assertEqual(report['days'][0]['work'],8.5);self.assertEqual(report['days'][0]['note'],'Corrected note')
     def test_reason_week_and_revision_required(self):
-        for data in [{**self.change,'editReason':''},{**self.change,'revision':0},{**self.change,'weekStart':'2027-02-08'},{**self.change,'technician':'Someone else'}]:
+        for data in [{**self.change,'editReason':''},{**self.change,'revision':0},{**self.change,'weekStart':'2027-02-09'},{**self.change,'technician':'Someone else'}]:
             with self.assertRaises(Problem):timesheets.edit_submission(self.state,data,'admin@example.nz')
     def test_approved_leave_and_no_double_count(self):
         state,request=leave.create(self.state,{'technician':'Scott Yearbury','leaveType':'Annual leave','startDate':'2027-02-01','endDate':'2027-02-01','hoursPerDay':4,'reason':'Holiday'})
@@ -47,3 +47,19 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(report['days'][0]['work'],8.5)
         self.assertEqual(row['submittedAt'],'2027-02-01T00:00:00+00:00')
         self.assertEqual(len(state['timesheets']),2)
+
+    def test_move_week_and_times_updates_reports_with_audit(self):
+        change=copy.deepcopy(self.change);change['weekStart']='2027-02-08';change['days'][0].update(method='times',start='08:00',finish='17:00',unpaidLunch=True)
+        state,row=timesheets.edit_submission(self.state,change,'another-admin@example.nz')
+        self.assertEqual(row['total'],8.5);self.assertEqual(row['weekStart'],'2027-02-08')
+        self.assertEqual(row['editHistory'][0]['previous']['weekStart'],'2027-02-01')
+        for week,expected in [('2027-02-01',0),('2027-02-08',8.5)]:
+            report=next(r for r in weekly_report.week_rows(state,week) if r['name']=='Scott Yearbury')
+            self.assertEqual(report['days'][0]['work'],expected)
+        self.assertEqual(self.state['timesheets'][row['id']]['weekStart'],'2027-02-01')
+    def test_destination_collision_requires_confirmation(self):
+        state,existing=timesheets.save(self.state,{**self.payload,'weekStart':'2027-02-08'})
+        change={**self.change,'weekStart':'2027-02-08'}
+        with self.assertRaises(Problem):timesheets.edit_submission(state,change,'admin@example.nz')
+        result,row=timesheets.edit_submission(state,{**change,'replaceWeekConfirmed':True},'admin@example.nz')
+        self.assertEqual(result['timesheets'][existing['id']],existing);self.assertEqual(len(result['timesheets']),2)

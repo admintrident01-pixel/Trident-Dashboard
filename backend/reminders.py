@@ -95,11 +95,12 @@ def enqueue_reminder(state, row, automatic=False, now=None):
 
 def due_reminders(state, now=None):
     result = copy.deepcopy(state)
+    now = (now or dt.datetime.now(ZoneInfo('Pacific/Auckland'))).astimezone(ZoneInfo('Pacific/Auckland'))
     cfg = settings(state)
     count = 0
     for row in dashboard(state, now):
         enabled = cfg['automaticVehicles'] if row['kind'] == 'vehicle' else cfg['automaticTimesheets']
-        due = (row['daysRemaining'] is None or row['daysRemaining'] <= cfg['vehicleLeadDays']) if row['kind'] == 'vehicle' else row.get('hoursRemaining',0) <= cfg['timesheetLeadHours']
+        due = (row['daysRemaining'] is None or row['daysRemaining'] <= cfg['vehicleLeadDays']) if row['kind'] == 'vehicle' else (row['kind']=='stocktake' or now >= dt.datetime.fromisoformat(row['due']) - dt.timedelta(hours=cfg['timesheetLeadHours']))
         if row['kind']=='stocktake':
             enabled=stocktake_sessions.config(state)['automatic'];due=row['daysRemaining']<=0
         if enabled and due and row['recipient'] and accounts.users(state)[row['recipient']].get('verified'):
@@ -163,3 +164,23 @@ def archive_mail(state,data,actor):
         if bool(message.get('archived'))==data['archived']:continue
         message.update(archived=data['archived'],archivedAt=stamp if data['archived'] else '',archivedBy=actor if data['archived'] else '')
     return result
+
+
+def scheduler_status(state, local=False, now=None):
+    now=now or dt.datetime.now(dt.timezone.utc)
+    last=state.get('reminderJob',{})
+    if local:status='preview'
+    elif not os.environ.get('REMINDER_JOB_TOKEN'):status='not-connected'
+    elif not last.get('finishedAt'):status='not-running'
+    else:
+        try:age=(now-dt.datetime.fromisoformat(last['finishedAt'])).total_seconds()
+        except (ValueError,TypeError):age=999999
+        status='running' if 0<=age<1200 else 'stale'
+    return {'status':status,'lastRunAt':last.get('finishedAt'),'lastQueued':last.get('queued',0),'lastProcessed':last.get('processed',0),'timezone':'Pacific/Auckland'}
+
+def record_run(store, queued, processed):
+    for _ in range(10):
+        revision,state=store.read()
+        state['reminderJob']={'finishedAt':dt.datetime.now(dt.timezone.utc).isoformat(),'queued':queued,'processed':processed}
+        if store.commit(revision,state):return
+    raise Problem(409,'Reminder run finished, but its status could not be saved. Check Email history before retrying.')

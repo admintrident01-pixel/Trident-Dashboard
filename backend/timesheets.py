@@ -111,8 +111,10 @@ def edit_submission(state, data, actor):
     if not old:raise Problem(404, 'This time sheet no longer exists.')
     if type(data.get('revision')) is not int or data['revision'] != old.get('revision',1):
         raise Problem(409, 'This time sheet changed. Refresh and reopen it.')
-    if data.get('technician') != old['technician'] or data.get('weekStart') != old['weekStart']:
-        raise Problem(400, 'Keep the original technician and week for a correction.')
+    if data.get('technician') != old['technician']:
+        raise Problem(400, 'Keep the original technician for a correction.')
+    if data.get('weekStart') != old['weekStart'] and any(s['id'] != old['id'] and s['technician'].casefold() == old['technician'].casefold() and s['weekStart'] == data.get('weekStart') for s in state.get('timesheets',{}).values()) and data.get('replaceWeekConfirmed') is not True:
+        raise Problem(400, 'This person already has a submission for the new week. Confirm that this correction should become the current submission.')
     reason=text(data.get('editReason'), 'correction reason', 1000, True)
     payload={**data, 'signature':old['signature']}
     _, entry=save(state,payload)

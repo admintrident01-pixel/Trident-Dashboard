@@ -25,6 +25,7 @@ import schedule_history
 import staff_setup
 
 import weekly_report
+import weekly_export
 
 import recycle
 
@@ -144,7 +145,7 @@ class Application:
 
     payload=self.account_request(environ)
 
-   elif path=='/api/reminders/run' and method=='POST':
+   elif path in ('/api/reminders/run','/api/reminders/check') and method=='POST':
 
     expected=os.environ.get('REMINDER_JOB_TOKEN','')
 
@@ -152,17 +153,23 @@ class Application:
 
     if self.store is None:self.store=BigQueryStore()
 
-    reminders.require_mail(self.local)
+    if path=='/api/reminders/check':
+     _,state=self.store.read();_,count=reminders.due_reminders(state)
+     payload={'checked':True,'wouldQueue':count,'emailMode':reminders.mail_mode(self.local)}
+    else:
+     reminders.require_mail(self.local)
 
-    for attempt in range(5):
+     for attempt in range(5):
 
-     revision,state=self.store.read();result,count=reminders.due_reminders(state)
+      revision,state=self.store.read();result,count=reminders.due_reminders(state)
 
-     if self.store.commit(revision,result):break
+      if self.store.commit(revision,result):break
 
-    else:raise Problem(409,'A newer change was saved. Run the job again.')
+     else:raise Problem(409,'A newer change was saved. Run the job again.')
 
-    payload={'queued':count,'processed':reminders.deliver(self.store,self.local)}
+     processed=reminders.deliver(self.store,self.local)
+     reminders.record_run(self.store,count,processed)
+     payload={'queued':count,'processed':processed}
 
    else:
 
@@ -204,7 +211,7 @@ class Application:
 
      admin_paths=('/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete','/api/vehicle-order')
 
-     if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
+     if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/weekly-report-excel','/api/report-periods-excel','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
      if path=='/api/office-files' and method=='GET':payload=office_files.listing(state)
      elif path=='/api/office-files/content' and method=='GET':payload=office_files.read(state,parse_qs(environ.get('QUERY_STRING','')).get('id',[''])[0],self.objects)
@@ -318,6 +325,8 @@ class Application:
 
       state=weekly_report.save_notes(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
 
+     elif path=='/api/weekly-report-excel' and method=='POST':payload=weekly_export.weekly(state,self.body(environ))
+     elif path=='/api/report-periods-excel' and method=='POST':payload=weekly_export.period(state,self.body(environ))
      elif path=='/api/weekly-report-pdf' and method=='POST':payload=weekly_report.pdf(state,self.body(environ))
 
      elif path=='/api/staff-setup' and method=='GET':payload={**staff_setup.read(state),'emailMode':reminders.mail_mode(self.local)}
@@ -330,7 +339,7 @@ class Application:
 
      elif path=='/api/users' and method=='GET':payload={'users':[accounts.public(u) for u in accounts.users(state).values()],'technicians':timesheets.settings(state)['technicians']}
 
-     elif path=='/api/reminder-settings' and method=='GET':payload={**reminders.settings(state),'emailMode':reminders.mail_mode(self.local),'scheduler': 'local' if self.local else 'external'}
+     elif path=='/api/reminder-settings' and method=='GET':payload={**reminders.settings(state),'emailMode':reminders.mail_mode(self.local),'scheduler': 'local' if self.local else 'external','schedulerStatus':reminders.scheduler_status(state,self.local)}
 
      elif path=='/api/reminder-dashboard' and method=='GET':payload={'items':reminders.dashboard(state),'emailMode':reminders.mail_mode(self.local)}
 
