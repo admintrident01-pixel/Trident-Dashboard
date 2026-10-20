@@ -17,3 +17,7 @@
 .trident-portal .reports .report-section-heading .report-actions button{font-size:12px;padding:5px 9px;min-height:28px}
 .trident-portal .reports .period-date-controls button.primary-action{background:#17345f;color:#fff;border-color:#17345f}
 .report-unsaved{font-size:12px;margin:6px 0;color:#65758a}
+
+.report-week-field{display:grid;gap:5px;font-size:12px;font-weight:bold}.report-week-picker{display:flex;align-items:center;gap:6px}.report-week-picker button{white-space:nowrap;font-weight:normal;padding:6px 9px;border:1px solid #cbd6e4;border-radius:5px;background:white;color:#17345f}
+
+.trident-portal .reports .report-table small{font-size:10px;line-height:1.25}

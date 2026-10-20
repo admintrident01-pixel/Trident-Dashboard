@@ -92,3 +92,7 @@
 .timesheet-form .time-step:disabled{opacity:.45;cursor:default}
 .timesheet-form .unpaid-lunch{min-width:155px;font-size:12px}
 .timesheet-form table{min-width:1220px}
+
+.week-quick-picker{display:flex;gap:6px;align-items:center}.week-quick-picker input{flex:1;min-width:0}.week-quick-picker #last-week{white-space:nowrap;padding:6px 9px;font-size:12px;min-height:34px;margin:0;width:auto}
+
+.timesheet-form .head>p{margin:0 0 5px}.timesheet-help summary{font-size:12px;cursor:pointer}.timesheet-help p{font-size:12px;line-height:1.5;margin:8px 0 0}

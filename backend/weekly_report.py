@@ -38,7 +38,8 @@ def week_rows(state, week):
             sick=hours if status=='Sick leave' else 0
             annual=hours if status=='Annual leave' else 0
             other=hours if status=='Other' else 0
-            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
+            other_description=(request if request else entry).get('other','') if status=='Other' else ''
+            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'otherDescription':other_description,'paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
         rows.append({'name':name,'submitted':bool(sheet),'days':days,'chargedHours':[charged.get(key,{}).get('days',{}).get(date) for date in dates]})
     return rows
 
@@ -114,6 +115,29 @@ def save_notes(state,data):
 def number(n): return f'{n:.2f}'.rstrip('0').rstrip('.')
 def day_label(date): return dt.date.fromisoformat(date).strftime('%d/%m/%Y')
 
+def leave_details(rows):
+    return [{'name':row['name'],'date':day['date'],'hours':day['other'],'description':day['otherDescription']}
+            for row in rows for day in row['days'] if day.get('otherDescription')]
+
+def period_leave_details(state,result):
+    first=week_date(result['start'])
+    return [item for offset in range(result['weeks'])
+            for item in leave_details(week_rows(state,(first+dt.timedelta(weeks=offset)).isoformat()))]
+
+def append_leave_details(story,details,width):
+    if not details:return
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import Paragraph,Spacer,LongTable,TableStyle
+    styles=getSampleStyleSheet();styles['Normal'].fontSize=8;styles['Normal'].leading=11
+    styles['Heading2'].fontSize=11;styles['Heading2'].leading=13
+    def cell(value):return Paragraph(escape(str(value)).replace('\n','<br/>'),styles['Normal'])
+    cells=[[cell(label) for label in ('Staff member','Date','Hours','Other leave description')]]
+    cells.extend([[cell(item['name']),cell(day_label(item['date'])),cell(number(item['hours'])),cell(item['description'])] for item in details])
+    table=LongTable(cells,colWidths=[110,65,40,width-215],repeatRows=1,hAlign='LEFT',splitInRow=1)
+    table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7eef8')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#ccd5e2')),('VALIGN',(0,0),(-1,-1),'TOP'),('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6)]))
+    story.extend([Spacer(1,12),Paragraph('Other leave descriptions',styles['Heading2']),table])
+
 def pdf(state,data):
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER
@@ -158,6 +182,7 @@ def pdf(state,data):
     table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7eef8')),('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#e7eef8')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#ccd5e2')),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),6),('RIGHTPADDING',(0,0),(-1,-1),6),('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
     table.setStyle(TableStyle([('BACKGROUND',(0,index),(-1,index),colors.HexColor('#e0e3e8')) for index in range(2,len(rows)*2+1,2)]+[('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#e0e3e8'))]))
     story.extend([table,Spacer(1,12)])
+    append_leave_details(story,leave_details(rows),width)
     average=averages(state,week);story.append(Paragraph('Three-month weekly averages',styles['Heading2']));story.append(para('13 completed weeks: '+day_label(average['start'])+' to '+day_label(average['end'])+'. Totals divided by all 13 weeks; missing and zero weeks included.'))
     average_cells=[[para(label) for label in ['Staff member','Average payable/week','Average charged/week','Payable weeks','Charged weeks']]]
     for item in average['rows']:
@@ -221,5 +246,5 @@ def period_pdf(state,data):
     cells.append([cell('Total')]+[cell(number(x)) for x in totals]+[cell(''),cell('')])
     table=LongTable(cells,colWidths=[110]+[(A4[0]-56-110)/6]*6,repeatRows=1,hAlign='LEFT')
     table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7eef8')),('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#e7eef8')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#ccd5e2')),('VALIGN',(0,0),(-1,-1),'TOP'),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5)]))
-    story.append(table);doc=SimpleDocTemplate(output,pagesize=A4,leftMargin=28,rightMargin=28,topMargin=26,bottomMargin=26,title='Trident selected week averages');doc.build(story)
+    story.append(table);append_leave_details(story,period_leave_details(state,result),A4[0]-56);doc=SimpleDocTemplate(output,pagesize=A4,leftMargin=28,rightMargin=28,topMargin=26,bottomMargin=26,title='Trident selected week averages');doc.build(story)
     return {'filename':f"Trident-week-averages-{result['start']}-{result['endWeek']}.pdf",'pdf':base64.b64encode(output.getvalue()).decode()}

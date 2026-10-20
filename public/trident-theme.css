@@ -265,7 +265,7 @@
  @media(prefers-reduced-motion:reduce){.trident-portal *{scroll-behavior:auto!important;transition:none!important}}
 }
 
-@media screen{.trident-portal main.workspace-page:not(.reports) h1{position:static!important;width:auto!important;height:auto!important;padding:0!important;margin:0 0 6px!important;overflow:visible!important;clip-path:none!important;white-space:normal!important;border:0!important;font-size:22px;line-height:1.25}}
+@media screen{.trident-portal main.workspace-page h1{position:static!important;width:auto!important;height:auto!important;padding:0!important;margin:0 0 6px!important;overflow:visible!important;clip-path:none!important;white-space:normal!important;border:0!important;font-size:22px;line-height:1.25}}
 
 @media screen{.trident-portal .leave-form .leave-field-grid{grid-column:1/-1}.trident-portal .leave-form .leave-weekends{margin-bottom:8px}.trident-portal .leave-form .leave-total{margin:8px 0 14px}}
 
@@ -317,3 +317,25 @@
 
 @media screen{.trident-portal .portal-header nav{overflow:visible;flex-wrap:wrap;height:auto;align-content:center;gap:2px}.trident-portal .portal-header nav button{padding:5px 6px;font-size:12px;min-height:28px;line-height:16px}.trident-portal .portal-header{height:auto;min-height:44px}}
 @media screen and (max-width:1100px){.trident-portal .portal-header{flex-wrap:wrap;gap:0 4px;align-content:center}.trident-portal .portal-brand{order:1;height:38px}.trident-portal .portal-account{order:2}.trident-portal .portal-header nav{order:3;flex:0 0 100%;width:100%;padding:0;justify-content:flex-start;align-self:auto}.trident-portal .portal-header nav button{padding:4px 6px}.trident-portal .portal-account span{display:none}}
+
+/* Keep common tasks compact and visible across sections. */
+@media screen{
+ .trident-portal .portal-home{padding:18px 16px 24px}
+ .trident-portal .home-intro h1{font-size:24px;margin:6px 0}.trident-portal .home-intro p{font-size:13px}
+ .trident-portal .module-grid{gap:10px;margin-top:16px}.trident-portal .module-card{min-height:120px;padding-top:13px;padding-bottom:13px}
+ .trident-portal .module-heading{font-size:17px}.trident-portal .module-description{font-size:12px;line-height:1.45}
+ .trident-portal .module-link{margin-top:10px}
+ .trident-portal :is(.settings-tabs,.settings-subtabs){flex-wrap:wrap;overflow:visible;gap:4px}
+ .trident-portal .workspace-page .page-heading{gap:10px;margin-bottom:10px}
+ .trident-portal .workspace-page .page-heading p{line-height:1.45}
+ .trident-portal .workspace-page :is(.settings-actions,.stock-actions,.report-actions){gap:6px}
+ .trident-portal .workspace-page :is(.settings-actions,.stock-actions,.report-actions) button{padding:6px 9px}
+}
+@media screen and (max-width:650px){
+ .trident-portal .portal-home{padding:12px 10px 20px}.trident-portal .module-card{min-height:120px;padding:12px}
+ .trident-portal .workspace-page .page-heading{flex-wrap:wrap}
+ .trident-portal .workspace-page :is(.report-controls,.stock-actions){max-width:100%;flex-wrap:wrap}
+}
+@media screen and (pointer:coarse){.trident-portal .portal-header nav button,.trident-portal .settings-tabs button,.trident-portal .settings-subtabs button{min-height:40px}}
+
+@media screen and (min-width:700px){.trident-portal .module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}

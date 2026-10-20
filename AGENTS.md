@@ -17,3 +17,7 @@
 ## Online data preservation
 
 - Online business values are authoritative and must survive every release. Before and after updating, back up and compare the live register and uploaded files; do not replace online state with a local database or seed values. Preserve quotes, schedules, stock and asset identities/history, Shared resources, settings, users and all other online records. Merge missing local content only when requested, keeping existing online values and retaining recoverable backups. Requested on 18 October 2026.
+
+## Usability and performance
+
+- For every future update, review clarity, compact spacing, button placement, responsiveness and loading cost. Prioritise the main working content, especially schedule blocks. Preserve all existing functionality and business data; verify improvements locally. Requested on 20 October 2026.
