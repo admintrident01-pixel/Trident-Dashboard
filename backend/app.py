@@ -339,7 +339,7 @@ class Application:
 
      elif path=='/api/users' and method=='GET':payload={'users':[accounts.public(u) for u in accounts.users(state).values()],'technicians':timesheets.settings(state)['technicians']}
 
-     elif path=='/api/reminder-settings' and method=='GET':payload={**reminders.settings(state),'emailMode':reminders.mail_mode(self.local),'scheduler': 'local' if self.local else 'external','schedulerStatus':reminders.scheduler_status(state,self.local)}
+     elif path=='/api/reminder-settings' and method=='GET':payload={**reminders.settings_view(state),'emailMode':reminders.mail_mode(self.local),'scheduler': 'local' if self.local else 'external','schedulerStatus':reminders.scheduler_status(state,self.local)}
 
      elif path=='/api/reminder-dashboard' and method=='GET':payload={'items':reminders.dashboard(state),'emailMode':reminders.mail_mode(self.local)}
 

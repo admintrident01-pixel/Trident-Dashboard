@@ -5,10 +5,22 @@ from zoneinfo import ZoneInfo
 from core import Problem
 import accounts, vehicles, stocktake_sessions
 
-DEFAULTS = {'timesheetWeekday': 4, 'timesheetTime': '17:00', 'timesheetLeadHours': 24, 'vehicleLeadDays': 7, 'automaticTimesheets': False, 'automaticVehicles': False}
+DEFAULTS = {'timesheetWeekday': 4, 'timesheetTime': '17:00', 'timesheetLeadHours': 24, 'vehicleLeadDays': 7, 'automaticTimesheets': False, 'automaticVehicles': False, 'timesheetRecipients': None, 'vehicleRecipients': None, 'stocktakeRecipients': None}
 
 def settings(state):
     return {**DEFAULTS, **state.get('reminderSettings', {})}
+
+def recipient_options(state):
+    return sorted([{'email':u['email'],'name':u.get('technician') or u.get('name') or u['email'],
+                    'technician':bool(u.get('technician')),'admin':u.get('role')=='admin',
+                    'active':bool(u.get('active')),'verified':bool(u.get('verified'))}
+                   for u in accounts.users(state).values()],key=lambda u:(u['name'].lower(),u['email']))
+
+def settings_view(state):
+    take=stocktake_sessions.status(state)
+    return {**settings(state),'recipientOptions':recipient_options(state),
+            'stocktakeIntervalDays':take['intervalDays'],'automaticStocktakes':take['automatic'],
+            'stocktakeLastCompleted':take['lastCompleted'],'stocktakeNextDue':take['nextDue']}
 
 def save_settings(state, data):
     if not isinstance(data, dict): raise Problem(400, 'Invalid reminder settings.')
@@ -17,9 +29,32 @@ def save_settings(state, data):
     import re
     if not isinstance(data.get('timesheetTime'), str) or not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d', data['timesheetTime']): raise Problem(400, 'Choose a valid time sheet due time.')
     if any(type(data.get(k)) is not bool for k in ('automaticTimesheets', 'automaticVehicles')): raise Problem(400, 'Choose whether automatic reminders are enabled.')
-    result = copy.deepcopy(state)
-    result['reminderSettings'] = {k: data[k] for k in DEFAULTS}
+    cfg=settings(state)
+    for key in DEFAULTS:
+        if key.endswith('Recipients'):
+            if key not in data:continue  # Older clients must preserve saved recipient choices.
+            values=data[key]
+            if values is not None:
+                if not isinstance(values,list) or any(not isinstance(v,str) for v in values):raise Problem(400,'Choose valid reminder recipients.')
+                choices={u['email'] for u in recipient_options(state) if u['admin']} if key=='stocktakeRecipients' else {u['email'] for u in recipient_options(state) if u['technician']}
+                if any(v not in choices for v in values):raise Problem(400,'Choose staff accounts for time sheets and vehicles, or admin accounts for stock takes. Refresh the page if staff changed.')
+                values=sorted(set(values))
+            cfg[key]=values
+        else:cfg[key]=data[key]
+    result=copy.deepcopy(state)
+    result['reminderSettings']=cfg
+    if 'stocktakeIntervalDays' in data or 'automaticStocktakes' in data:
+        take=stocktake_sessions.config(state)
+        interval=data.get('stocktakeIntervalDays',take['intervalDays']);automatic=data.get('automaticStocktakes',take['automatic'])
+        if type(interval) is not int or not 1<=interval<=730:raise Problem(400,'Enter a stock take interval from 1 to 730 days.')
+        if type(automatic) is not bool:raise Problem(400,'Choose whether automatic stock take reminders are enabled.')
+        result['stockTakeSettings']={**state.get('stockTakeSettings',{}),'intervalDays':interval,'automatic':automatic}
     return result
+
+def recipient_selected(cfg,kind,email):
+    selected=cfg[{'timesheet':'timesheetRecipients','vehicle':'vehicleRecipients','stocktake':'stocktakeRecipients'}[kind]]
+    return selected is None or email in selected
+
 
 def mail_mode(local):
     # Local development never sends business email; previews remain private.
@@ -103,7 +138,7 @@ def due_reminders(state, now=None):
         due = (row['daysRemaining'] is None or row['daysRemaining'] <= cfg['vehicleLeadDays']) if row['kind'] == 'vehicle' else (row['kind']=='stocktake' or now >= dt.datetime.fromisoformat(row['due']) - dt.timedelta(hours=cfg['timesheetLeadHours']))
         if row['kind']=='stocktake':
             enabled=stocktake_sessions.config(state)['automatic'];due=row['daysRemaining']<=0
-        if enabled and due and row['recipient'] and accounts.users(state)[row['recipient']].get('verified'):
+        if enabled and due and row['recipient'] and recipient_selected(cfg,row['kind'],row['recipient']) and accounts.users(state)[row['recipient']].get('verified'):
             count += enqueue_reminder(result, row, True, now)
     return result, count
 

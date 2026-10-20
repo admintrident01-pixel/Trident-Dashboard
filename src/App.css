@@ -53,3 +53,32 @@
 
 /* Keep navigation beside the Trident logo without large side gaps. */
 .portal-header{padding-left:4px;padding-right:6px;gap:4px}.portal-brand{margin:0;padding:0}.portal-header nav{margin:0;gap:2px}.portal-account{margin-left:auto;gap:7px}@media(max-width:800px){.portal-header{padding-left:3px;padding-right:4px;gap:3px}}
+
+/* Compact, independent reminder rules and recipient lists. */
+.reminder-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.reminder-settings-page .reminder-rule{margin:0;padding:14px;min-width:0}
+.reminder-rule h2{margin:0 0 12px}.reminder-rule .leave-field-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.reminder-service{padding:10px 14px!important;margin-bottom:12px!important}.reminder-service p{margin:3px 0}
+.reminder-recipients{min-width:0;margin:12px 0 0;border:1px solid #d2deed;border-radius:6px;padding:8px}
+.reminder-recipients legend{font-weight:600;font-size:13px;padding:0 4px}
+.reminder-recipient-tools{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px}.reminder-recipient-tools span{margin-right:auto;color:#526b89}
+.reminder-recipient-tools button{padding:3px 7px;min-height:28px;font-size:12px}
+.reminder-recipient-list{display:grid;gap:2px;max-height:260px;overflow:auto}
+.reminder-recipient{display:flex;gap:8px;align-items:center;padding:5px 3px;cursor:pointer;font-size:13px;min-width:0}
+.reminder-recipient input{width:16px;height:16px;flex:none}.reminder-recipient span{min-width:0}.reminder-recipient small{display:block;color:#62758d;font-size:11px;overflow-wrap:anywhere}
+.reminder-rule .report-hint{font-size:12px;line-height:1.45;margin:8px 0}
+.reminder-save-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 18px;padding:10px;background:#fff;border:1px solid #d2deed;border-radius:6px}
+@media(max-width:1050px){.reminder-settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.reminder-settings-grid{grid-template-columns:1fr}.reminder-settings-page .page-heading{gap:8px}.reminder-save-bar .report-hint{width:100%}}
+.reminder-settings-page{padding:12px 16px;font-size:13px}
+.reminder-settings-page .page-heading h1{font-size:22px}
+.reminder-settings-page button{font:inherit;padding:5px 9px;border:1px solid #cbd6e4;border-radius:5px;background:#fff;color:#17345f;cursor:pointer}
+.reminder-settings-page button:disabled{opacity:.5;cursor:default}
+.reminder-settings-page button.primary-action{background:#17345f;border-color:#17345f;color:#fff}
+.reminder-settings-page input:not([type=checkbox]),.reminder-settings-page select{padding:6px 8px;font-size:13px;min-height:32px}
+.reminder-settings-page .reminder-rule h2{font-size:17px;margin-bottom:10px}
+.reminder-rule .vehicle-field{font-size:12px;gap:5px;margin-bottom:8px}
+.reminder-rule .check-option{margin:10px 0;gap:7px}
+.reminder-settings-page .reminder-recipient-list{max-height:240px}
+.reminder-settings-page .reminder-save-bar{position:sticky;bottom:0;z-index:4;box-shadow:0 -2px 5px #17345f0d}
+.reminder-settings-page button:focus-visible{outline:2px solid #4278b5;outline-offset:2px}
