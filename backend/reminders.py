@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from core import Problem
 import accounts, vehicles, stocktake_sessions
 
-DEFAULTS = {'timesheetWeekday': 4, 'timesheetTime': '17:00', 'timesheetLeadHours': 24, 'vehicleLeadDays': 7, 'automaticTimesheets': False, 'automaticVehicles': False, 'timesheetRecipients': None, 'vehicleRecipients': None, 'stocktakeRecipients': None}
+DEFAULTS = {'timesheetWeekday': 4, 'timesheetTime': '17:00', 'timesheetLeadHours': 24, 'vehicleLeadDays': 7, 'automaticTimesheets': False, 'automaticVehicles': False, 'timesheetRecipients': None, 'vehicleRecipients': None, 'stocktakeRecipients': None, 'leaveRecipients': []}
 
 def settings(state):
     return {**DEFAULTS, **state.get('reminderSettings', {})}
@@ -34,10 +34,11 @@ def save_settings(state, data):
         if key.endswith('Recipients'):
             if key not in data:continue  # Older clients must preserve saved recipient choices.
             values=data[key]
+            if key=='leaveRecipients' and values is None:raise Problem(400,'Choose the admins who receive leave notifications.')
             if values is not None:
                 if not isinstance(values,list) or any(not isinstance(v,str) for v in values):raise Problem(400,'Choose valid reminder recipients.')
-                choices={u['email'] for u in recipient_options(state) if u['admin']} if key=='stocktakeRecipients' else {u['email'] for u in recipient_options(state) if u['technician']}
-                if any(v not in choices for v in values):raise Problem(400,'Choose staff accounts for time sheets and vehicles, or admin accounts for stock takes. Refresh the page if staff changed.')
+                choices={u['email'] for u in recipient_options(state) if u['admin']} if key in ('stocktakeRecipients','leaveRecipients') else {u['email'] for u in recipient_options(state) if u['technician']}
+                if any(v not in choices for v in values):raise Problem(400,'Choose staff accounts for time sheets and vehicles, or admin accounts for stock takes and leave notifications. Refresh the page if staff changed.')
                 values=sorted(set(values))
             cfg[key]=values
         else:cfg[key]=data[key]
@@ -219,3 +220,31 @@ def record_run(store, queued, processed):
         state['reminderJob']={'finishedAt':dt.datetime.now(dt.timezone.utc).isoformat(),'queued':queued,'processed':processed}
         if store.commit(revision,state):return
     raise Problem(409,'Reminder run finished, but its status could not be saved. Check Email history before retrying.')
+
+
+def queue_leave_notifications(state, entry, submitted=False):
+    """Save event mail alongside the leave change; the normal outbox handles delivery."""
+    eligible=[u for u in accounts.users(state).values() if u.get('active') and u.get('verified')]
+    technicians=[u for u in eligible if (u.get('technician') or '').casefold()==entry['technician'].casefold()]
+    # Technician identity, never the admin submitting on their behalf, determines receipts.
+    link='https://trident-dashboard.admintrident01.workers.dev/#leave'
+    dates=f"{entry['startDate']} to {entry['endDate']}"
+    summary=f"Technician: {entry['technician']}\nDates: {dates}\nHours per day: {entry['hoursPerDay']:g}\nTotal hours: {entry['totalHours']:g}"
+    event='submitted' if submitted else entry['status'].lower()
+    key=f"leave:{entry['id']}:{entry['revision']}:{event}"
+    if submitted:
+        selected=settings(state)['leaveRecipients'] or []
+        for user in eligible:
+            if user.get('role')=='admin' and user['email'] in selected:
+                queue(state,user['email'],'Leave request submitted — '+entry['technician'],
+                      f"A leave request is waiting for review.\n\n{summary}\n\nReview the request securely: {link}", 'leave',key+':review:'+user['email'])
+        subject='Leave request received'
+        body=f"Your leave request has been submitted and is awaiting approval. It is not approved yet.\n\n{summary}"
+    else:
+        label={'Approved':'approved','Declined':'rejected','Cancelled':'cancelled'}[entry['status']]
+        subject='Leave request '+label
+        body=f"Your leave request has been {label}.\n\n{summary}"
+        if entry.get('decisionNotes'):
+            body+=('\n\nReason for rejection: ' if entry['status']=='Declined' else '\n\nDecision notes: ')+entry['decisionNotes']
+    for user in technicians:
+        queue(state,user['email'],subject,body+f"\n\nView your leave: {link}",'leave',key+':staff:'+user['email'])

@@ -470,6 +470,8 @@ class Application:
 
        else:state,entry=leave.decide(state,p,email)
 
+       reminders.queue_leave_notifications(state,entry,submitted=path=='/api/leave')
+
        payload={'saved':True,'request':entry}
 
       elif path in ('/api/vehicles','/api/vehicle-order','/api/vehicle-checks'):
@@ -563,6 +565,11 @@ class Application:
        raise Problem(409,'A newer change was saved. Return Home and reopen the quote.')
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+
+      if path in ('/api/leave','/api/leave-decision'):
+       try:
+        if reminders.mail_mode(self.local)!='unconfigured':reminders.deliver(self.store,self.local)
+       except Exception:logging.exception('Leave saved; queued notification delivery will be checked by the scheduler.')
 
       for key in garbage:
 
