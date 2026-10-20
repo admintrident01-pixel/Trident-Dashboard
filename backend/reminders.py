@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from core import Problem
 import accounts, vehicles, stocktake_sessions
 
-DEFAULTS = {'timesheetWeekday': 4, 'timesheetTime': '17:00', 'timesheetLeadHours': 24, 'vehicleLeadDays': 7, 'automaticTimesheets': False, 'automaticVehicles': False, 'timesheetRecipients': None, 'vehicleRecipients': None, 'stocktakeRecipients': None, 'leaveRecipients': []}
+DEFAULTS = {'timesheetWeekday': 4, 'timesheetTime': '17:00', 'timesheetLeadHours': 24, 'timesheetRepeatHours': 24, 'vehicleLeadDays': 7, 'automaticTimesheets': False, 'automaticVehicles': False, 'timesheetRecipients': None, 'vehicleRecipients': None, 'stocktakeRecipients': None, 'leaveRecipients': []}
 
 def settings(state):
     return {**DEFAULTS, **state.get('reminderSettings', {})}
@@ -41,7 +41,10 @@ def save_settings(state, data):
                 if any(v not in choices for v in values):raise Problem(400,'Choose staff accounts for time sheets and vehicles, or admin accounts for stock takes and leave notifications. Refresh the page if staff changed.')
                 values=sorted(set(values))
             cfg[key]=values
-        else:cfg[key]=data[key]
+        elif key!='timesheetRepeatHours':cfg[key]=data[key]
+    repeat=data.get('timesheetRepeatHours',cfg['timesheetRepeatHours'])
+    if type(repeat) is not int or not 1<=repeat<=168:raise Problem(400,'Enter a follow-up interval from 1 to 168 hours.')
+    cfg['timesheetRepeatHours']=repeat
     result=copy.deepcopy(state)
     result['reminderSettings']=cfg
     if 'stocktakeIntervalDays' in data or 'automaticStocktakes' in data:
@@ -64,15 +67,52 @@ def mail_mode(local):
 def require_mail(local):
     if mail_mode(local) == 'unconfigured': raise Problem(503, 'Email delivery is not configured. Ask your administrator to connect the email service.')
 
-def queue(state, recipient, subject, body, kind, key=None):
+def queue(state, recipient, subject, body, kind, key=None, context=None):
     mails = state.setdefault('mailOutbox', {})
     if key and any(m.get('dedupe') == key for m in mails.values()): return False
     mid = str(uuid.uuid4())
     mails[mid] = {'id': mid, 'to': recipient, 'subject': subject, 'body': body, 'kind': kind, 'status': 'queued', 'createdAt': dt.datetime.now(dt.timezone.utc).isoformat(), 'dedupe': key or ''}
+    if context:mails[mid]['context']=context
     # Keep pending mail and a bounded history; automatic dedupe keys are separate.
-    finished = [k for k, m in mails.items() if m['status'] in ('sent', 'preview', 'failed')]
+    finished = [k for k, m in mails.items() if m['status'] in ('sent', 'preview', 'failed', 'cancelled')]
     for k in finished[:-300]: del mails[k]
     return True
+
+def sheet_submitted(state, technician, week):
+    return any((sheet.get('technician') or '').casefold()==technician.casefold() and sheet.get('weekStart')==week for sheet in state.get('timesheets',{}).values())
+
+
+def sheet_first_reminder(due, week, cfg):
+    finished=dt.datetime.combine(week+dt.timedelta(days=7),dt.time(),ZoneInfo('Pacific/Auckland'))
+    # Lead hours are real elapsed hours; no email for an unfinished week.
+    proposed=(due.astimezone(dt.timezone.utc)-dt.timedelta(hours=cfg['timesheetLeadHours'])).astimezone(ZoneInfo('Pacific/Auckland'))
+    return max(finished,proposed)
+
+
+def sheet_progress(state,row):
+    saved=state.get('timesheetReminderCycles',{}).get(row['id'])
+    if saved:return saved
+    # Keep already-sent legacy reminders in the four-email limit on upgrade.
+    marks={k:v for k,v in state.get('reminderSentKeys',{}).items() if k.startswith(row['id']+':')}
+    stamps=[]
+    for key,value in marks.items():
+        mail=next((m for m in state.get('mailOutbox',{}).values() if m.get('dedupe')==key),{})
+        try:
+            stamp=dt.datetime.fromisoformat(mail.get('createdAt') or value)
+            if stamp.tzinfo is None:stamp=dt.datetime.combine(stamp.date(),dt.time(23,59,59),ZoneInfo('Pacific/Auckland'))
+            stamps.append(stamp)
+        except (ValueError,TypeError):continue
+    return {'recipient':row['recipient'],'technician':row['name'],'weekStart':row['weekStart'],'count':min(4,len(marks)),'lastQueuedAt':max(stamps).isoformat() if stamps else None}
+
+
+def sheet_next_at(row,progress,cfg):
+    if progress['count']>=4:return None
+    first=sheet_first_reminder(dt.datetime.fromisoformat(row['due']),dt.date.fromisoformat(row['weekStart']),cfg).astimezone(dt.timezone.utc)
+    if progress['lastQueuedAt']:
+        next_time=dt.datetime.fromisoformat(progress['lastQueuedAt']).astimezone(dt.timezone.utc)+dt.timedelta(hours=cfg['timesheetRepeatHours'])
+        first=max(first,next_time)
+    return first.astimezone(ZoneInfo('Pacific/Auckland'))
+
 
 def dashboard(state, now=None):
     now = now or dt.datetime.now(ZoneInfo('Pacific/Auckland'))
@@ -81,11 +121,26 @@ def dashboard(state, now=None):
     active_users = [u for u in accounts.users(state).values() if u['active'] and u.get('technician')]
     rows = []
     monday = now.date() - dt.timedelta(days=now.weekday())
-    for week in (monday - dt.timedelta(days=7), monday):
-        due = dt.datetime.combine(week + dt.timedelta(days=cfg['timesheetWeekday']), dt.time.fromisoformat(cfg['timesheetTime']), ZoneInfo('Pacific/Auckland'))
-        for user in active_users:
-            if any(s['technician'] == user['technician'] and s['weekStart'] == week.isoformat() for s in state.get('timesheets', {}).values()): continue
-            rows.append({'id': 'sheet:' + user['email'] + ':' + week.isoformat(), 'kind': 'timesheet', 'recipient': user['email'], 'name': user['technician'], 'weekStart': week.isoformat(), 'due': due.isoformat(), 'hoursRemaining': round((due - now).total_seconds() / 3600, 1)})
+    for user in active_users:
+        # New cycles always concern the previous completed week. Continue a started
+        # older cycle when a long configured interval crosses into another week.
+        weeks={monday-dt.timedelta(days=7)}
+        for cycle in state.get('timesheetReminderCycles',{}).values():
+            if cycle.get('recipient')!=user['email'] or (cycle.get('technician') or '').casefold()!=user['technician'].casefold() or cycle.get('count',0)>=4:continue
+            try:week=dt.date.fromisoformat(cycle['weekStart'])
+            except (KeyError,ValueError,TypeError):continue
+            if monday-dt.timedelta(days=35)<=week<monday:weeks.add(week)
+        for week in sorted(weeks):
+            if sheet_submitted(state,user['technician'],week.isoformat()):continue
+            due=dt.datetime.combine(week+dt.timedelta(days=7+cfg['timesheetWeekday']),dt.time.fromisoformat(cfg['timesheetTime']),ZoneInfo('Pacific/Auckland'))
+            first=sheet_first_reminder(due,week,cfg)
+            row={'id':'sheet:'+user['email']+':'+week.isoformat(),'kind':'timesheet','recipient':user['email'],'name':user['technician'],'weekStart':week.isoformat(),'due':due.isoformat(),'firstReminderAt':first.isoformat(),'hoursRemaining':round((due-now).total_seconds()/3600,1)}
+            progress=sheet_progress(state,row)
+            row['remindersQueued']=progress['count']
+            row['reminderLimit']=4
+            next_time=sheet_next_at(row,progress,cfg)
+            row['nextReminderAt']=next_time.isoformat() if next_time else None
+            rows.append(row)
     for vehicle in vehicles.active_fleet(state):
         if not vehicle['active']: continue
         checks = [c for c in state.get('vehicleChecks', {}).values() if c['vehicleId'] == vehicle['id']]
@@ -118,16 +173,27 @@ def enqueue_reminder(state, row, automatic=False, now=None):
     else:
         subject = 'Weekly time sheet reminder · ' + row['weekStart']
         body = f"Hello {row['name']},\n\nYour time sheet for the week starting {row['weekStart']} is still awaiting submission.\nDue: {row['due']} (Pacific/Auckland).\n\nPlease sign in to Trident, sign and submit your time sheet.\n\nTrident Community Equipment"
+    context={'technician':row['name'],'weekStart':row['weekStart']} if row['kind']=='timesheet' else None
+    if automatic and row['kind']=='timesheet':
+        cfg=settings(state);progress=sheet_progress(state,row)
+        next_time=sheet_next_at(row,progress,cfg)
+        if sheet_submitted(state,row['name'],row['weekStart']) or next_time is None or now.astimezone(dt.timezone.utc)<next_time.astimezone(dt.timezone.utc):return False
+        key=f"timesheet-cycle:{row['recipient']}:{row['weekStart']}:{progress['count']+1}"
+        body+=f"\n\nAutomatic reminder {progress['count']+1} of 4. Further reminders stop when this week's time sheet is submitted."
+        if not queue(state,row['recipient'],subject,body,row['kind'],key,context):return False
+        state.setdefault('timesheetReminderCycles',{})[row['id']]={**progress,'count':progress['count']+1,'lastQueuedAt':now.isoformat()}
+        return True
     key = f"{row['id']}:{row['due']}:{now.date().isoformat()}"
-    # Automatic runs send at most once per recipient/due date/Auckland day.
+    # Vehicle and stock take reminders retain their daily deduplication.
     if automatic and key in state.get('reminderSentKeys', {}): return False
-    if queue(state, row['recipient'], subject, body, row['kind'], key if automatic else None):
+    if queue(state, row['recipient'], subject, body, row['kind'], key if automatic else None,context):
         if automatic:
             marks = state.setdefault('reminderSentKeys', {})
             marks[key] = now.date().isoformat()
             state['reminderSentKeys'] = {k: v for k, v in marks.items() if v >= (now.date() - dt.timedelta(days=45)).isoformat()}
         return True
     return False
+
 
 def due_reminders(state, now=None):
     result = copy.deepcopy(state)
@@ -152,6 +218,11 @@ def deliver(store, local=False):
         item = next((m for m in state.get('mailOutbox', {}).values() if m['status'] == 'queued'), None)
         if not item: break
         mid = item['id']
+        context=item.get('context',{})
+        if item['kind']=='timesheet' and context.get('technician') and sheet_submitted(state,context['technician'],context['weekStart']):
+            state['mailOutbox'][mid].update(status='cancelled',finishedAt=dt.datetime.now(dt.timezone.utc).isoformat(),cancelReason='Time sheet submitted')
+            if store.commit(revision,state):processed+=1
+            continue
         state['mailOutbox'][mid]['status'] = 'preview' if local else 'sending'
         if not store.commit(revision, state): continue
         if local:

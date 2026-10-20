@@ -34,12 +34,12 @@ class ReminderFix(unittest.TestCase):
  def test_friday_three_exact_boundary_and_dedupe(self):
   rules=test_accounts.ReminderRules();rules.setUp();state=rules.state
   state['reminderSettings']={**reminders.DEFAULTS,'automaticTimesheets':True,'timesheetWeekday':5,'timesheetTime':'15:00','timesheetLeadHours':24}
-  state['timesheets']={'old':{'technician':'Scott','weekStart':'2026-10-05'}}
+  state['timesheets']={'old':{'technician':'Scott','weekStart':'2026-09-28'}}
   friday=dt.datetime(2026,10,16,15,tzinfo=ZoneInfo('Pacific/Auckland'))
   self.assertEqual(reminders.due_reminders(state,friday-dt.timedelta(seconds=1))[1],0)
   result,count=reminders.due_reminders(state,friday);self.assertEqual(count,1)
   self.assertEqual(reminders.due_reminders(result,friday)[1],0)
-  state['timesheets']['new']={'technician':'Scott','weekStart':'2026-10-12'};self.assertEqual(reminders.due_reminders(state,friday)[1],0)
+  state['timesheets']['new']={'technician':'Scott','weekStart':'2026-10-05'};self.assertEqual(reminders.due_reminders(state,friday)[1],0)
  def test_scheduler_status_does_not_claim_connection(self):
   with patch.dict(os.environ,{},clear=True):self.assertEqual(reminders.scheduler_status({})['status'],'not-connected')
   now=dt.datetime.now(dt.timezone.utc)

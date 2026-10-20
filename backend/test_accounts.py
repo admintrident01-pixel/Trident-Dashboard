@@ -155,15 +155,15 @@ class ReminderRules(unittest.TestCase):
         vehicle=next(r for r in rows if r['kind']=='vehicle')
         self.assertEqual(vehicle['due'],'2026-10-16')
         self.assertEqual(vehicle['daysRemaining'],7)
-        sheet=next(r for r in rows if r.get('weekStart')=='2026-10-05')
+        sheet=next(r for r in rows if r.get('weekStart')=='2026-09-28')
         self.assertEqual(sheet['hoursRemaining'],5)
         self.assertIn('+13:00',sheet['due'])
     def test_latest_check_drives_deadline_and_submission_stops_sheet_reminder(self):
         self.state['vehicleChecks']={'a':{'vehicleId':'V1','checkDate':'2026-10-01','createdAt':'2026-10-01'}}
-        self.state['timesheets']={'s':{'technician':'Scott','weekStart':'2026-10-05'}}
+        self.state['timesheets']={'s':{'technician':'Scott','weekStart':'2026-09-28'}}
         rows=reminders.dashboard(self.state,self.now)
         self.assertEqual(next(r for r in rows if r['kind']=='vehicle')['due'],'2026-10-31')
-        self.assertFalse(any(r.get('weekStart')=='2026-10-05' for r in rows))
+        self.assertFalse(any(r.get('weekStart')=='2026-09-28' for r in rows))
     def test_saved_expiry_drives_reminder(self):
         self.state['vehicleChecks']={'a':{'vehicleId':'V1','checkDate':'2026-10-01','nextCheckDue':'2026-10-20','createdAt':'2026-10-01'}}
         row=next(r for r in reminders.dashboard(self.state,self.now) if r['kind']=='vehicle')
@@ -172,7 +172,7 @@ class ReminderRules(unittest.TestCase):
     def test_configurable_deadline_and_automatic_deduplication(self):
         cfg={**reminders.DEFAULTS,'timesheetWeekday':6,'timesheetTime':'18:30','automaticVehicles':True,'automaticTimesheets':True}
         state=reminders.save_settings(self.state,cfg)
-        sheet=next(r for r in reminders.dashboard(state,self.now) if r.get('weekStart')=='2026-10-05')
+        sheet=next(r for r in reminders.dashboard(state,self.now) if r.get('weekStart')=='2026-09-28')
         self.assertIn('2026-10-11T18:30',sheet['due'])
         state,count=reminders.due_reminders(state,self.now)
         self.assertGreater(count,0)
