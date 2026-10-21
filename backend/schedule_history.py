@@ -7,7 +7,7 @@ def clean(value):
  if isinstance(value,list):return [clean(v) for v in value]
  return value
 def signature(state):
- keys=COLLECTIONS+('deletedLunchIds','leaveRequests','staffSettings','scheduleSettings','timeSettings')
+ keys=COLLECTIONS+('deletedLunchIds','leaveRequests','staffSettings','scheduleSettings','timeSettings','scheduleNoteSeries')
  return hashlib.sha256(json.dumps(clean({k:state.get(k,{}) for k in keys}),sort_keys=True,separators=(',',':')).encode()).hexdigest()
 def stacks(state,email,date):return state.get('scheduleHistory',{}).get(email,{}).get(date,{'undo':[],'redo':[]})
 def record(before,state,email,date,label):

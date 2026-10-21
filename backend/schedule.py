@@ -4,7 +4,7 @@ import copy, datetime as dt, re, uuid
 
 from core import Problem
 
-import timesheets, leave, schedule_routes, schedule_links
+import timesheets, leave, schedule_routes, schedule_links, schedule_notes
 
 
 
@@ -54,6 +54,7 @@ def settings(state):
     result.setdefault('lunchStart','12:00')
 
     result.setdefault('quickNotes',DEFAULT_QUICK_NOTES.copy())
+    result.setdefault('typeDefaults',{})
 
     staff=timesheets.settings(state)['technicians']
 
@@ -105,7 +106,14 @@ def save_settings(state,data):
 
     if len(set(note.casefold() for note in quick))!=len(quick): raise Problem(400,'Use different quick notes.')
 
-    result['scheduleSettings']={'appointmentTypes':cleaned,'lunchStart':lunch_start,'technicianOrder':order,'quickNotes':quick}
+    defaults=data.get('typeDefaults',settings(state).get('typeDefaults',{}))
+    if not isinstance(defaults,dict):raise Problem(400,'Choose valid appointment defaults.')
+    validated={}
+    for kind,value in defaults.items():
+        if kind not in cleaned:continue
+        if not isinstance(value,dict) or not re.fullmatch(r'#[0-9a-fA-F]{6}',str(value.get('colour',''))) or type(value.get('duration')) is not int or not 15<=value['duration']<=1440 or value['duration']%15 or value.get('timing') not in ('fixed','flexible') or value.get('bookingStatus') not in BOOKING_STATUSES:raise Problem(400,'Use a colour, quarter-hour duration, timing and booking status for each type.')
+        validated[kind]={k:value[k] for k in ('colour','duration','timing','bookingStatus')}
+    result['scheduleSettings']={'appointmentTypes':cleaned,'lunchStart':lunch_start,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated}
 
     return result
 
@@ -215,7 +223,7 @@ def read(state,date):
 
     names.sort(key=lambda name:types.get(name,'technician')=='office')
 
-    return {'date':date,'depotAddress':schedule_routes.configuration()['depot'],'routeTotals':schedule_routes.itinerary_totals(appointments,names),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
+    return {'date':date,'depotAddress':schedule_routes.configuration()['depot'],'routeTotals':schedule_routes.itinerary_totals(appointments,names),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
 
 
 
@@ -236,6 +244,8 @@ def save(state,data,user):
     if old and data.get('version')!=old['version']: raise Problem(409,'This appointment changed. Refresh and reopen it.')
 
     action=data.get('action','save')
+
+    if action=='resize':return resize_booking(state,data,user,old)
 
     if action not in ('save','cancel','restore'): raise Problem(400,'Choose a valid appointment action.')
 
@@ -303,6 +313,8 @@ def save(state,data,user):
             return result,next(a for a in result['appointments'].values() if a.get('source')=='lunch' and a['date']==appointment['date'] and assigned(a)==assigned(appointment) and not a.get('cancelled')) if appointment.get('source')=='lunch' else result['appointments'][appointment['id']]
 
     if not appointment['cancelled']:
+
+        if any(overlaps(appointment,block) for block in schedule_notes.blocks(state,appointment['date'])):raise Problem(409,'This time is reserved by recurring notes. Change the notes series in Schedule settings or choose another time.')
 
         if any(overlaps(appointment,block) for block in leave_blocks(state,appointment['date'])):
 
@@ -389,7 +401,7 @@ def travel_id(date,name,anchor,side):
 
 def travel_candidates(state,date):
     bookings=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')!='lunch']
-    barriers=leave_blocks(state,date)+lunch_blocks(state,date)+[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')=='lunch']
+    barriers=leave_blocks(state,date)+schedule_notes.blocks(state,date)+lunch_blocks(state,date)+[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')=='lunch']
     result=[]
     config=schedule_routes.configuration()
     names={name for a in bookings for name in assigned(a)}
@@ -460,4 +472,49 @@ def save_travel(state,data,user):
 def time_string(value):return f'{value//60:02d}:{value%60:02d}'
 
 def read_without_travel(state,date):
-    return [a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled')]+lunch_blocks(state,date)+leave_blocks(state,date)
+    return [a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled')]+lunch_blocks(state,date)+leave_blocks(state,date)+schedule_notes.blocks(state,date)
+
+
+def resize_booking(state,data,user,old):
+    """Resize one edge and atomically push only colliding flexible neighbours."""
+    if not old or old.get('cancelled'):raise Problem(409,'Choose an active appointment to resize.')
+    edge=data.get('edge');start=minutes(data.get('start'));duration=data.get('duration')
+    if edge not in ('start','end') or type(duration) is not int or duration<15 or duration%15 or start+duration>1440:raise Problem(400,'Resize in 15-minute steps within the selected day.')
+    old_start=minutes(old['start']);old_end=old_start+old['duration']
+    if edge=='end' and start!=old_start or edge=='start' and start+duration!=old_end:raise Problem(400,'Keep the opposite edge in place when resizing.')
+    date=old['date'];originals={b['id']:b for b in read_without_travel(state,date)}
+    rows=copy.deepcopy(originals);rows[old['id']]={**old,'start':time_string(start),'duration':duration}
+    travels=travel_blocks(state,date)
+    attached=[t for t in travels if t.get('linked',True) and t.get('anchorId') in originals]
+    barriers=[t for t in travels if t not in attached and not t.get('cancelled')]
+    def bounds(block,name):
+        bs=minutes(block['start']);be=bs+block['duration']
+        own=[t for t in attached if t['anchorId']==block['id'] and name in assigned(t)]
+        return min([bs]+[bs-t['duration'] for t in own if t['side']=='before']),max([be]+[be+t['duration'] for t in own if t['side']=='after'])
+    direction=-1 if edge=='start' else 1
+    changed={old['id']};pending=[old['id']];steps=0
+    while pending:
+        steps+=1
+        if steps>max(20,len(originals)*len(originals)*4):raise Problem(409,'There is not enough clear time to resize this booking.')
+        a=rows[pending.pop(0)]
+        for name in assigned(a):
+            a_start,a_end=bounds(a,name)
+            if a_start<0 or a_end>1440:raise Problem(409,'The booking or its travel would leave this day.')
+            for b in list(rows.values())+barriers:
+                if a['id']==b['id'] or name not in assigned(b):continue
+                b_start,b_end=bounds(b,name)
+                if a_start>=b_end or b_start>=a_end:continue
+                if a['id']==old['id'] and start>=old_start and start+duration<=old_end:continue
+                old_b=originals.get(b['id']);old_a=originals[a['id']]
+                in_direction=old_b and (minutes(old_b['start'])>=minutes(old_a['start']) if direction>0 else minutes(old_b['start'])<=minutes(old_a['start']))
+                if b['id']==old['id'] or b.get('source') in ('leave','travel') or b.get('timing')=='fixed' or not in_direction:raise Problem(409,f"{b['client']} cannot move. Resize less, or make the neighbouring booking flexible.")
+                delta=a_end-b_start if direction>0 else a_start-b_end
+                new_start=minutes(b['start'])+delta
+                if new_start<0 or new_start+b['duration']>1440:raise Problem(409,'The booking or its travel would leave this day.')
+                rows[b['id']]={**b,'start':time_string(new_start)};changed.add(b['id']);pending.append(b['id'])
+    result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
+    for identifier in changed:
+        block=rows[identifier]
+        if block['start']==originals[identifier]['start'] and block['duration']==originals[identifier]['duration']:continue
+        result.setdefault('appointments',{})[identifier]={**block,'version':block.get('version',0)+1,'updatedAt':now,'updatedBy':user['email']}
+    return result,result.get('appointments',{}).get(old['id'],old)

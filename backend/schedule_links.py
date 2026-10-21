@@ -32,7 +32,7 @@ def travel_blocks(state,date):
         block={**c,'source':'travel','type':'Travel','timing':'fixed','cancelled':False,'start':s.time_string(start),'duration':duration,'version':saved.get('version',0),'locked':locked,'linked':linked,'routeError':route.get('error',''),'estimatedSeconds':route.get('seconds'),'routeConflict':conflict,'notes':('Calculated by Google Maps; rounded up to 15 minutes.' if route.get('duration') else 'Manual travel time.' if not locked else route.get('error',''))}
         if not linked and saved.get('technician'):
             block.update(technician=saved['technician'],technicians=[saved['technician']])
-        barriers=s.leave_blocks(state,date)+s.lunch_blocks(state,date)
+        barriers=s.leave_blocks(state,date)+s.schedule_notes.blocks(state,date)+s.lunch_blocks(state,date)
         if not linked:barriers+=s.read_without_travel(state,date)
         if any(s.overlaps(block,b) for b in barriers):block['routeConflict']=True
         rows.append(block)
@@ -271,7 +271,7 @@ def delete_selection(state,data,user):
     if not isinstance(ids,list) or not ids or len(ids)>1000 or any(not isinstance(i,str) for i in ids):raise Problem(400,'Select blocks to delete.')
     blocks={b['id']:b for b in day_blocks(state,date)}
     if any(i not in blocks for i in ids):raise Problem(409,'The selected blocks changed. Refresh and select them again.')
-    if any(blocks[i].get('source')=='leave' for i in ids):raise Problem(409,'Approved leave is managed in Leave forms and cannot be deleted here.')
+    if any(blocks[i].get('source') in ('leave','note') for i in ids):raise Problem(409,'Approved leave and recurring notes must be managed in their own settings.')
     result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
     for identifier in set(ids):
         block=blocks[identifier]
@@ -284,7 +284,7 @@ def travel_next(state,data,user):
     """Anchor Google travel after the upper booking; optionally pull the next one."""
     import schedule as s
     date=s.day(data.get('date'));name=data.get('technician')
-    rows=sorted([b for b in s.read_without_travel(state,date) if b.get('source') not in ('leave','lunch') and name in s.assigned(b)],key=lambda b:(s.minutes(b['start']),b['id']))
+    rows=sorted([b for b in s.read_without_travel(state,date) if b.get('source') not in ('leave','lunch','note') and name in s.assigned(b)],key=lambda b:(s.minutes(b['start']),b['id']))
     index=next((i for i,b in enumerate(rows) if b['id']==data.get('upperId')),None)
     if index is None or index+1>=len(rows):raise Problem(409,'There is no next appointment for this technician.')
     top=rows[index];bottom=rows[index+1]

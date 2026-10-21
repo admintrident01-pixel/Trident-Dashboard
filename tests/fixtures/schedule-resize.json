@@ -1,0 +1,694 @@
+[
+  {
+    "name": "bottom pushes chain",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "fixed",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "C",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "11:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "C",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "A",
+    "start": "09:00",
+    "duration": 90,
+    "edge": "end",
+    "expected": {
+      "A": "09:00",
+      "B": "10:30",
+      "C": "11:30"
+    },
+    "travel": [],
+    "error": false
+  },
+  {
+    "name": "top pushes earlier chain",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "08:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "C",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "fixed",
+        "client": "C",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "C",
+    "start": "09:30",
+    "duration": 90,
+    "edge": "start",
+    "expected": {
+      "A": "07:30",
+      "B": "08:30",
+      "C": "09:30"
+    },
+    "travel": [],
+    "error": false
+  },
+  {
+    "name": "shrinking leaves neighbours",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "A",
+    "start": "09:00",
+    "duration": 30,
+    "edge": "end",
+    "expected": {
+      "A": "09:00"
+    },
+    "travel": [],
+    "error": false
+  },
+  {
+    "name": "fixed barrier below",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "fixed",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "A",
+    "start": "09:00",
+    "duration": 90,
+    "edge": "end",
+    "expected": {},
+    "travel": [],
+    "error": true
+  },
+  {
+    "name": "fixed barrier above",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "fixed",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "B",
+    "start": "09:30",
+    "duration": 90,
+    "edge": "start",
+    "expected": {},
+    "travel": [],
+    "error": true
+  },
+  {
+    "name": "approved leave barrier",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "Leave",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "fixed",
+        "client": "Leave",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample",
+        "source": "leave"
+      }
+    ],
+    "root": "A",
+    "start": "09:00",
+    "duration": 90,
+    "edge": "end",
+    "expected": {},
+    "travel": [],
+    "error": true
+  },
+  {
+    "name": "team resize pushes both columns",
+    "blocks": [
+      {
+        "id": "Team",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex",
+          "Blake"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "Team",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "Alex next",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "Alex next",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "Blake next",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Blake",
+        "technicians": [
+          "Blake"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "Blake next",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "Team",
+    "start": "09:00",
+    "duration": 120,
+    "edge": "end",
+    "expected": {
+      "Team": "09:00",
+      "Alex next": "11:00",
+      "Blake next": "11:00"
+    },
+    "travel": [],
+    "error": false
+  },
+  {
+    "name": "travel kept around bottom resize",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:30",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "A",
+    "start": "09:00",
+    "duration": 90,
+    "edge": "end",
+    "expected": {
+      "A": "09:00",
+      "B": "11:00"
+    },
+    "travel": [
+      {
+        "id": "T1",
+        "source": "travel",
+        "anchorId": "A",
+        "side": "after",
+        "start": "10:00",
+        "duration": 15,
+        "technician": "Alex",
+        "linked": true
+      },
+      {
+        "id": "T2",
+        "source": "travel",
+        "anchorId": "B",
+        "side": "before",
+        "start": "10:15",
+        "duration": 15,
+        "technician": "Alex",
+        "linked": true
+      }
+    ],
+    "error": false
+  },
+  {
+    "name": "travel kept around top resize",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:30",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "B",
+    "start": "10:00",
+    "duration": 90,
+    "edge": "start",
+    "expected": {
+      "A": "08:30",
+      "B": "10:00"
+    },
+    "travel": [
+      {
+        "id": "T1",
+        "source": "travel",
+        "anchorId": "A",
+        "side": "after",
+        "start": "10:00",
+        "duration": 15,
+        "technician": "Alex",
+        "linked": true
+      },
+      {
+        "id": "T2",
+        "source": "travel",
+        "anchorId": "B",
+        "side": "before",
+        "start": "10:15",
+        "duration": 15,
+        "technician": "Alex",
+        "linked": true
+      }
+    ],
+    "error": false
+  },
+  {
+    "name": "detached travel barrier",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "A",
+    "start": "09:00",
+    "duration": 90,
+    "edge": "end",
+    "expected": {},
+    "travel": [
+      {
+        "id": "Manual",
+        "source": "travel",
+        "anchorId": "A",
+        "side": "after",
+        "start": "10:00",
+        "duration": 15,
+        "technician": "Alex",
+        "linked": false,
+        "client": "Manual travel"
+      }
+    ],
+    "error": true
+  },
+  {
+    "name": "day boundary blocks cascade",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "22:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "23:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      }
+    ],
+    "root": "A",
+    "start": "22:00",
+    "duration": 120,
+    "edge": "end",
+    "expected": {},
+    "travel": [],
+    "error": true
+  },
+  {
+    "name": "flexible confirmed neighbour shifts",
+    "blocks": [
+      {
+        "id": "A",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "09:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "A",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample"
+      },
+      {
+        "id": "B",
+        "date": "2026-10-21",
+        "version": 1,
+        "technician": "Alex",
+        "technicians": [
+          "Alex"
+        ],
+        "start": "10:00",
+        "duration": 60,
+        "timing": "flexible",
+        "client": "B",
+        "type": "Equipment repair",
+        "address": "Sample address",
+        "notes": "",
+        "cancelled": false,
+        "createdAt": "sample",
+        "bookingStatus": "confirmed"
+      }
+    ],
+    "root": "A",
+    "start": "09:00",
+    "duration": 90,
+    "edge": "end",
+    "expected": {
+      "A": "09:00",
+      "B": "10:30"
+    },
+    "travel": [],
+    "error": false
+  }
+]
