@@ -198,7 +198,8 @@
 
 /* Select once; dedicated move grip and two compact resize edges. */
 .trident-portal .tech-schedule .schedule-help{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:auto;min-width:0;height:28px;min-height:28px;padding:4px 7px;border-radius:5px;font-size:11px;white-space:nowrap}
-.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note){background:var(--appointment-fill,#e5efff);color:#17345f;border-color:#99adc6;border-left:3px solid var(--booking-stroke,#99adc6)}
+.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note){background:linear-gradient(to right,var(--booking-stroke,#99adc6) 0 18px,var(--appointment-fill,#e5efff) 18px);color:#17345f;border:1px solid #99adc6;padding-left:22px}
+.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note)>input.schedule-select-block{left:3.5px}
 .trident-portal .tech-schedule .schedule-appointment.travel{background:#edf0f3!important;color:#35465a;border-color:#acb6c2}
 .schedule-travel-check{display:inline-flex!important;vertical-align:middle;overflow:visible!important;align-items:center;margin-right:3px}
 .schedule-travel-check.calculated{color:#17844a}.schedule-travel-check.review{color:#c12e2e}.schedule-travel-check.manual{color:#60758b}
