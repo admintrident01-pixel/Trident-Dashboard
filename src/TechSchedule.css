@@ -242,3 +242,19 @@
 .schedule-edit-conflict table{width:100%;table-layout:fixed;overflow-wrap:anywhere;margin-bottom:10px}
 .schedule-edit-conflict th,.schedule-edit-conflict td{text-align:left;padding:6px;vertical-align:top}
 .schedule-edit-conflict button{margin:3px}
+
+.trident-portal .tech-schedule .schedule-client-search{position:absolute;right:19px;top:1px;width:17px;height:17px;min-height:0;padding:2px;border:0;border-radius:3px;background:#ffffffd9;color:#234d7e;display:flex;align-items:center;justify-content:center;z-index:12;opacity:0}
+.trident-portal .tech-schedule .schedule-appointment:is(:hover,:focus-within,.is-selected) .schedule-client-search{opacity:1}
+.trident-portal .tech-schedule .schedule-appointment:has(.schedule-client-search):is(:hover,:focus-within,.is-selected)>strong{padding-right:36px}
+.schedule-client-search:focus-visible{outline:2px solid #1669c1;outline-offset:-1px}
+.schedule-gap-preview-list{max-height:45dvh;overflow:auto;border:1px solid #d5dfeb;border-radius:5px}
+.schedule-gap-preview table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.schedule-gap-preview th,.schedule-gap-preview td{padding:7px;border-bottom:1px solid #e4eaf2;vertical-align:top}
+.schedule-gap-preview thead{position:sticky;top:0;background:#edf2f9}
+.schedule-gap-preview th small{display:block;font-weight:400;color:#536b87;margin-top:3px}
+.schedule-gap-preview td{white-space:nowrap;font-variant-numeric:tabular-nums}
+.schedule-gap-preview p{font-size:13px;line-height:1.5}
+.schedule-time-field{display:grid;gap:5px;font-size:12px;font-weight:bold;min-width:0;align-content:start}
+@media(hover:none){.trident-portal .tech-schedule .schedule-client-search{opacity:1}.trident-portal .tech-schedule .schedule-appointment:has(.schedule-client-search)>strong{padding-right:36px}}
+@media(max-width:450px){.schedule-gap-preview td,.schedule-gap-preview th{padding:5px;font-size:11px}.schedule-gap-preview td{white-space:normal}}
+.schedule-gap-preview table{table-layout:fixed}.schedule-gap-preview th{overflow-wrap:anywhere}.schedule-gap-preview thead th:first-child{width:42%}

@@ -1,0 +1,21 @@
+/* Compact shared hour : minute entry, with the stored 24-hour value kept separate. */
+.trident-time-host{display:inline-flex;max-width:100%;vertical-align:middle}
+.trident-time-entry{display:inline-grid;grid-template-columns:38px 8px 38px 34px;gap:3px;align-items:center;max-width:100%;width:max-content;box-sizing:border-box;color:#17345f;vertical-align:middle;line-height:1;isolation:isolate}
+.trident-time-entry .trident-time-digit{box-sizing:border-box;appearance:none;width:38px!important;min-width:0!important;max-width:none!important;height:38px;min-height:38px;margin:0!important;padding:3px 1px!important;border:1px solid #ccd8e6;border-radius:6px;background:#edf2f8;color:#17345f;font:600 19px/1 Arial,sans-serif!important;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.5px;box-shadow:none}
+.trident-time-entry .trident-time-digit::placeholder{font-size:16px;color:#73849a;font-weight:400;letter-spacing:0}
+.trident-time-entry .trident-time-digit:focus{background:#e6edf7;border-color:#537cac;outline:2px solid #b5cbed;outline-offset:1px}
+.trident-time-entry .trident-time-digit:invalid:not(:placeholder-shown){border-color:#ad3d35}
+.trident-time-entry .trident-time-colon{font:600 19px/1 Arial,sans-serif;text-align:center;padding-bottom:3px;align-self:center}
+.trident-time-entry .trident-time-period{display:grid;grid-template-rows:1fr 1fr;gap:0;height:38px;overflow:hidden;border:1px solid #ccd8e6;border-radius:5px;box-sizing:border-box}
+.trident-time-entry .trident-time-period-button{display:flex;align-items:center;justify-content:center;width:32px!important;min-width:0!important;height:18px;min-height:18px!important;margin:0!important;padding:0 2px!important;border:0;border-radius:0;background:#fff;color:#53657c;font:600 10px/1 Arial,sans-serif!important;letter-spacing:.1px;box-shadow:none;cursor:pointer}
+.trident-time-entry .trident-time-period-button+button{border-top:1px solid #ccd8e6}
+.trident-time-entry .trident-time-period-button[aria-pressed=true]{background:#17345f;color:#fff}
+.trident-time-entry .trident-time-period-button:focus-visible{position:relative;z-index:1;outline:2px solid #da832c;outline-offset:-2px}
+.trident-time-entry .trident-time-period-button:hover:not(:disabled):not([aria-pressed=true]){background:#e7edf6}
+.trident-time-entry .trident-time-end{grid-column:1/-1;display:flex;align-items:center;gap:4px;margin:2px 0 0!important;color:#53657c;font:11px/1.3 Arial,sans-serif!important;white-space:nowrap;cursor:pointer}
+.trident-time-entry .trident-time-end[hidden]{display:none!important}
+.trident-time-entry .trident-time-end-checkbox{appearance:auto;width:12px!important;min-width:12px!important;height:12px!important;min-height:12px!important;padding:0!important;margin:0!important;accent-color:#17345f}
+.trident-time-entry.is-disabled{opacity:.58}
+.trident-time-entry.is-disabled :is(input,button){cursor:default}
+.trident-time-entry.is-disabled .trident-time-digit{color:#53657c;background:#eef1f5}
+@media(pointer:coarse){.trident-time-entry .trident-time-period{height:44px}.trident-time-entry .trident-time-period-button{height:21px;min-height:21px!important}.trident-time-entry .trident-time-digit{height:44px;min-height:44px}}

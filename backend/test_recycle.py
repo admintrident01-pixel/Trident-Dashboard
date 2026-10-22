@@ -40,7 +40,7 @@ class RecycleTests(unittest.TestCase):
         new=schedule.save_settings(state,{'appointmentTypes':['Repair']})
         archived=recycle.capture(state,new,self.actor['email'])
         restored,_=recycle.action(archived,{'ids':['appointmentType:Delivery'],'action':'restore'},self.actor)
-        self.assertEqual(schedule.settings(restored)['appointmentTypes'],['Repair','Delivery'])
+        self.assertEqual(schedule.settings(restored)['appointmentTypes'],['Repair','Unspecified','Delivery'])
     def test_default_lunch_purge_does_not_regenerate(self):
         lunch=schedule.lunch_blocks(self.state,self.booking['date'])[0]
         state,cancelled=schedule.save(self.state,{**lunch,'action':'cancel'},self.actor)

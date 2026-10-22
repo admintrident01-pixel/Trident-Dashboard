@@ -1,6 +1,7 @@
 """Shared technician appointments with optimistic edits and overlap checks."""
 
 import copy, datetime as dt, re, uuid
+from urllib.parse import urlsplit
 
 from core import Problem
 
@@ -43,7 +44,19 @@ BOOKING_STATUS_LABELS={'confirmed':'Confirmed','action-needed':'Action needed','
 
 
 
-DEFAULT_TYPES=['Equipment repair','Equipment assessment','Delivery','Collection','Vehicle service','Client visit','Other']
+DEFAULT_TYPES=['Equipment repair','Equipment assessment','Delivery','Collection','Vehicle service','Client visit','Other','Unspecified']
+DEFAULT_CLIENT_SEARCH_URL='https://www.google.com/search?q={client}'
+
+def client_search_template(value):
+    if value=='':return value
+    if not isinstance(value,str) or len(value)>2000 or '{client}' not in value or re.search(r'[{}]',value.replace('{client}','')):raise Problem(400,'Use an http(s) search URL containing {client}, or leave it blank to hide client search.')
+    try:
+        url=urlsplit(value)
+        valid=url.scheme in ('http','https') and url.hostname and not url.username and not url.password and '{client}' not in url.netloc and not re.search(r'[\s\x00-\x1f\\]',value)
+        url.port
+    except (ValueError,TypeError):valid=False
+    if not valid:raise Problem(400,'Use an http(s) search URL without sign-in credentials; put {client} in its path or query.')
+    return value
 
 
 
@@ -55,6 +68,9 @@ def settings(state):
 
     result.setdefault('quickNotes',DEFAULT_QUICK_NOTES.copy())
     result.setdefault('typeDefaults',{})
+    result.setdefault('appointmentTypes',DEFAULT_TYPES.copy())
+    if not any(value.casefold()=='unspecified' for value in result['appointmentTypes']):result['appointmentTypes'].append('Unspecified')
+    result.setdefault('clientSearchUrlTemplate',DEFAULT_CLIENT_SEARCH_URL)
 
     staff=timesheets.settings(state)['technicians']
 
@@ -113,7 +129,8 @@ def save_settings(state,data):
         if kind not in cleaned:continue
         if not isinstance(value,dict) or not re.fullmatch(r'#[0-9a-fA-F]{6}',str(value.get('colour',''))) or type(value.get('duration')) is not int or not 15<=value['duration']<=1440 or value['duration']%15 or value.get('timing') not in ('fixed','flexible') or value.get('bookingStatus') not in BOOKING_STATUSES:raise Problem(400,'Use a colour, quarter-hour duration, timing and booking status for each type.')
         validated[kind]={k:value[k] for k in ('colour','duration','timing','bookingStatus')}
-    result['scheduleSettings']={'appointmentTypes':cleaned,'lunchStart':lunch_start,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated}
+    search_template=client_search_template(data.get('clientSearchUrlTemplate',settings(state)['clientSearchUrlTemplate']))
+    result['scheduleSettings']={**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
 
     return result
 
@@ -223,7 +240,7 @@ def read(state,date):
 
     names.sort(key=lambda name:types.get(name,'technician')=='office')
 
-    return {'date':date,'depotAddress':schedule_routes.configuration()['depot'],'routeTotals':schedule_routes.itinerary_totals(appointments,names),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
+    return {'date':date,'depotAddress':schedule_routes.configuration()['depot'],'routeTotals':schedule_routes.itinerary_totals(appointments,names),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
 
 
 
@@ -298,7 +315,7 @@ def save(state,data,user):
 
                      'client':'Lunch' if is_lunch else text(data.get('client'),'a client name',160),'address':'' if is_lunch else text(data.get('address'),'an address',500),
 
-                     'bookingStatus':booking_status,'type':text(data.get('type'),'an appointment type',120),'notes':str(data.get('notes','')).strip(),'cancelled':False}
+                     'bookingStatus':booking_status,'type':text(data.get('type',(old or {}).get('type','Unspecified')),'an appointment type',120),'notes':str(data.get('notes','')).strip(),'cancelled':False}
 
         if is_lunch: appointment['source']='lunch'
 
@@ -446,6 +463,9 @@ def save_travel(state,data,user):
     if action=='move_selection':return schedule_links.move_selection(state,data,user)
     if action=='travel_next':return schedule_links.travel_next(state,data,user)
     if action=='snap_gap':return schedule_links.snap_gap(state,data,user)
+    if action=='pack_gap':
+        import schedule_gap
+        return schedule_gap.pack_gap(state,data,user)
     if action in ('lock','link','link_block','move','recalculate') or action=='resize' and schedule_links.active(state):return schedule_links.save_control(state,data,user)
     candidates=travel_candidates(state,date)
     if action=='insert':

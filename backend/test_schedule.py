@@ -51,11 +51,11 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(api.call('/api/schedule-settings','POST',{'appointmentTypes':['Install']},token='tech')[0],403)
         self.assertEqual(api.call('/api/schedule-settings','POST',{'appointmentTypes':['Install']},match=False)[0],409)
         self.assertEqual(api.call('/api/schedule-settings','POST',{'appointmentTypes':['Install','Delivery']})[0],200)
-        self.assertEqual(api.call('/api/schedule-settings')[1]['appointmentTypes'],['Install','Delivery'])
+        self.assertEqual(api.call('/api/schedule-settings')[1]['appointmentTypes'],['Install','Delivery','Unspecified'])
         state,booking=schedule.save(self.state,self.booking,self.user)
         updated=schedule.save_settings(state,{'appointmentTypes':['New type']})
         self.assertEqual(updated['appointments'],state['appointments'])
-        self.assertEqual(schedule.read(updated,self.booking['date'])['appointmentTypes'],['New type'])
+        self.assertEqual(schedule.read(updated,self.booking['date'])['appointmentTypes'],['New type','Unspecified'])
         for types in [[],['One','one'],[''],['x'*121],'Not a list']:
             with self.assertRaises(Problem):schedule.save_settings(state,{'appointmentTypes':types})
     def test_default_lunch_moves_removes_and_restores_without_changing_other_days(self):

@@ -1,4 +1,4 @@
-import base64,io,json,logging,os
+import base64,io,json,logging,os,random,time,uuid
 
 from urllib.parse import parse_qs
 
@@ -128,6 +128,39 @@ class Application:
   if path=='/api/auth/request':reminders.deliver(self.store,self.local)
 
   return payload
+
+ def leave_request(self,revision,state,data,token,verified_email,submitted):
+  # The browser's global ETag can be hours old. Rebase this scoped command on
+  # current state; the CAS still atomically protects leave, permissions and mail.
+  # Legacy clients receive a stable key for this request's internal retries.
+  data={**data,'operationId':data.get('operationId',uuid.uuid4().hex)}
+  for attempt in range(7):
+   if attempt:
+    try:revision,state=self.store.read()
+    except Problem:raise
+    except Exception:
+     logging.warning('Leave save could not read the current register; retrying.')
+     if attempt<6:time.sleep(random.uniform(.025,min(.25,.025*2**attempt)))
+     continue
+   # Recheck session revocation, current role and technician assignment for
+   # every candidate write. The external identity was verified at request entry.
+   user=accounts.resolve(state,token,lambda _:verified_email)
+   if submitted:accounts.own(user,data.get('technician'))
+   else:accounts.admin(user)
+   result,entry,replayed=leave.operation(state,data,user['email'],submitted)
+   if replayed:return revision,state,entry,True
+   result=recycle.capture(state,result,user['email'])
+   try:committed=self.store.commit(revision,result)
+   except Problem:raise
+   except Exception:
+    # A database timeout may happen after commit. The next read recovers the
+    # receipt; racing retries share the same key and cannot create two events.
+    committed=False;logging.warning('Leave save outcome uncertain; checking its receipt.')
+   if committed:
+    if schedule_live.configuration()[0] and schedule_history.etag(state)!=schedule_history.etag(result):schedule_live.notify()
+    return revision+1,result,entry,False
+   if attempt<6:time.sleep(random.uniform(.025,min(.25,.025*2**attempt)))
+  raise Problem(503,'Leave saving is busy or its result could not be confirmed. Your details are kept. Try the same save again; it will not create a duplicate.')
 
  def __call__(self,environ,start_response):
 
@@ -308,7 +341,7 @@ class Application:
       p=self.body(environ);before=state
       if p.get('action') in ('undo','redo'):state=schedule_history.apply(state,email,schedule.day(p.get('date')),p['action'])
       else:
-       state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
+       state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','pack_gap':'Close schedule gap','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
       self.commit(revision,state,actor=email,before=before);payload=schedule_history.read(state,p['date'],user);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(state)))
      elif path=='/api/schedule-notes' and method=='GET':payload=schedule.schedule_notes.read(state)
      elif path=='/api/schedule-notes' and method=='POST':
@@ -422,6 +455,15 @@ class Application:
 
      elif path=='/api/leave' and method=='GET':payload={'requests':[r for r in state.get('leaveRequests',{}).values() if user['role']=='admin' or r['technician']==user['technician']],'technicians':[t for t in timesheets.settings(state)['technicians'] if user['role']=='admin' or t['name']==user['technician']]}
 
+     elif path in ('/api/leave','/api/leave-decision') and method=='POST':
+      saved_revision,saved_state,entry,replayed=self.leave_request(revision,state,self.body(environ),auth[7:],email,path=='/api/leave')
+      payload={'saved':True,'request':entry,'replayed':replayed}
+      try:
+       if reminders.mail_mode(self.local)!='unconfigured':reminders.deliver(self.store,self.local)
+       saved_revision,_=self.store.read()
+      except Exception:logging.exception('Leave saved; queued notification delivery will be checked by the scheduler.')
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{saved_revision}"'))
+
      elif path=='/api/vehicles' and method=='GET':payload={'vehicles':vehicles.fleet(state),'activeVehicles':vehicles.active_fleet(state),'removedVehicles':list(state.get('removedVehicles',{}).values()),'checks':list(state.get('vehicleChecks',{}).values()),'technicians':timesheets.settings(state)['technicians'],'checklist':vehicles.CHECKLIST,'colourSettings':vehicles.colour_settings(state)}
 
      elif path=='/api/timesheets' and method=='GET':
@@ -442,7 +484,7 @@ class Application:
 
       payload=self.objects.get(key);mime='application/pdf'
 
-     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/timesheet-drafts','/api/staff-settings','/api/vehicles','/api/vehicle-order','/api/vehicle-checks','/api/leave','/api/leave-decision','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
+     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/timesheet-drafts','/api/staff-settings','/api/vehicles','/api/vehicle-order','/api/vehicle-checks','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
 
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh and try again.')
 
@@ -476,22 +518,6 @@ class Application:
        try:p=json.loads(body)
        except Exception:raise Problem(400,'Invalid time sheet correction.')
        state,entry=timesheets.edit_submission(state,p,email);payload={'saved':True,'timesheet':entry,'message':'Updated time sheet submitted. Labour payables now uses these corrected values for the week.'}
-
-      elif path in ('/api/leave','/api/leave-decision'):
-
-       try:p=json.loads(body)
-
-       except Exception:raise Problem(400,'Invalid leave request.')
-
-       if path=='/api/leave':
-
-        accounts.own(user,p.get('technician'));state,entry=leave.create(state,p);entry['submittedBy']=email
-
-       else:state,entry=leave.decide(state,p,email)
-
-       reminders.queue_leave_notifications(state,entry,submitted=path=='/api/leave')
-
-       payload={'saved':True,'request':entry}
 
       elif path in ('/api/vehicles','/api/vehicle-order','/api/vehicle-checks'):
 
@@ -585,12 +611,6 @@ class Application:
        raise Problem(409,'A newer change was saved. Return Home and reopen the quote.')
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
-
-      if path in ('/api/leave','/api/leave-decision'):
-       try:
-        if reminders.mail_mode(self.local)!='unconfigured':reminders.deliver(self.store,self.local)
-       except Exception:logging.exception('Leave saved; queued notification delivery will be checked by the scheduler.')
-       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{self.store.read()[0]}"'))
 
       if schedule_live.configuration()[0] and schedule_history.etag(mutation_before)!=schedule_history.etag(state):schedule_live.notify()
 

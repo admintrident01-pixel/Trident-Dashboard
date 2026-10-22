@@ -1,7 +1,38 @@
-import copy,datetime,decimal,re,uuid
+import copy,datetime,decimal,hashlib,json,re,uuid
 from core import Problem
 
 TYPES=('Annual leave','Sick leave','Other')
+
+def operation_receipt(state,data,actor,submitted):
+ """A durable receipt lets the same command recover an uncertain response.
+
+ Receipts survive cancellation and permanent removal. Keeping them separate from
+ editable leave records also prevents an old retry from creating leave again.
+ """
+ key=data.get('operationId')
+ if not isinstance(key,str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,100}',key):raise Problem(400,'Invalid leave save identity. Reopen the leave form and try again.')
+ identity=hashlib.sha256((actor+'\0'+key).encode()).hexdigest()
+ try:fingerprint=hashlib.sha256(json.dumps({'submitted':submitted,'data':{k:v for k,v in data.items() if k!='operationId'}},sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+ except (TypeError,ValueError):raise Problem(400,'Invalid leave request.')
+ receipt=state.get('leaveOperations',{}).get(identity)
+ if not receipt:return identity,fingerprint,None
+ if receipt['fingerprint']!=fingerprint:raise Problem(409,'This leave save was already completed with different details. Reload saved requests before starting another request.')
+ entry=state.get('leaveRequests',{}).get(receipt['requestId'])
+ if not entry:raise Problem(409,'This leave save was already completed, and its request was later removed. Reload saved requests before starting another request.')
+ return identity,fingerprint,entry
+
+def operation(state,data,actor,submitted):
+ identity,fingerprint,replayed=operation_receipt(state,data,actor,submitted)
+ if replayed:return state,replayed,True
+ if submitted:
+  result,entry=create(state,data);entry['submittedBy']=actor
+ else:result,entry=decide(state,data,actor)
+ # Queue mail and the receipt in the same atomic register write as the leave.
+ import reminders
+ reminders.queue_leave_notifications(result,entry,submitted=submitted)
+ result.setdefault('leaveOperations',{})[identity]={'fingerprint':fingerprint,'requestId':entry['id'],'revision':entry['revision']}
+ return result,entry,False
+
 def value(data,key,label,limit,required=False):
  v=data.get(key,'')
  if not isinstance(v,str) or len(v)>limit or (required and not v.strip()):raise Problem(400,f'Enter a valid {label}.')

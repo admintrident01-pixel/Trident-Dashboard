@@ -67,9 +67,8 @@ class LeaveNotifications(unittest.TestCase):
   with patch.object(reminders,'deliver',side_effect=RuntimeError('delivery unavailable')):entry=self.submit()
   self.assertEqual(self.api.store.state['leaveRequests'][entry['id']]['status'],'Pending')
   self.assertTrue(all(m['status']=='queued' for m in self.mails()))
- def test_stale_submission_has_no_mail_or_leave_change(self):
-  before=copy.deepcopy(self.state)
-  self.assertEqual(self.api.call('/api/leave','POST',self.request,token='tech',match=False)[0],409)
-  self.assertEqual(before,self.api.store.state)
+ def test_stale_global_revision_does_not_block_submission(self):
+  self.assertEqual(self.api.call('/api/leave','POST',self.request,token='tech',match=False)[0],200)
+  self.assertEqual(len(self.api.store.state['leaveRequests']),1);self.assertEqual(len(self.mails()),2)
 
 if __name__=='__main__':unittest.main()
