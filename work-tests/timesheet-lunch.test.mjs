@@ -8,6 +8,9 @@ assert.equal(context.payableHours({status:'Work',method:'direct',hours:8,unpaidL
 assert.equal(context.payableHours({status:'Work',method:'times',start:'07:30',finish:'16:00',unpaidLunch:true}),8)
 assert.equal(context.payableHours({status:'Annual leave',method:'direct',hours:8,unpaidLunch:true}),8)
 assert.equal(context.payableHours({status:'Work',method:'direct',hours:0,unpaidLunch:true}),0)
+assert.equal(context.payableHours({status:'Work',method:'direct',hours:4.5,unpaidLunch:true,leaveHours:4}),8)
+assert.equal(context.payableHours({status:'Work',method:'times',start:'08:00',finish:'12:00',unpaidLunch:false,leaveHours:4}),8)
+assert.equal(context.payableHours({status:'Annual leave',method:'direct',hours:4,leaveHours:4}),4)
 const fields={'.status':{value:'Work'},'.mode':{value:'direct'},'.direct':{},'.start':{},'.finish':{}}
 const row={querySelector:s=>fields[s],querySelectorAll:()=>[fields['.start'],fields['.finish']]}
 context.calc=()=>{};vm.runInContext(fn('modeChange')+fn('timeEntry'),context)

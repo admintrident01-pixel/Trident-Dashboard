@@ -32,14 +32,16 @@ def week_rows(state, week):
         for i,date in enumerate(dates):
             entry=sheet['days'][i] if sheet else {'status':'Work','hours':0}
             request=approved.get((key,date))
+            if not request and entry.get('leave'):request=entry['leave']
             status=request['leaveType'] if request else entry['status']
             hours=float(request['hoursPerDay'] if request else entry['hours'])
             work=hours if status=='Work' else 0
+            if request and request.get('startTime') and entry['status']=='Work':work=float(entry['hours'])
             sick=hours if status=='Sick leave' else 0
             annual=hours if status=='Annual leave' else 0
             other=hours if status=='Other' else 0
             other_description=(request if request else entry).get('other','') if status=='Other' else ''
-            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'otherDescription':other_description,'paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
+            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'otherDescription':other_description,'leaveFrom':request.get('startTime','') if request else '','leaveTo':request.get('endTime','') if request else '','paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
         rows.append({'name':name,'submitted':bool(sheet),'days':days,'chargedHours':[charged.get(key,{}).get('days',{}).get(date) for date in dates]})
     return rows
 

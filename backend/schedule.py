@@ -22,9 +22,9 @@ def leave_blocks(state,date):
 
         if date not in request['dates']: continue
 
-        duration=int(round(request['hoursPerDay']*60))
+        duration=(leave.time_minutes(request['endTime'],True)-leave.time_minutes(request['startTime'])) if request.get('startTime') else int(round(request['hoursPerDay']*60))
 
-        start_minute=min(default_start,1440-duration)
+        start_minute=leave.time_minutes(request['startTime']) if request.get('startTime') else min(default_start,1440-duration)
 
         blocks.append({'id':'leave:'+request['id']+':'+date,'source':'leave','date':date,'technician':request['technician'],
 

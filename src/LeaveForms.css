@@ -1,0 +1,13 @@
+.leave-form.vehicle-form-card{padding:16px}
+.leave-form .leave-form-heading{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.leave-form .leave-form-heading h2,.leave-form .leave-total{margin:0}
+.leave-form .leave-form-heading h2{font-size:18px;line-height:1.25}
+.leave-form .leave-total{font-size:14px;color:#456379;white-space:nowrap}
+.leave-form .leave-field-grid{gap:10px 16px;margin-bottom:10px}
+.leave-form .vehicle-field{margin-bottom:0;font-size:13px}
+.leave-form .vehicle-field input,.leave-form .vehicle-field select,.leave-form .vehicle-field textarea{margin-top:5px}
+.leave-form .vehicle-field input,.leave-form .vehicle-field select{height:32px;min-height:32px;padding:5px 8px;font-size:13px}
+.leave-form .leave-weekends{margin:0;align-self:center;gap:8px;font-size:13px}
+.leave-form .report-hint{font-size:12px;line-height:1.45;margin:8px 0}
+.leave-form .settings-actions{margin-top:10px}
+@media(max-width:520px){.leave-form .leave-form-heading{align-items:flex-start;flex-direction:column;gap:4px}.leave-form .leave-field-grid{grid-template-columns:1fr}}

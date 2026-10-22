@@ -48,6 +48,11 @@ def save(state,data,user):
         gross=hours if row['method']=='direct' else decimal.Decimal(max(0,timesheets.minutes(row['finish'])-timesheets.minutes(row['start'])))/60 if row['start'] and row['finish'] else decimal.Decimal(0)
         total+=max(decimal.Decimal(0),gross-(decimal.Decimal('0.5') if row['unpaidLunch'] else 0));cleaned.append(row)
     stamp=dt.datetime.now(dt.timezone.utc).isoformat()
+    import leave
+    timed={leave_date:r for r in leave.approved(state) if r['technician'].casefold()==name.casefold() and r.get('startTime') for leave_date in r['dates']}
+    for index,row in enumerate(cleaned):
+        approved=timed.get((date+dt.timedelta(days=index)).isoformat())
+        if row['status']=='Work' and approved:total+=decimal.Decimal(str(approved['hoursPerDay']))
     entry={'id':old['id'] if old else str(uuid.uuid4()),'revision':old['revision']+1 if old else 1,'owner':old['owner'] if old else user['email'],'technician':name,'weekStart':week,'signature':timesheets.text(data.get('signature',''),'signature',160),'notes':timesheets.text(data.get('notes',''),'weekly notes',4000),'days':cleaned,'total':float(total),'createdAt':old['createdAt'] if old else stamp,'updatedAt':stamp,'isDraft':True}
     result=copy.deepcopy(state);result.setdefault('timesheetDrafts',{})[entry['id']]=entry
     return result,entry

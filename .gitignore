@@ -16,3 +16,6 @@ credentials*.json
 
 .local-data/
 .local-runtime/
+.dev.vars
+.dev.vars.*
+.wrangler/

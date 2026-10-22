@@ -476,7 +476,7 @@ async function deleteQuote(q){
  if(confirmingQuote)return;
  const number=Number(q.data.fields.number),label=q.state==='Draft'?'draft':'quote';
  if(!confirm(`Delete ${label} #${number} for ${q.data.fields.client||q.data.fields.to||'Unnamed client'}?\n\nIts saved draft and PDF will be removed. Quote number ${number} will remain reserved.`))return;
- const locked=[...document.querySelectorAll('#homePage button,header.app button,.editor input,.editor select,.editor textarea,.editor button')].map(el=>[el,el.disabled]);locked.forEach(([el])=>{if(!automatic||el.closest('header.app'))el.disabled=true});confirmingQuote=true;
+ const locked=[...document.querySelectorAll('#homePage button,header.app button,.editor input,.editor select,.editor textarea,.editor button')].map(el=>[el,el.disabled]);locked.forEach(([el])=>{el.disabled=true});confirmingQuote=true;
  quoteConfirmationStatus(`Deleting ${label} ${number}…`);
  try{
   const file=await readLocalWorkbook(),reg=parseQuoteRegister(await readXlsx(file));

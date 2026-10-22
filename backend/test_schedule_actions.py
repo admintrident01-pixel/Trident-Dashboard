@@ -1,5 +1,5 @@
 import copy, unittest
-import schedule, test_accounts
+import schedule, schedule_history, test_accounts
 from core import Problem
 
 class BookingActionsTests(unittest.TestCase):
@@ -51,7 +51,7 @@ class BookingActionsTests(unittest.TestCase):
         api.store.state['users']['bala@example.nz']['verified']=True
         status,data,headers=api.call('/api/schedule','POST',payload)
         self.assertEqual(status,200);self.assertIn('previews',data['message'])
-        self.assertEqual(headers['ETag'],f'"{api.store.revision}"')
+        self.assertEqual(headers['ETag'],schedule_history.etag(api.store.state))
         self.assertTrue(all(m['status']=='preview' for m in api.store.state['mailOutbox'].values()))
 
     def test_save_uses_one_read_returns_schedule_and_keeps_cas(self):
@@ -62,7 +62,7 @@ class BookingActionsTests(unittest.TestCase):
             self.assertEqual(status,200)
             self.assertEqual(read.call_count,1)
             self.assertIn(data['appointment'],data['schedule']['appointments'])
-            self.assertEqual(headers['ETag'],f'"{api.store.revision}"')
+            self.assertEqual(headers['ETag'],schedule_history.etag(api.store.state))
         appointment=data['appointment']
         with patch.object(api.store,'commit',return_value=False):
             status,_,_=api.call('/api/schedule','POST',{**appointment,'start':'10:00'})

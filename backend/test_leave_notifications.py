@@ -26,6 +26,12 @@ class LeaveNotifications(unittest.TestCase):
  def test_admin_submits_on_behalf_receipt_goes_to_technician(self):
   self.state['reminderSettings']['leaveRecipients']=[];self.submit('admin')
   self.assertEqual([m['to'] for m in self.mails()],['tech@example.nz'])
+ def test_response_token_includes_mail_delivery_and_can_approve_without_refresh(self):
+  status,body,headers=self.api.call('/api/leave','POST',self.request,token='admin')
+  self.assertEqual(status,200);self.assertEqual(headers['ETag'],f'"{self.api.store.revision}"')
+  entry=body['request'];payload={'id':entry['id'],'revision':entry['revision'],'status':'Approved','decisionNotes':''}
+  with patch('schedule_live.configuration',return_value=('x'*32,'https://example.test')),patch('schedule_live.notify') as notify:
+   self.assertEqual(self.api.call('/api/leave-decision','POST',payload)[0],200);notify.assert_called_once()
  def test_approval_and_rejection_reason_and_retry(self):
   for status in ('Approved','Declined'):
    with self.subTest(status=status):

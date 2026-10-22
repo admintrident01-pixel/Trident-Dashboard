@@ -35,6 +35,7 @@ def day_annotations(day):
  for kind,label in [('sick','Sick'),('annual','Annual'),('other','Other')]:
   if day[kind]:labels.append(label+' '+weekly_report.number(day[kind])+'h')
  if day.get('otherDescription'):labels.append(day['otherDescription'])
+ if day.get('leaveFrom'):labels.append('Leave '+day['leaveFrom']+'–'+day['leaveTo'])
  if day['note']:labels.append(day['note'])
  return '\n'.join(labels)
 

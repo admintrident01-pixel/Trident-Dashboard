@@ -2,6 +2,12 @@
 import copy,datetime as dt,hashlib,json
 from core import Problem
 COLLECTIONS=('appointments','travelBlocks','scheduleLinks','scheduleHiddenTravel')
+
+def etag(state):
+ # Include versions and history so a change followed by a reversal still refreshes clients.
+ keys=COLLECTIONS+('deletedLunchIds','leaveRequests','staffSettings','scheduleSettings','timeSettings','scheduleNoteSeries','scheduleHistory')
+ payload=json.dumps({k:state.get(k,{}) for k in keys},sort_keys=True,separators=(',',':'))
+ return '"schedule-'+hashlib.sha256(payload.encode()).hexdigest()+'"'
 def clean(value):
  if isinstance(value,dict):return {k:clean(v) for k,v in value.items() if k not in ('version','updatedAt','updatedBy','createdAt')}
  if isinstance(value,list):return [clean(v) for v in value]

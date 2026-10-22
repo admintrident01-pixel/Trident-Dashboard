@@ -21,6 +21,7 @@ import labour
 import schedule
 import office_files
 import schedule_history
+import schedule_live
 
 import staff_setup
 
@@ -75,6 +76,9 @@ class Application:
 
  def commit(self,revision,state,actor='',capture=True,before=None):
 
+  live_enabled=bool(schedule_live.configuration()[0])
+  live_before=before
+
   if capture:
 
    if before is None:
@@ -85,7 +89,13 @@ class Application:
 
    state=recycle.capture(before,state,actor)
 
+   live_before=before
+
+  elif live_enabled and live_before is None:_,live_before=self.store.read()
+
   if not self.store.commit(revision,state):raise Problem(409,'Another change was saved. Refresh and try again.')
+
+  if live_enabled and live_before is not None and schedule_history.etag(live_before)!=schedule_history.etag(state):schedule_live.notify()
 
  def account_request(self,environ):
 
@@ -213,7 +223,8 @@ class Application:
 
      if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/weekly-report-excel','/api/report-periods-excel','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
-     if path=='/api/office-files' and method=='GET':payload=office_files.listing(state)
+     if path=='/api/schedule/live-ticket' and method=='GET':payload=schedule_live.ticket()
+     elif path=='/api/office-files' and method=='GET':payload=office_files.listing(state)
      elif path=='/api/office-files/content' and method=='GET':payload=office_files.read(state,parse_qs(environ.get('QUERY_STRING','')).get('id',[''])[0],self.objects)
      elif path=='/api/office-files' and method=='POST':
       accounts.admin(user)
@@ -264,11 +275,15 @@ class Application:
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
 
-     elif path=='/api/schedule' and method=='GET':payload={'unchanged':True} if environ.get('HTTP_IF_NONE_MATCH')==f'"{revision}"' and not schedule.schedule_links.active(state) else schedule_history.read(state,parse_qs(environ.get('QUERY_STRING','')).get('date',[''])[0],user)
+     elif path=='/api/schedule' and method=='GET':
+      tag=schedule_history.etag(state);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',tag))
+      payload={'unchanged':True} if environ.get('HTTP_IF_NONE_MATCH') in (tag,f'"{revision}"') and not schedule.schedule_links.active(state) else schedule_history.read(state,parse_qs(environ.get('QUERY_STRING','')).get('date',[''])[0],user)
+      editing=parse_qs(environ.get('QUERY_STRING','')).get('appointment',[''])[0]
+      if editing and user.get('role')=='admin' and not payload.get('unchanged'):payload['editingAppointment']=state.get('appointments',{}).get(editing)
 
      elif path=='/api/schedule' and method=='POST':
 
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh the schedule before trying again.')
+      if environ.get('HTTP_IF_MATCH') not in (f'"{revision}"',schedule_history.etag(state)):raise Problem(409,'The schedule changed while you were editing. Your edit has been kept; refresh to review the latest schedule.')
 
       p=self.body(environ);before=state;state,appointment=schedule.save(state,p,user);mail_ids=[]
 
@@ -286,15 +301,15 @@ class Application:
 
        payload['message']='Email previews saved; no emails sent.' if self.local else f"Appointment saved. Emails sent: {statuses.count('sent')}; failed: {statuses.count('failed')}; pending: {len(statuses)-statuses.count('sent')-statuses.count('failed')}."
 
-      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{saved_revision}"'))
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(current if mail_ids else state)))
 
      elif path=='/api/schedule/travel' and method=='POST':
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'The schedule changed. Refresh and try again.')
+      if environ.get('HTTP_IF_MATCH') not in (f'"{revision}"',schedule_history.etag(state)):raise Problem(409,'The schedule changed. Refresh and try again.')
       p=self.body(environ);before=state
       if p.get('action') in ('undo','redo'):state=schedule_history.apply(state,email,schedule.day(p.get('date')),p['action'])
       else:
        state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
-      self.commit(revision,state,actor=email,before=before);payload=schedule_history.read(state,p['date'],user);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      self.commit(revision,state,actor=email,before=before);payload=schedule_history.read(state,p['date'],user);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(state)))
      elif path=='/api/schedule-notes' and method=='GET':payload=schedule.schedule_notes.read(state)
      elif path=='/api/schedule-notes' and method=='POST':
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'The schedule changed. Refresh and try again.')
@@ -550,7 +565,8 @@ class Application:
 
        state,entry,upload,garbage=save_quote(state,p,self.objects,user);payload={'saved':True,'quote':entry}
 
-      state=recycle.capture(self.store.read()[1],state,email)
+      mutation_before=self.store.read()[1]
+      state=recycle.capture(mutation_before,state,email)
 
       try:committed=self.store.commit(revision,state)
 
@@ -574,6 +590,9 @@ class Application:
        try:
         if reminders.mail_mode(self.local)!='unconfigured':reminders.deliver(self.store,self.local)
        except Exception:logging.exception('Leave saved; queued notification delivery will be checked by the scheduler.')
+       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{self.store.read()[0]}"'))
+
+      if schedule_live.configuration()[0] and schedule_history.etag(mutation_before)!=schedule_history.etag(state):schedule_live.notify()
 
       for key in garbage:
 

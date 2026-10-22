@@ -1,5 +1,5 @@
 import copy, unittest
-import schedule, staff_setup, recycle, accounts, leave, timesheets, test_accounts
+import schedule, schedule_history, staff_setup, recycle, accounts, leave, timesheets, test_accounts
 from core import Problem
 
 class TravelStaffTests(unittest.TestCase):
@@ -71,4 +71,4 @@ class TravelStaffTests(unittest.TestCase):
         self.assertEqual(api.call('/api/schedule/travel','POST',payload,token='tech')[0],403)
         self.assertEqual(api.call('/api/schedule/travel','POST',payload,match=False)[0],409)
         status,data,headers=api.call('/api/schedule/travel','POST',payload)
-        self.assertEqual(status,200);self.assertEqual(data['travelBlocks'][0]['duration'],15);self.assertEqual(headers['ETag'],f'"{api.store.revision}"')
+        self.assertEqual(status,200);self.assertEqual(data['travelBlocks'][0]['duration'],15);self.assertEqual(headers['ETag'],schedule_history.etag(api.store.state))

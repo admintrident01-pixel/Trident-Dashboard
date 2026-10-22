@@ -56,7 +56,7 @@ export default function App(){
 
   if(response.status===401||response.status===403&&data.error==='Your account is not active. Contact an administrator.'){setSession(null);setDocument('');setTimesheetDocument('');setPage('home')}
 
-  if(!response.ok)throw Error(data.error||'Unable to complete this request.')
+  if(!response.ok)throw Object.assign(Error(data.error||'Unable to complete this request.'),{status:response.status})
 
   return {data,etag:response.headers.get('ETag')}
 
@@ -173,7 +173,7 @@ export default function App(){
   {page==='office'&&<Suspense fallback={<p className="module-loading" role="status">Opening shared resources…</p>}><OfficeFiles request={request} isAdmin={isAdmin}/></Suspense>}
   {isAdmin&&page==='stock'&&<StockPage request={request}/>}
   {isAdmin&&page==='reports'&&<WeeklyReport request={request}/>}
-  {(page==='schedule'||visitedPages.schedule)&&<section hidden={page!=='schedule'}><TechSchedule request={request} isAdmin={isAdmin} active={page==='schedule'}/></section>}
+  {(page==='schedule'||visitedPages.schedule)&&<section hidden={page!=='schedule'}><TechSchedule request={request} isAdmin={isAdmin} active={page==='schedule'} draftOwner={session.email}/></section>}
 
   {(page==='vehicles'||visitedPages.vehicles)&&<section hidden={page!=='vehicles'}><VehicleChecks onManage={()=>{setManagementSection('fleet');navigate('settings')}} isAdmin={isAdmin} technician={session.technician} request={request} active={page==='vehicles'}/></section>}
 

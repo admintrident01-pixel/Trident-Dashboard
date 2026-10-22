@@ -232,3 +232,13 @@
 .trident-portal .tech-schedule .schedule-appointment:has(.schedule-booking-controls):is(:hover,:focus-within,.is-selected)>span{padding-right:20px}
 
 .trident-portal .tech-schedule .schedule-appointment.recurring-note{background:#f0eafa;color:#493064;border:1px solid #ad91c9;border-left:3px solid #80609f;padding-left:5px;cursor:help}
+.schedule-live-label{color:#456379;font-size:11px;white-space:nowrap;margin-right:4px}
+.schedule-draft-list{border:1px solid #c9d8e9;border-radius:6px;background:#fff8e8;padding:7px 10px;margin:0 0 6px;font-size:12px}
+.schedule-draft-list summary{cursor:pointer;font-weight:600}
+.schedule-draft-list>div{display:flex;align-items:center;gap:6px;padding-top:6px}
+.schedule-draft-list>div>span{flex:1;overflow-wrap:anywhere}
+.schedule-edit-conflict{padding:12px;border:1px solid #d99b34;border-radius:6px;background:#fff8e8;margin:10px 0;grid-column:1/-1}
+.schedule-edit-conflict h3{margin:0 0 6px}.schedule-edit-conflict p{margin:6px 0}
+.schedule-edit-conflict table{width:100%;table-layout:fixed;overflow-wrap:anywhere;margin-bottom:10px}
+.schedule-edit-conflict th,.schedule-edit-conflict td{text-align:left;padding:6px;vertical-align:top}
+.schedule-edit-conflict button{margin:3px}

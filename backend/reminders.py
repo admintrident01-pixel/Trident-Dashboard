@@ -301,6 +301,7 @@ def queue_leave_notifications(state, entry, submitted=False):
     link='https://trident-dashboard.admintrident01.workers.dev/#leave'
     dates=f"{entry['startDate']} to {entry['endDate']}"
     summary=f"Technician: {entry['technician']}\nDates: {dates}\nHours per day: {entry['hoursPerDay']:g}\nTotal hours: {entry['totalHours']:g}"
+    if entry.get('startTime'):summary+=f"\nTime each day: {entry['startTime']} to {entry['endTime']}"
     event='submitted' if submitted else entry['status'].lower()
     key=f"leave:{entry['id']}:{entry['revision']}:{event}"
     if submitted:
