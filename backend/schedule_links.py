@@ -21,7 +21,7 @@ def travel_blocks(state,date):
         locked=saved.get('locked',True)
         linked=saved.get('linked',True)
         route=routes.get((c.get('origin',''),c.get('destination','')),{}) if locked else {}
-        duration=route.get('duration') if locked else saved.get('duration',15)
+        duration=route.get('defaultDuration',route.get('duration')) if locked else saved.get('duration',15)
         if duration is None:duration=saved.get('duration',15)
         if duration==0:continue
         start=c['edge']-duration if c['side']=='before' else c['edge']
@@ -35,6 +35,7 @@ def travel_blocks(state,date):
         barriers=s.leave_blocks(state,date)+s.schedule_notes.blocks(state,date)+s.lunch_blocks(state,date)
         if not linked:barriers+=s.read_without_travel(state,date)
         if any(s.overlaps(block,b) for b in barriers):block['routeConflict']=True
+        if route.get('locationMissing'):block['routeLocationMissing']=True
         rows.append(block)
     return rows
 

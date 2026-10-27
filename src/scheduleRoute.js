@@ -4,6 +4,7 @@ export function wholeRoute(appointments,technician,depot,travelBlocks=[]){
  const bookings=appointments.filter(a=>!a.cancelled&&!a.source&&assignedTechs(a).includes(technician)).slice().sort((a,b)=>timeMinutes(a.start)-timeMinutes(b.start)||a.id.localeCompare(b.id))
  if(!bookings.length)return {error:'No appointments for this technician on this day.'}
  if(!depot)return {error:'Set the depot address before showing the route.'}
+ if(travelBlocks.some(b=>b.technician===technician&&b.routeLocationMissing))return {error:'Add a confirmed location to every appointment before showing the whole route. Placeholder locations are not sent to Google.'}
  if(bookings.some(a=>!a.address?.trim()))return {error:'Add an address to every appointment before showing the whole route.'}
  const stops=[depot],parts=[]
  for(const booking of bookings){

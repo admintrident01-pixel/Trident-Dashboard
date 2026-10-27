@@ -1,5 +1,5 @@
 """Server-only routing configuration and short-lived route estimates."""
-import json, math, os, time, urllib.request, urllib.error, threading
+import json, math, os, re, time, urllib.request, urllib.error, threading
 from pathlib import Path
 
 _cache={}
@@ -16,7 +16,16 @@ def configuration():
 def rounded_minutes(seconds):
     return max(0,math.ceil(float(seconds)/900)*15)
 
+def missing_location(value):
+    if not isinstance(value,str) or not value.strip():return True
+    value=' '.join(re.sub(r'[^a-z0-9]+',' ',value.casefold()).split())
+    placeholders={'','tbc','t b c','tba','t b a','tbd','t b d','to be confirmed','to be advised','to be determined','unknown','not known','not confirmed','not provided','not supplied','not available','none','nil','na','n a','no address','no location','no fixed address'}
+    return value in placeholders or any(value.startswith(label+' ') and value[len(label)+1:] in placeholders for label in ('address','location','site','destination','client address'))
+
 def estimate(origin,destination,force=False):
+    # Check before cache/config/provider lookup: old guessed routes must never win.
+    if missing_location(origin) or missing_location(destination):
+        return {'error':'Location not confirmed. Default travel is 0.25 hours; add a real address to calculate it.','defaultDuration':15,'locationMissing':True}
     if force:
         with _lock:_itinerary_cache.clear()
     config=configuration()
