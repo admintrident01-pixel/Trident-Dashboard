@@ -252,7 +252,7 @@ class Application:
 
      headers.append(('ETag',f'"{revision}"'))
 
-     admin_paths=('/api/schedule-notes','/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete','/api/vehicle-order')
+     admin_paths=('/api/schedule/header-preview','/api/schedule-notes','/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete','/api/vehicle-order')
 
      if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/weekly-report-excel','/api/report-periods-excel','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
@@ -336,12 +336,17 @@ class Application:
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(current if mail_ids else state)))
 
+     elif path=='/api/schedule/header-preview' and method=='POST':
+      if environ.get('HTTP_IF_MATCH')!=schedule_history.etag(state):raise Problem(409,'The schedule changed. Review the latest schedule.')
+      import schedule_release
+      payload=schedule_release.header_preview(state,self.body(environ),user)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(state)))
      elif path=='/api/schedule/travel' and method=='POST':
       if environ.get('HTTP_IF_MATCH') not in (f'"{revision}"',schedule_history.etag(state)):raise Problem(409,'The schedule changed. Refresh and try again.')
       p=self.body(environ);before=state
       if p.get('action') in ('undo','redo'):state=schedule_history.apply(state,email,schedule.day(p.get('date')),p['action'])
       else:
-       state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','pack_gap':'Close schedule gap','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
+       state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'swap_headers':'Reassign technician headers','workshop_travel':'Workshop travel','move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','pack_gap':'Close schedule gap','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
       self.commit(revision,state,actor=email,before=before);payload=schedule_history.read(state,p['date'],user);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(state)))
      elif path=='/api/schedule-notes' and method=='GET':payload=schedule.schedule_notes.read(state)
      elif path=='/api/schedule-notes' and method=='POST':

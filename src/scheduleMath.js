@@ -1,6 +1,11 @@
 export const timeMinutes=value=>Number(value.slice(0,2))*60+Number(value.slice(3,5))
 export const timeText=value=>`${String(Math.floor(value/60)).padStart(2,'0')}:${String(value%60).padStart(2,'0')}`
 export const snapMinutes=value=>Math.round(value/15)*15
+export function pointerMinute(range,rect,point,vertical=true){
+ const coordinate=vertical?point.y:point.x,origin=vertical?rect.top:rect.left,size=vertical?rect.height:rect.width
+ if(!Number.isFinite(coordinate)||!Number.isFinite(origin)||!Number.isFinite(size)||size<=0||!Number.isFinite(range.start)||!Number.isFinite(range.end)||range.end<=range.start)throw Error('Choose a visible schedule time.')
+ return Math.min(1425,range.end-15,Math.max(0,range.start,snapMinutes(range.start+(coordinate-origin)/size*(range.end-range.start))))
+}
 export function moveAppointment(original,delta,mode){
  const start=timeMinutes(original.start),end=start+original.duration
  if(mode==='end')return {...original,duration:Math.min(1440-start,Math.max(15,original.duration+snapMinutes(delta)))}

@@ -1,7 +1,7 @@
 """Recoverable schedule edits, scoped to the signed-in administrator and day."""
 import copy,datetime as dt,hashlib,json
 from core import Problem
-COLLECTIONS=('appointments','travelBlocks','scheduleLinks','scheduleHiddenTravel')
+COLLECTIONS=('appointments','travelBlocks','scheduleLinks','scheduleHiddenTravel','scheduleColumnOrders')
 
 def etag(state):
  # Include versions and history so a change followed by a reversal still refreshes clients.

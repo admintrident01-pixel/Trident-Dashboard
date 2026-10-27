@@ -71,6 +71,7 @@ def settings(state):
     result.setdefault('appointmentTypes',DEFAULT_TYPES.copy())
     if not any(value.casefold()=='unspecified' for value in result['appointmentTypes']):result['appointmentTypes'].append('Unspecified')
     result.setdefault('clientSearchUrlTemplate',DEFAULT_CLIENT_SEARCH_URL)
+    result.setdefault('workshopAddress',schedule_routes.configuration()['depot'])
 
     staff=timesheets.settings(state)['technicians']
 
@@ -130,7 +131,8 @@ def save_settings(state,data):
         if not isinstance(value,dict) or not re.fullmatch(r'#[0-9a-fA-F]{6}',str(value.get('colour',''))) or type(value.get('duration')) is not int or not 15<=value['duration']<=1440 or value['duration']%15 or value.get('timing') not in ('fixed','flexible') or value.get('bookingStatus') not in BOOKING_STATUSES:raise Problem(400,'Use a colour, quarter-hour duration, timing and booking status for each type.')
         validated[kind]={k:value[k] for k in ('colour','duration','timing','bookingStatus')}
     search_template=client_search_template(data.get('clientSearchUrlTemplate',settings(state)['clientSearchUrlTemplate']))
-    result['scheduleSettings']={**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
+    workshop=text(data.get('workshopAddress',settings(state)['workshopAddress']),'a workshop address',1000)
+    result['scheduleSettings']={'workshopAddress':workshop,**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
 
     return result
 
@@ -235,12 +237,14 @@ def read(state,date):
     types={t['name']:t.get('staffType','technician') for t in staff}
 
     names=settings(state)['technicianOrder']
+    saved_order=state.get('scheduleColumnOrders',{}).get(date,[])
+    names=[n for n in saved_order if n in names]+[n for n in names if n not in saved_order]
 
     names+=sorted({name for a in appointments+blocks for name in assigned(a)}-set(names))
 
     names.sort(key=lambda name:types.get(name,'technician')=='office')
 
-    return {'date':date,'depotAddress':schedule_routes.configuration()['depot'],'routeTotals':schedule_routes.itinerary_totals(appointments,names),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
+    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
 
 
 
@@ -420,7 +424,7 @@ def travel_candidates(state,date):
     bookings=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')!='lunch']
     barriers=leave_blocks(state,date)+schedule_notes.blocks(state,date)+lunch_blocks(state,date)+[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')=='lunch']
     result=[]
-    config=schedule_routes.configuration()
+    config={**schedule_routes.configuration(),'depot':settings(state)['workshopAddress']}
     names={name for a in bookings for name in assigned(a)}
     for name in names:
         rows=sorted([a for a in bookings if name in assigned(a)],key=lambda a:minutes(a['start']))
@@ -439,8 +443,13 @@ def travel_candidates(state,date):
             if index+1<len(rows) and state.get('scheduleHiddenTravel',{}).get(travel_id(date,name,rows[index+1]['id'],'before')):next_before=None
             if previous_after:left=max(left,minutes(rows[index-1]['start'])+rows[index-1]['duration']+previous_after['duration'])
             if next_before:right=min(right,minutes(rows[index+1]['start'])-next_before['duration'])
-            result.append({'id':travel_id(date,name,a['id'],'before'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'before','edge':start,'maxDuration':max(0,start-left),'automatic':(bool(config['key']) or index>0) and not previous_after,'origin':rows[index-1]['address'] if index else config['depot'],'destination':a['address'],'client':'Travel to '+a['client'],'address':a['address']})
+            result.append({'id':travel_id(date,name,a['id'],'before'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'before','edge':start,'maxDuration':max(0,start-left),'automatic':(bool(config['key']) or index>0) and (not previous_after or previous_after.get('workshop')),'origin':rows[index-1]['address'] if index and not (previous_after or {}).get('workshop') else config['depot'],'destination':a['address'],'client':'Travel to '+a['client'],'address':a['address']})
             result.append({'id':travel_id(date,name,a['id'],'after'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'after','edge':end,'maxDuration':max(0,right-end),'automatic':bool(config['key']) and index==len(rows)-1,'origin':a['address'],'destination':rows[index+1]['address'] if index+1<len(rows) else config['depot'],'client':'Travel from '+a['client'],'address':a['address']})
+    for candidate in result:
+        if state.get('travelBlocks',{}).get(candidate['id'],{}).get('workshop'):
+            candidate['workshop']=True
+            if candidate['side']=='before':candidate['origin']=config['depot']
+            else:candidate['destination']=config['depot']
     return result
 
 def travel_blocks(state,date):
@@ -458,6 +467,9 @@ def travel_blocks(state,date):
 
 def save_travel(state,data,user):
     date=day(data.get('date'));name=data.get('technician');action=data.get('action')
+    if action in ('swap_headers','workshop_travel'):
+        import schedule_release
+        return (schedule_release.swap_headers if action=='swap_headers' else schedule_release.workshop_travel)(state,data,user)
     if action=='delete_selection':return schedule_links.delete_selection(state,data,user)
     if action=='move_to_date':return schedule_links.move_to_date(state,data,user)
     if action=='move_selection':return schedule_links.move_selection(state,data,user)

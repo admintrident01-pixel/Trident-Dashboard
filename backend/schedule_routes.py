@@ -11,7 +11,7 @@ def configuration():
     if os.environ.get('TRIDENT_LOCAL_DATA'):
         try:local=json.loads((Path(os.environ['TRIDENT_LOCAL_DATA'])/'travel-routing.json').read_text(encoding='utf-8'))
         except (OSError,ValueError):pass
-    return {'key':os.environ.get('GOOGLE_ROUTES_API_KEY') or local.get('key',''),'depot':os.environ.get('TRIDENT_DEPOT_ADDRESS') or local.get('depot','255 Port Road, Whangarei, New Zealand')}
+    return {'key':os.environ.get('GOOGLE_ROUTES_API_KEY') or local.get('key',''),'depot':os.environ.get('TRIDENT_DEPOT_ADDRESS') or local.get('depot','255 Port Road, Whangarei')}
 
 def rounded_minutes(seconds):
     return max(0,math.ceil(float(seconds)/900)*15)
@@ -47,13 +47,19 @@ def estimate(origin,destination,force=False):
     return result.copy()
 
 
-def itinerary_totals(appointments,names):
+def itinerary_totals(appointments,names,depot=None,travel_overrides=None,date=None):
     """Planned depot-to-depot distances; never present partial estimates as totals."""
     from concurrent.futures import ThreadPoolExecutor
-    depot=configuration()['depot'];legs={}
+    depot=depot or configuration()['depot'];legs={}
     for name in names:
         rows=sorted([a for a in appointments if not a.get('cancelled') and not a.get('source') and name in a.get('technicians',[a.get('technician')])],key=lambda a:(a['start'],a['id']))
-        stops=[depot]+[a.get('address','') for a in rows]+[depot]
+        stops=[depot]
+        for a in rows:
+            import schedule as s
+            if (travel_overrides or {}).get(s.travel_id(date,name,a['id'],'before'),{}).get('workshop') and stops[-1]!=depot:stops.append(depot)
+            stops.append(a.get('address',''))
+            if (travel_overrides or {}).get(s.travel_id(date,name,a['id'],'after'),{}).get('workshop'):stops.append(depot)
+        if stops[-1]!=depot:stops.append(depot)
         legs[name]=list(zip(stops,stops[1:])) if rows else []
     cache_key=tuple((name,tuple(values)) for name,values in legs.items())
     with _lock:
