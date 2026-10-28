@@ -7,13 +7,13 @@ import schedule_routes, schedule_booking
 def active(state):
     return bool(schedule_routes.configuration()['key'] or state.get('scheduleLinks') or any('locked' in row for row in state.get('travelBlocks',{}).values()))
 
-def travel_blocks(state,date):
+def travel_blocks(state,date,cache_only=False):
     import schedule as s
     rows=[]
     candidates=s.travel_candidates(state,date)
     pairs={(c.get('origin',''),c.get('destination','')) for c in candidates if (c['automatic'] or state.get('travelBlocks',{}).get(c['id'])) and state.get('travelBlocks',{}).get(c['id'],{}).get('locked',True)}
     with ThreadPoolExecutor(max_workers=4) as executor:
-        routes=dict(zip(pairs,executor.map(lambda pair:schedule_routes.estimate(*pair),pairs)))
+        routes=dict(zip(pairs,executor.map(lambda pair:schedule_routes.estimate(*pair,cache_only=True) if cache_only else schedule_routes.estimate(*pair),pairs)))
     for c in candidates:
         if state.get('scheduleHiddenTravel',{}).get(c['id']):continue
         saved=state.get('travelBlocks',{}).get(c['id'],{})
@@ -21,6 +21,9 @@ def travel_blocks(state,date):
         locked=saved.get('locked',True)
         linked=saved.get('linked',True)
         route=routes.get((c.get('origin',''),c.get('destination','')),{}) if locked else {}
+        # Do not draw a guessed duration while the first provider result is pending.
+        # A saved override or previous cached estimate can stay visible meanwhile.
+        if route.get('pending') and route.get('duration') is None and not saved:continue
         duration=route.get('defaultDuration',route.get('duration')) if locked else saved.get('duration',15)
         if duration is None:duration=saved.get('duration',15)
         if duration==0:continue
@@ -29,7 +32,7 @@ def travel_blocks(state,date):
         # Keep the complete estimate visible; never silently shorten a journey.
         conflict=duration>c['maxDuration'] if linked else False
         if not 0<=start<1440 or start+duration>1440:continue
-        block={**c,'source':'travel','type':'Travel','timing':'fixed','cancelled':False,'start':s.time_string(start),'duration':duration,'version':saved.get('version',0),'locked':locked,'linked':linked,'routeError':route.get('error',''),'estimatedSeconds':route.get('seconds'),'routeConflict':conflict,'notes':('Calculated by Google Maps; rounded up to 15 minutes.' if route.get('duration') else 'Manual travel time.' if not locked else route.get('error',''))}
+        block={**c,'source':'travel','type':'Travel','timing':'fixed','cancelled':False,'start':s.time_string(start),'duration':duration,'version':saved.get('version',0),'locked':locked,'linked':linked,'routePending':bool(route.get('pending')),'routeError':route.get('error',''),'estimatedSeconds':route.get('seconds'),'routeConflict':conflict,'notes':('Calculating travel…' if route.get('pending') else 'Calculated by Google Maps; rounded up to 15 minutes.' if route.get('duration') else 'Manual travel time.' if not locked else route.get('error',''))}
         if not linked and saved.get('technician'):
             block.update(technician=saved['technician'],technicians=[saved['technician']])
         barriers=s.leave_blocks(state,date)+s.schedule_notes.blocks(state,date)+s.lunch_blocks(state,date)

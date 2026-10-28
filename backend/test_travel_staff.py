@@ -21,14 +21,18 @@ class TravelStaffTests(unittest.TestCase):
         state=schedule.save_travel(state,{**block,'action':'resize','delta':15},self.actor)
         self.assertEqual(schedule.travel_blocks(state,self.booking['date'])[0]['duration'],60)
         with self.assertRaises(Problem):schedule.save_travel(state,{**block,'action':'resize','delta':15},self.actor)
-        with self.assertRaisesRegex(Problem,'Lunch'):schedule.save(state,{**moved,'date':'2027-02-02'},self.actor)
+        lunch_state,lunch_visit=schedule.save(state,{**moved,'date':'2027-02-02'},self.actor)
+        self.assertEqual(lunch_visit['start'],'11:30')
+        self.assertEqual(schedule.read(lunch_state,'2027-02-02')['lunchBlocks'],[])
         state,_=schedule.save(state,{**moved,'date':'2027-02-02','start':'10:30'},self.actor)
         self.assertEqual(schedule.travel_blocks(state,'2027-02-02')[0]['duration'],60)
-    def test_travel_respects_lunch_and_insert_constraints(self):
+    def test_travel_can_cover_lunch_and_keeps_insert_constraints(self):
         state,a=schedule.save(self.state,{**self.second,'start':'13:00'},self.actor)
         block=schedule.travel_blocks(state,self.booking['date'])[0]
-        self.assertEqual((block['start'],block['duration']),('12:30',30))
-        for delta in (15,-60,0):
+        self.assertEqual((block['start'],block['duration']),('10:00',180))
+        resized=schedule.save_travel(state,{**block,'action':'resize','delta':-15},self.actor)
+        self.assertEqual(schedule.travel_blocks(resized,self.booking['date'])[0]['duration'],165)
+        for delta in (15,-180,0):
             with self.assertRaises(Problem):schedule.save_travel(state,{**block,'action':'resize','delta':delta},self.actor)
         state=schedule.save_travel(state,{'date':self.booking['date'],'technician':'Scott','anchorId':self.first['id'],'side':'before','duration':15,'action':'insert'},self.actor)
         self.assertTrue(any(b['start']=='08:45' and b['duration']==15 for b in schedule.travel_blocks(state,self.booking['date'])))

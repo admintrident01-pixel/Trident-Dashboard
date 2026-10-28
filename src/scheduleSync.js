@@ -1,6 +1,11 @@
 import {bookingControls} from './scheduleBooking.js'
 import {assignedTechs,timeMinutes,timeText} from './scheduleMath.js'
 
+export const schedulePollInterval=live=>live==='live'?60000:10000
+export function canApplyRouteSnapshot(result,{target,generation},sync,etag){
+ return !sync.writing&&sync.date===target&&sync.generation===generation&&result.data.date===target&&result.etag===etag
+}
+
 export function pendingSchedule(current,appointment,action='save'){
  if(!current||!appointment.id)return current
  const saved={...appointment,cancelled:action==='cancel'?true:action==='restore'?false:appointment.cancelled}

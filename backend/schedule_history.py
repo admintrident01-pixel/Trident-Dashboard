@@ -45,8 +45,8 @@ def apply(state,email,date,action):
  updated=copy.deepcopy(history);updated[action].pop();updated['redo' if action=='undo' else 'undo'].append(entry)
  result.setdefault('scheduleHistory',{}).setdefault(email,{})[date]=updated
  return result
-def read(state,date,user):
+def read(state,date,user,fast=False):
  import schedule
- result=schedule.read(state,date);history=stacks(state,user['email'],date);current=signature(state)
+ result=schedule.read(state,date,fast=fast);history=stacks(state,user['email'],date);current=signature(state)
  result['history']={name:{'available':bool(history[name]) and history[name][-1]['afterHash' if name=='undo' else 'beforeHash']==current,'label':history[name][-1]['label'] if history[name] else ''} for name in ('undo','redo')}
  return result

@@ -22,7 +22,7 @@ def missing_location(value):
     placeholders={'','tbc','t b c','tba','t b a','tbd','t b d','to be confirmed','to be advised','to be determined','unknown','not known','not confirmed','not provided','not supplied','not available','none','nil','na','n a','no address','no location','no fixed address'}
     return value in placeholders or any(value.startswith(label+' ') and value[len(label)+1:] in placeholders for label in ('address','location','site','destination','client address'))
 
-def estimate(origin,destination,force=False):
+def estimate(origin,destination,force=False,cache_only=False):
     # Check before cache/config/provider lookup: old guessed routes must never win.
     if missing_location(origin) or missing_location(destination):
         return {'error':'Location not confirmed. Default travel is 0.25 hours; add a real address to calculate it.','defaultDuration':15,'locationMissing':True}
@@ -35,6 +35,7 @@ def estimate(origin,destination,force=False):
     with _lock:
         cached=_cache.get(cache_key)
         if not force and cached and cached[0]>time.monotonic():return cached[1].copy()
+    if cache_only:return {**cached[1],'pending':True} if cached else {'pending':True}
     body={'origin':{'address':origin},'destination':{'address':destination},'travelMode':'DRIVE','routingPreference':'TRAFFIC_UNAWARE','regionCode':'NZ'}
     req=urllib.request.Request('https://routes.googleapis.com/directions/v2:computeRoutes',data=json.dumps(body).encode(),headers={'Content-Type':'application/json','X-Goog-Api-Key':config['key'],'X-Goog-FieldMask':'routes.duration,routes.distanceMeters'})
     try:
@@ -56,7 +57,7 @@ def estimate(origin,destination,force=False):
     return result.copy()
 
 
-def itinerary_totals(appointments,names,depot=None,travel_overrides=None,date=None):
+def itinerary_totals(appointments,names,depot=None,travel_overrides=None,date=None,cache_only=False):
     """Planned depot-to-depot distances; never present partial estimates as totals."""
     from concurrent.futures import ThreadPoolExecutor
     depot=depot or configuration()['depot'];legs={}
@@ -74,13 +75,15 @@ def itinerary_totals(appointments,names,depot=None,travel_overrides=None,date=No
     with _lock:
         cached=_itinerary_cache.get(cache_key)
         if cached and cached[0]>time.monotonic():return {name:value.copy() for name,value in cached[1].items()}
+    if cache_only and cached:return {name:{**value,'pending':True} for name,value in cached[1].items()}
     pairs=list({pair for values in legs.values() for pair in values})
-    with ThreadPoolExecutor(max_workers=4) as pool:estimates=dict(zip(pairs,pool.map(lambda pair:estimate(*pair),pairs)))
+    with ThreadPoolExecutor(max_workers=4) as pool:estimates=dict(zip(pairs,pool.map(lambda pair:estimate(*pair,cache_only=True) if cache_only else estimate(*pair),pairs)))
     result={}
     for name,values in legs.items():
         known=[estimates[pair].get('distanceMeters') for pair in values if not estimates[pair].get('error') and isinstance(estimates[pair].get('distanceMeters'),(int,float)) and estimates[pair]['distanceMeters']>=0]
         complete=len(known)==len(values)
-        result[name]={'distanceMeters':sum(known) if complete else None,'knownDistanceMeters':sum(known),'complete':complete,'legCount':len(values),'knownLegs':len(known)}
+        result[name]={'distanceMeters':sum(known) if complete else None,'knownDistanceMeters':sum(known),'complete':complete,'legCount':len(values),'knownLegs':len(known),**({'pending':True} if any(estimates[pair].get('pending') for pair in values) else {})}
+    if cache_only:return result
     with _lock:
         if len(_itinerary_cache)>=128:_itinerary_cache.clear()
         _itinerary_cache[cache_key]=(time.monotonic()+(900 if all(v['complete'] for v in result.values()) else 60),{name:value.copy() for name,value in result.items()})

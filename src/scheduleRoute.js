@@ -24,4 +24,4 @@ export function wholeRoute(appointments,technician,depot,travelBlocks=[]){
  }
  return {bookings,stops,parts}
 }
-export function routeDistanceLabel(total){return total?.complete&&Number.isFinite(total.distanceMeters)?`${(total.distanceMeters/1000).toFixed(1)} km`:'— km'}
+export function routeDistanceLabel(total){return total?.complete&&Number.isFinite(total.distanceMeters)?`${(total.distanceMeters/1000).toFixed(1)} km`:total?.pending?'Calculating…':'— km'}

@@ -210,7 +210,7 @@ def lunch_blocks(state,date):
     return []
 
 
-def read(state,date):
+def read(state,date,fast=False):
 
     date=day(date)
 
@@ -234,7 +234,7 @@ def read(state,date):
 
     names.sort(key=lambda name:types.get(name,'technician')=='office')
 
-    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'lunchShading':{'start':settings(state)['lunchStart'],'duration':30},'publicHolidays':settings(state)['publicHolidays'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
+    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date,cache_only=True) if fast else schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'lunchShading':{'start':settings(state)['lunchStart'],'duration':30},'publicHolidays':settings(state)['publicHolidays'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date,cache_only=True) if fast else travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
 
 
 
@@ -439,8 +439,8 @@ def travel_candidates(state,date):
             else:candidate['destination']=config['depot']
     return result
 
-def travel_blocks(state,date):
-    if schedule_links.active(state):return schedule_links.travel_blocks(state,date)
+def travel_blocks(state,date,cache_only=False):
+    if schedule_links.active(state):return schedule_links.travel_blocks(state,date,cache_only=True) if cache_only else schedule_links.travel_blocks(state,date)
     rows=[]
     for candidate in travel_candidates(state,date):
         if state.get('scheduleHiddenTravel',{}).get(candidate['id']):continue

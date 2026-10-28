@@ -22,6 +22,8 @@ import schedule
 import office_files
 import schedule_history
 import schedule_live
+import quote_catalog
+from performance import measure,request_metrics
 
 import staff_setup
 
@@ -82,7 +84,7 @@ class Application:
   if capture:
 
    if before is None:
-    current,before=self.store.read()
+    current,before=self.read_state()
    else:current=revision
 
    if current!=revision:raise Problem(409,'Another change was saved. Refresh and try again.')
@@ -91,7 +93,7 @@ class Application:
 
    live_before=before
 
-  elif live_enabled and live_before is None:_,live_before=self.store.read()
+  elif live_enabled and live_before is None:_,live_before=self.read_state()
 
   if not self.store.commit(revision,state):raise Problem(409,'Another change was saved. Refresh and try again.')
 
@@ -101,7 +103,7 @@ class Application:
 
   path=environ['PATH_INFO'];p=self.body(environ)
 
-  revision,state=self.store.read()
+  revision,state=self.read_state()
 
   if path=='/api/auth/request':
 
@@ -136,7 +138,7 @@ class Application:
   data={**data,'operationId':data.get('operationId',uuid.uuid4().hex)}
   for attempt in range(7):
    if attempt:
-    try:revision,state=self.store.read()
+    try:revision,state=self.read_state()
     except Problem:raise
     except Exception:
      logging.warning('Leave save could not read the current register; retrying.')
@@ -162,13 +164,26 @@ class Application:
    if attempt<6:time.sleep(random.uniform(.025,min(.25,.025*2**attempt)))
   raise Problem(503,'Leave saving is busy or its result could not be confirmed. Your details are kept. Try the same save again; it will not create a duplicate.')
 
+ def read_state(self):
+  with measure('database_read'):return self.store.read()
+
  def __call__(self,environ,start_response):
+  started=time.perf_counter()
+  with request_metrics() as durations:
+   def respond(status,headers):
+    durations['total']=(time.perf_counter()-started)*1000
+    headers.append(('Server-Timing',', '.join(name+';dur='+format(ms,'.1f') for name,ms in durations.items())))
+    logging.getLogger('gunicorn.error').info('api_timing category=%s status=%s durations_ms=%s','/'.join(environ.get('PATH_INFO','').split('/')[:3]),status.split()[0],{k:round(v,1) for k,v in durations.items()})
+    return start_response(status,headers)
+   return self.handle(environ,respond)
+
+ def handle(self,environ,start_response):
 
   status=200;headers=[('Cache-Control','no-store'),('X-Content-Type-Options','nosniff')];mime='application/json';payload=None
 
   origin=environ.get('HTTP_ORIGIN','');method=environ['REQUEST_METHOD'];path=environ['PATH_INFO']
 
-  if origin==self.origin and origin:headers += [('Access-Control-Allow-Origin',origin),('Vary','Origin'),('Access-Control-Expose-Headers','ETag')]
+  if origin==self.origin and origin:headers += [('Access-Control-Allow-Origin',origin),('Vary','Origin'),('Access-Control-Expose-Headers','ETag,Server-Timing'),('Timing-Allow-Origin',self.origin)]
 
   try:
 
@@ -176,7 +191,7 @@ class Application:
 
     if origin!=self.origin or not origin:raise Problem(403,'Origin is not allowed.')
 
-    headers += [('Access-Control-Allow-Methods','GET,POST,OPTIONS'),('Access-Control-Allow-Headers','Authorization,Content-Type,If-Match,If-None-Match,X-Quote-Token')];payload={}
+    headers += [('Access-Control-Allow-Methods','GET,POST,OPTIONS'),('Access-Control-Allow-Headers','Authorization,Content-Type,If-Match,If-None-Match,X-Quote-Token'),('Access-Control-Max-Age','600')];payload={}
 
    elif path=='/api/health':payload={'ok':True,'version':'C'}
 
@@ -197,14 +212,14 @@ class Application:
     if self.store is None:self.store=BigQueryStore()
 
     if path=='/api/reminders/check':
-     _,state=self.store.read();_,count=reminders.due_reminders(state)
+     _,state=self.read_state();_,count=reminders.due_reminders(state)
      payload={'checked':True,'wouldQueue':count,'emailMode':reminders.mail_mode(self.local)}
     else:
      reminders.require_mail(self.local)
 
      for attempt in range(5):
 
-      revision,state=self.store.read();result,count=reminders.due_reminders(state)
+      revision,state=self.read_state();result,count=reminders.due_reminders(state)
 
       if self.store.commit(revision,result):break
 
@@ -224,7 +239,7 @@ class Application:
 
     if self.store is None:self.store=BigQueryStore()
 
-    revision,state=self.store.read()
+    revision,state=self.read_state()
 
     user=accounts.resolve(state,auth[7:],self.verify);email=user['email']
 
@@ -252,7 +267,7 @@ class Application:
 
      headers.append(('ETag',f'"{revision}"'))
 
-     admin_paths=('/api/schedule/header-preview','/api/schedule-notes','/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete','/api/vehicle-order')
+     admin_paths=('/api/schedule/header-preview','/api/schedule-notes','/api/recycle-bin','/api/schedule-settings','/api/labour-settings','/api/staff-settings','/api/time-settings','/api/quote-settings','/api/catalog','/api/quote-dashboard','/api/quote-detail','/api/drafts','/api/workbook','/api/pdf','/api/quote-save','/api/users','/api/user-invite','/api/reminder-settings','/api/reminder-dashboard','/api/send-reminder','/api/mail-outbox','/api/mail-archive','/api/leave-decision','/api/timesheet-edit','/api/timesheet-delete','/api/vehicle-order')
 
      if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/weekly-report-excel','/api/report-periods-excel','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
@@ -308,10 +323,12 @@ class Application:
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
 
-     elif path=='/api/schedule' and method=='GET':
+     elif path in ('/api/schedule','/api/schedule/routes') and method=='GET':
+      params=parse_qs(environ.get('QUERY_STRING',''));fast=path=='/api/schedule' and params.get('view',[''])[0]=='bookings'
       tag=schedule_history.etag(state);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',tag))
-      payload={'unchanged':True} if environ.get('HTTP_IF_NONE_MATCH') in (tag,f'"{revision}"') and not schedule.schedule_links.active(state) else schedule_history.read(state,parse_qs(environ.get('QUERY_STRING','')).get('date',[''])[0],user)
-      editing=parse_qs(environ.get('QUERY_STRING','')).get('appointment',[''])[0]
+      with measure('schedule' if fast else 'schedule_routes'):
+       payload={'unchanged':True} if path=='/api/schedule' and environ.get('HTTP_IF_NONE_MATCH') in (tag,f'"{revision}"') and (fast or not schedule.schedule_links.active(state)) else schedule_history.read(state,params.get('date',[''])[0],user,fast=fast)
+      editing=params.get('appointment',[''])[0]
       if editing and user.get('role')=='admin' and not payload.get('unchanged'):payload['editingAppointment']=schedule.schedule_booking.controls(state.get('appointments',{}).get(editing))
 
      elif path=='/api/schedule' and method=='POST':
@@ -330,7 +347,7 @@ class Application:
 
        reminders.deliver(self.store,self.local)
 
-       saved_revision,current=self.store.read();statuses=[current['mailOutbox'][mid]['status'] for mid in mail_ids];payload['schedule']=schedule_history.read(current,appointment['date'],user)
+       saved_revision,current=self.read_state();statuses=[current['mailOutbox'][mid]['status'] for mid in mail_ids];payload['schedule']=schedule_history.read(current,appointment['date'],user)
 
        payload['message']='Email previews saved; no emails sent.' if self.local else f"Appointment saved. Emails sent: {statuses.count('sent')}; failed: {statuses.count('failed')}; pending: {len(statuses)-statuses.count('sent')-statuses.count('failed')}."
 
@@ -434,7 +451,7 @@ class Application:
 
        if p.get('recipient'):
         recipient=accounts.email(p['recipient']);target=accounts.users(state).get(recipient)
-        if row['kind']!='vehicle' or not target or not target.get('active') or target.get('technician')!=row['name']:raise Problem(400,'Choose the email linked to this vehicle’s staff member.')
+        if row['kind']!='vehicle' or not target or not target.get('active') or target.get('technician')!=row['name']:raise Problem(400,'Choose the email linked to this vehicleâ€™s staff member.')
         row={**row,'recipient':recipient}
        reminders.enqueue_reminder(state,row);payload={'saved':True,'message':'Reminder queued.'}
 
@@ -444,7 +461,7 @@ class Application:
 
        reminders.deliver(self.store,self.local);payload['message']='Email preview saved; no email sent.' if self.local else 'Delivery attempted. Check Email history for the result.'
 
-      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{self.store.read()[0]}"'))
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{self.read_state()[0]}"'))
 
      elif path=='/api/timesheets/config' and method=='GET':
 
@@ -465,7 +482,7 @@ class Application:
       payload={'saved':True,'request':entry,'replayed':replayed}
       try:
        if reminders.mail_mode(self.local)!='unconfigured':reminders.deliver(self.store,self.local)
-       saved_revision,_=self.store.read()
+       saved_revision,_=self.read_state()
       except Exception:logging.exception('Leave saved; queued notification delivery will be checked by the scheduler.')
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{saved_revision}"'))
 
@@ -474,6 +491,10 @@ class Application:
      elif path=='/api/timesheets' and method=='GET':
 
       payload={'timesheets':[r for r in state.get('timesheets',{}).values() if user['role']=='admin' or r['technician']==user['technician']],'drafts':timesheet_drafts.visible(state,user)}
+
+     elif path in ('/api/quote-dashboard','/api/quote-detail') and method=='GET':
+      with measure('quote_index'):
+       payload=(quote_catalog.listing if path=='/api/quote-dashboard' else quote_catalog.detail)(state,parse_qs(environ.get('QUERY_STRING','')))
 
      elif path=='/api/catalog' and method=='GET':payload={'quotes':list(state['quotes'].values()),'pdfs':list(state['pdfs'])}
 
@@ -596,7 +617,7 @@ class Application:
 
        state,entry,upload,garbage=save_quote(state,p,self.objects,user);payload={'saved':True,'quote':entry}
 
-      mutation_before=self.store.read()[1]
+      mutation_before=self.read_state()[1]
       state=recycle.capture(mutation_before,state,email)
 
       try:committed=self.store.commit(revision,state)

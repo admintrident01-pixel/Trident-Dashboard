@@ -52,7 +52,9 @@ export default function App(){
 
   const headers=new Headers(init.headers);headers.set('Authorization',`Bearer ${session?.token}`)
 
+  const started=performance.now()
   const response=await fetch(api+path,{...init,headers}),data=await response.json()
+  performance.measure(path.startsWith('/api/schedule')?'trident.api.schedule':'trident.api.request',{start:started,duration:performance.now()-started})
 
   if(response.status===401||response.status===403&&data.error==='Your account is not active. Contact an administrator.'){setSession(null);setDocument('');setTimesheetDocument('');setPage('home')}
 
@@ -70,7 +72,7 @@ export default function App(){
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin}).replace(/</g,'\\u003c')
 
-   const bridge=`<script>(()=>{const c=${config},original=window.fetch.bind(window);window.fetch=async(input,init={})=>{const url=typeof input==='string'?input:input.url;if(new URL(url,c.origin).pathname.startsWith('/api/')){const headers=new Headers(init.headers);headers.set('Authorization','Bearer '+c.token);const response=await original(c.api+new URL(url,c.origin).pathname+new URL(url,c.origin).search,{...init,headers});if(response.status===401)parent.postMessage({type:'trident-signin-expired'},c.origin);return response;}return original(input,init);};})();</script>`
+   const bridge=`<script>(()=>{const c=${config},original=window.fetch.bind(window);window.fetch=async(input,init={})=>{const url=typeof input==='string'?input:input.url;if(new URL(url,c.origin).pathname.startsWith('/api/')){const headers=new Headers(init.headers);headers.set('Authorization','Bearer '+c.token);const started=performance.now();const response=await original(c.api+new URL(url,c.origin).pathname+new URL(url,c.origin).search,{...init,headers});performance.measure('trident.api.request',{start:started,duration:performance.now()-started});if(response.status===401)parent.postMessage({type:'trident-signin-expired'},c.origin);return response;}return original(input,init);};})();</script>`
 
    if(!cancelled)setDocument(html.replace('<head>','<head>'+bridge))
 
@@ -86,7 +88,7 @@ export default function App(){
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin}).replace(/</g,'\\u003c')
 
-   const bridge=`<script>(()=>{const c=${config},original=window.fetch.bind(window);window.fetch=async(input,init={})=>{const url=typeof input==='string'?input:input.url;if(new URL(url,c.origin).pathname.startsWith('/api/')){const headers=new Headers(init.headers);headers.set('Authorization','Bearer '+c.token);const response=await original(c.api+new URL(url,c.origin).pathname+new URL(url,c.origin).search,{...init,headers});if(response.status===401)parent.postMessage({type:'trident-signin-expired'},c.origin);return response;}return original(input,init);};})();</script>`
+   const bridge=`<script>(()=>{const c=${config},original=window.fetch.bind(window);window.fetch=async(input,init={})=>{const url=typeof input==='string'?input:input.url;if(new URL(url,c.origin).pathname.startsWith('/api/')){const headers=new Headers(init.headers);headers.set('Authorization','Bearer '+c.token);const started=performance.now();const response=await original(c.api+new URL(url,c.origin).pathname+new URL(url,c.origin).search,{...init,headers});performance.measure('trident.api.request',{start:started,duration:performance.now()-started});if(response.status===401)parent.postMessage({type:'trident-signin-expired'},c.origin);return response;}return original(input,init);};})();</script>`
 
    if(!cancelled)setTimesheetDocument(html.replace('<head>','<head>'+bridge))
 
