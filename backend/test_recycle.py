@@ -41,14 +41,23 @@ class RecycleTests(unittest.TestCase):
         archived=recycle.capture(state,new,self.actor['email'])
         restored,_=recycle.action(archived,{'ids':['appointmentType:Delivery'],'action':'restore'},self.actor)
         self.assertEqual(schedule.settings(restored)['appointmentTypes'],['Repair','Unspecified','Delivery'])
-    def test_default_lunch_purge_does_not_regenerate(self):
-        lunch=schedule.lunch_blocks(self.state,self.booking['date'])[0]
-        state,cancelled=schedule.save(self.state,{**lunch,'action':'cancel'},self.actor)
+    def test_legacy_lunch_purge_does_not_regenerate_blocks(self):
+        state=copy.deepcopy(self.state)
+        state['appointments']['old-lunch']={**self.booking,'id':'old-lunch','source':'lunch','type':'Lunch','client':'Lunch','start':'12:00','duration':30,'cancelled':True,'version':1,'createdAt':'original'}
         ids=[r['id'] for r in recycle.read(state)['items']]
         purged,_=recycle.action(state,{'ids':ids,'action':'purge','confirmed':True},self.actor)
         self.assertEqual(schedule.lunch_blocks(purged,self.booking['date']),[])
-        self.assertEqual(len(schedule.lunch_blocks(purged,'2027-02-02')),1)
+        self.assertEqual(schedule.lunch_blocks(purged,'2027-02-02'),[])
         self.assertEqual(recycle.read(purged)['items'],[])
+    def test_legacy_lunch_restore_keeps_history_without_blocking_current_work(self):
+        state,booking=schedule.save(self.state,{**self.booking,'start':'12:00'},self.actor)
+        state['appointments']['old-lunch']={**booking,'id':'old-lunch','source':'lunch','type':'Lunch','client':'Lunch','duration':30,'cancelled':True,'notes':'Historical note'}
+        before=copy.deepcopy(state)
+        restored,_=recycle.action(state,{'ids':['lunch:old-lunch'],'action':'restore'},self.actor)
+        self.assertFalse(restored['appointments']['old-lunch']['cancelled']);self.assertEqual(restored['appointments']['old-lunch']['notes'],'Historical note')
+        self.assertEqual(restored['appointments'][booking['id']],booking)
+        self.assertEqual([a['id'] for a in schedule.read(restored,self.booking['date'])['appointments']],[booking['id']])
+        self.assertEqual(state,before)
     def test_legacy_cancelled_leave_returns_pending(self):
         self.state['leaveRequests']['old']={'id':'old','revision':2,'status':'Cancelled','technician':'Scott','startDate':'2027-02-01','dates':['2027-02-01'],'hoursPerDay':8,'leaveType':'Sick leave'}
         restored,_=recycle.action(self.state,{'ids':['leave:old'],'action':'restore'},self.actor)

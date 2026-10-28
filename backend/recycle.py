@@ -105,7 +105,11 @@ def restore(state,row,actor):
         if not old:
             old={**value,'cancelled':True}
             state.setdefault('appointments',{})[key]=old
-        state,record=schedule.save(state,{**old,'action':'restore'},actor)
+        if schedule.is_lunch(old):
+            # Restore the historical record without reintroducing an active block.
+            if not old.get('cancelled'):raise Problem(409,'This lunch record has changed.')
+            state.setdefault('appointments',{})[key]={**old,'cancelled':False,'version':old.get('version',0)+1,'updatedAt':stamp(),'updatedBy':actor['email']}
+        else:state,record=schedule.save(state,{**old,'action':'restore'},actor)
     elif kind=='leave':
         old=state.get('leaveRequests',{}).get(key)
         if not old or old.get('status')!='Cancelled':raise Problem(409,'This leave request has changed.')
