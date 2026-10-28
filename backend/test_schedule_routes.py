@@ -70,11 +70,12 @@ class RoutingTests(unittest.TestCase):
   moved=next(row for row in schedule.travel_blocks(state,self.booking['date']) if row['id']==b['id'])
   self.assertEqual(moved['start'],'08:00')
   with self.assertRaises(Problem):schedule.save_travel(state,{**moved,'action':'move','start':'09:00'},self.actor)
- def test_touching_lunch_is_linked_and_moves_with_group(self):
+ def test_touching_lunch_shading_stays_in_place_when_group_moves(self):
   state,second=schedule.save(self.state,{**self.booking,'start':'10:30','client':'Second'},self.actor)
   state,_=schedule.save(state,{**self.first,'start':'10:00'},self.actor)
-  lunch=next(a for a in state['appointments'].values() if a.get('source')=='lunch')
-  self.assertEqual(lunch['start'],'13:00')
+  self.assertFalse(any(a.get('source')=='lunch' for a in state['appointments'].values()))
+  self.assertEqual(schedule.read(state,self.booking['date'])['lunchShading']['start'],'12:00')
+
  def test_own_depot_travel_follows_booking_to_another_date(self):
   state,a=schedule.save(self.state,{**self.first,'date':'2027-02-02'},self.actor)
   self.assertEqual(len(schedule.travel_blocks(state,'2027-02-02')),2)

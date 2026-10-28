@@ -58,35 +58,28 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(schedule.read(updated,self.booking['date'])['appointmentTypes'],['New type','Unspecified'])
         for types in [[],['One','one'],[''],['x'*121],'Not a list']:
             with self.assertRaises(Problem):schedule.save_settings(state,{'appointmentTypes':types})
-    def test_default_lunch_moves_removes_and_restores_without_changing_other_days(self):
+    def test_default_lunch_is_nonblocking_shading_on_each_day(self):
         result=schedule.read(self.state,'2027-02-01')
-        self.assertEqual(len(result['lunchBlocks']),2)
-        lunch=result['lunchBlocks'][0]
-        self.assertEqual((lunch['start'],lunch['duration']),('12:00',30))
+        self.assertEqual(result['lunchBlocks'],[])
+        self.assertEqual(result['lunchShading'],{'start':'12:00','duration':30})
         self.assertNotIn('appointments',self.state)
-        state,moved=schedule.save(self.state,{**lunch,'start':'13:00'},self.user)
-        self.assertEqual(len(schedule.read(state,'2027-02-01')['lunchBlocks']),1)
-        self.assertEqual(schedule.read(state,'2027-02-02')['lunchBlocks'][0]['start'],'12:00')
-        state,cancelled=schedule.save(state,{**moved,'action':'cancel'},self.user)
-        self.assertTrue(cancelled['cancelled'])
-        self.assertEqual(len(schedule.read(state,'2027-02-01')['lunchBlocks']),1)
-        state,restored=schedule.save(state,{**cancelled,'action':'restore'},self.user)
-        self.assertEqual(restored['start'],'13:00')
-        self.assertFalse(restored['cancelled'])
-    def test_lunch_settings_manual_booking_and_leave(self):
+        state,booking=schedule.save(self.state,{**self.booking,'start':'12:00'},self.user)
+        self.assertEqual(booking['start'],'12:00')
+        self.assertEqual(schedule.read(state,'2027-02-02')['lunchShading'],result['lunchShading'])
+
+    def test_lunch_shading_settings_manual_block_refusal_and_leave(self):
         import leave
         state=schedule.save_settings(self.state,{'appointmentTypes':['Repair'],'lunchStart':'12:45'})
-        self.assertEqual(schedule.read(state,'2027-02-01')['lunchBlocks'][0]['start'],'12:45')
+        self.assertEqual(schedule.read(state,'2027-02-01')['lunchShading']['start'],'12:45')
         for start in ['12:10','23:45','bad']:
             with self.assertRaises(Problem):schedule.save_settings(state,{'appointmentTypes':['Repair'],'lunchStart':start})
-        state,manual=schedule.save(state,{**self.booking,'type':'Lunch','start':'13:30','duration':30,'client':'','address':'','technicians':['Scott','Bala']},self.user)
-        self.assertEqual(manual['source'],'lunch')
-        self.assertEqual(schedule.read(state,'2027-02-01')['lunchBlocks'],[])
-        # A lunch marker can sit alongside a long client booking.
+        with self.assertRaisesRegex(Problem,'Schedule settings'):schedule.save(state,{**self.booking,'type':'Lunch'},self.user)
         schedule.save(state,{**self.booking,'duration':360},self.user)
         state,request=leave.create(self.state,{'technician':'Scott','leaveType':'Annual leave','startDate':'2027-02-01','endDate':'2027-02-01','hoursPerDay':8,'reason':'Test'})
         state,_=leave.decide(state,{'id':request['id'],'revision':request['revision'],'status':'Approved'},self.user['email'])
-        self.assertEqual([a['technician'] for a in schedule.read(state,'2027-02-01')['lunchBlocks']],['Bala'])
+        view=schedule.read(state,'2027-02-01')
+        self.assertEqual(view['lunchBlocks'],[]);self.assertEqual(len(view['leaveBlocks']),1)
+
     def test_move_resize_and_stale_record(self):
         state,booking=schedule.save(self.state,self.booking,self.user)
         updated={**booking,'technician':'Bala','technicians':['Bala'],'start':'10:15','duration':90}

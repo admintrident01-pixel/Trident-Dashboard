@@ -117,7 +117,7 @@ def workshop_travel(state, data, user):
     trial = {'id': identifier, 'technician': name, 'start': s.time_string(start), 'duration': duration}
     barriers = s.read_without_travel(state, date) + [b for b in s.travel_blocks(state, date) if b['id'] != identifier]
     if any(s.overlaps(trial, other) for other in barriers):
-        raise Problem(409, 'Workshop travel overlaps a booking, travel, lunch, recurring note or approved leave. No blocks were moved.')
+        raise Problem(409, 'Workshop travel overlaps a booking, travel, recurring note or approved leave. No blocks were moved.')
     result = copy.deepcopy(state)
     old = result.setdefault('travelBlocks', {}).get(identifier, {})
     result['travelBlocks'][identifier] = {**old, 'date': date, 'duration': duration,

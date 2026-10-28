@@ -34,11 +34,11 @@ class GapPackTests(unittest.TestCase):
   state,body=self.setup_gap();body['direction']='below';result=schedule.save_travel(state,body,self.user)
   self.assertEqual(result['appointments'][self.lower['id']]['start'],'10:15')
   self.assertEqual(result['appointments'][self.upper['id']],state['appointments'][self.upper['id']])
-  self.assertEqual(next(b for b in schedule.read(result,self.date)['appointments'] if b.get('source')=='lunch')['start'],'11:15')
+  self.assertFalse(any(b.get('source')=='lunch' for b in schedule.read(result,self.date)['appointments']));self.assertEqual(schedule.read(result,self.date)['lunchShading']['start'],'12:00')
   result=schedule_history.record(state,result,self.user['email'],self.date,'Close gap')
   undo=schedule_history.apply(result,self.user['email'],self.date,'undo')
   self.assertEqual(undo['appointments'][self.lower['id']]['start'],self.lower['start'])
-  self.assertEqual(len(schedule.read(undo,self.date)['lunchBlocks']),2)
+  self.assertEqual(schedule.read(undo,self.date)['lunchBlocks'],[])
  def test_fixed_or_confirmed_anywhere_on_chosen_side_prevents_entire_move(self):
   for change in ({'timing':'fixed'},{'bookingStatus':'confirmed'}):
    state,body=self.setup_gap();state['appointments'][self.early['id']].update(change);state['appointments'][self.early['id']].pop('bookingControlsVersion',None);before=copy.deepcopy(state)

@@ -34,10 +34,11 @@ class SelectionTests(unittest.TestCase):
   self.assertEqual(result['appointments'][self.b['id']],before)
   self.assertEqual(result['appointments'][self.a['id']]['start'],'08:45')
   self.assertFalse(result['scheduleLinks'][schedule_links.edge_id('Scott',self.a['id'],self.b['id'])])
- def test_lunch_selected_keeps_duration(self):
-  lunch=next(b for b in schedule.lunch_blocks(self.state,self.date) if b['technician']=='Scott')
-  result=self.move(self.state,[lunch['id']],30)
-  self.assertEqual(result['appointments'][lunch['id']]['start'],'12:30');self.assertEqual(result['appointments'][lunch['id']]['duration'],30)
+ def test_shading_is_not_selectable_and_stale_lunch_selection_is_refused(self):
+  self.assertEqual(schedule.lunch_blocks(self.state,self.date),[])
+  before=copy.deepcopy(self.state)
+  with self.assertRaisesRegex(Problem,'changed'):self.move(self.state,['lunch:old-client'],30)
+  self.assertEqual(self.state,before)
 
  def test_across_technicians_and_team_collision(self):
   self.state['appointments'][self.b['id']].update(technician='Bala',technicians=['Bala'])

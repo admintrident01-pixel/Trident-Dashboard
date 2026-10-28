@@ -29,12 +29,14 @@ class HistoryTests(unittest.TestCase):
   with self.assertRaisesRegex(Problem,'newer changes'):self.apply(state,'undo')
   self.assertFalse(schedule_history.read(state,self.date,self.user)['history']['undo']['available'])
   with self.assertRaises(Problem):schedule_history.apply(state,'someone@example.nz',self.date,'undo')
- def test_delete_appointment_travel_and_lunch_restore_together(self):
-  state,a=self.create();travel=schedule.travel_blocks(state,self.date)[0];lunch=schedule.lunch_blocks(state,self.date)[0]
-  after=schedule.save_travel(state,{'date':self.date,'action':'delete_selection','ids':[a['id'],travel['id'],lunch['id']]},self.user);after=self.record(state,after,'Delete selected')
-  self.assertTrue(after['appointments'][a['id']]['cancelled']);self.assertFalse(schedule.travel_blocks(after,self.date));self.assertFalse(schedule.lunch_blocks(after,self.date))
-  undone=self.apply(after,'undo');self.assertFalse(undone['appointments'][a['id']]['cancelled']);self.assertEqual(len(schedule.travel_blocks(undone,self.date)),2);self.assertEqual(len(schedule.lunch_blocks(undone,self.date)),1)
+ def test_delete_and_undo_preserve_lunch_shading(self):
+  state,a=self.create();travel=schedule.travel_blocks(state,self.date)[0]
+  after=schedule.save_travel(state,{'date':self.date,'action':'delete_selection','ids':[a['id'],travel['id']]},self.user);after=self.record(state,after,'Delete selected')
+  self.assertTrue(after['appointments'][a['id']]['cancelled']);self.assertFalse(schedule.travel_blocks(after,self.date))
+  undone=self.apply(after,'undo');self.assertFalse(undone['appointments'][a['id']]['cancelled']);self.assertEqual(len(schedule.travel_blocks(undone,self.date)),2)
+  self.assertEqual(schedule.read(undone,self.date)['lunchShading'],schedule.read(state,self.date)['lunchShading'])
   self.assertTrue(self.apply(undone,'redo')['appointments'][a['id']]['cancelled'])
+
  def test_delete_travel_only_and_undo(self):
   state,a=self.create();travel=schedule.travel_blocks(state,self.date)[0]
   after=schedule.save_travel(state,{'date':self.date,'action':'delete_selection','ids':[travel['id']]},self.user);after=self.record(state,after)

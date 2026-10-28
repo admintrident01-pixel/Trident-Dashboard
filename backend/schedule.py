@@ -65,6 +65,7 @@ def settings(state):
     result=copy.deepcopy(state.get('scheduleSettings',{'appointmentTypes':DEFAULT_TYPES}))
 
     result.setdefault('lunchStart','12:00')
+    result.setdefault('publicHolidays',[])
 
     result.setdefault('quickNotes',DEFAULT_QUICK_NOTES.copy())
     result.setdefault('typeDefaults',{})
@@ -108,6 +109,15 @@ def save_settings(state,data):
 
     if minutes(lunch_start)>1410: raise Problem(400,'Lunch must finish before midnight.')
 
+    holidays=data.get('publicHolidays',settings(state)['publicHolidays'])
+    if not isinstance(holidays,list) or len(holidays)>1000:raise Problem(400,'Use up to 1,000 public holiday dates.')
+    public_holidays=[]
+    for holiday in holidays:
+        if not isinstance(holiday,dict):raise Problem(400,'Enter a date and name for each public holiday.')
+        public_holidays.append({'date':day(holiday.get('date')),'name':text(holiday.get('name'),'a public holiday name',120)})
+    if len({h['date'] for h in public_holidays})!=len(public_holidays):raise Problem(400,'Use each public holiday date once.')
+    public_holidays.sort(key=lambda h:h['date'])
+
     order=data.get('technicianOrder',settings(state)['technicianOrder'])
 
     names={row['name'] for row in timesheets.settings(state)['technicians']}
@@ -133,7 +143,7 @@ def save_settings(state,data):
         validated[kind]={**{k:value[k] for k in ('colour','duration','bookingStatus')},'urgency':value.get('urgency','low'),'timing':'fixed' if value['bookingStatus']=='confirmed' else 'flexible','bookingControlsVersion':1}
     search_template=client_search_template(data.get('clientSearchUrlTemplate',settings(state)['clientSearchUrlTemplate']))
     workshop=text(data.get('workshopAddress',settings(state)['workshopAddress']),'a workshop address',1000)
-    result['scheduleSettings']={'workshopAddress':workshop,**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
+    result['scheduleSettings']={'workshopAddress':workshop,**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'publicHolidays':public_holidays,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
 
     return result
 
@@ -191,41 +201,20 @@ def text(value,label,limit):
 
 
 
+def is_lunch(appointment):
+    return appointment.get('source')=='lunch' or str(appointment.get('type','')).strip().casefold()=='lunch'
+
 def lunch_blocks(state,date):
-
-    rows=state.get('appointments',{})
-
-    start=settings(state)['lunchStart']
-
-    blocks=[]
-
-    for staff in timesheets.settings(state)['technicians']:
-
-        name=staff['name']
-
-        identifier='lunch:'+str(uuid.uuid5(uuid.NAMESPACE_URL,date+':'+name))
-
-        if identifier in rows or identifier in state.get('deletedLunchIds',[]): continue
-
-        if any(a['date']==date and a.get('source')=='lunch' and name in assigned(a) for a in rows.values()): continue
-
-        block={'id':identifier,'source':'lunch','date':date,'technician':name,'technicians':[name],
-
-               'start':start,'duration':30,'client':'Lunch','address':'','type':'Lunch','timing':'flexible',
-
-               'notes':'','cancelled':False,'version':0,'createdAt':''}
-
-        if not any(overlaps(block,leave_block) for leave_block in leave_blocks(state,date)): blocks.append(block)
-
-    return blocks
-
+    # Compatibility field for older clients. Lunch is now non-blocking shading.
+    # Saved lunch records and history remain in the authoritative register.
+    return []
 
 
 def read(state,date):
 
     date=day(date)
 
-    appointments=[schedule_booking.controls(copy.deepcopy(a)) for a in state.get('appointments',{}).values() if a['date']==date]
+    appointments=[schedule_booking.controls(copy.deepcopy(a)) for a in state.get('appointments',{}).values() if a['date']==date and not is_lunch(a)]
 
     blocks=leave_blocks(state,date)
 
@@ -245,7 +234,7 @@ def read(state,date):
 
     names.sort(key=lambda name:types.get(name,'technician')=='office')
 
-    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
+    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'lunchShading':{'start':settings(state)['lunchStart'],'duration':30},'publicHolidays':settings(state)['publicHolidays'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
 
 
 
@@ -256,6 +245,8 @@ def save(state,data,user):
     identifier=data.get('id')
 
     old=rows.get(identifier) if isinstance(identifier,str) else None
+
+    if is_lunch(data) or old and is_lunch(old):raise Problem(400,'Lunch is grey schedule shading. Change its time in Schedule settings.')
 
     if identifier and not old and isinstance(identifier,str) and identifier.startswith('lunch:'):
 
@@ -313,15 +304,11 @@ def save(state,data,user):
 
         # Booking status owns the internal timing rule; urgency is independent.
 
-        is_lunch=str(data.get('type','')).strip().casefold()=='lunch'
-
         appointment={'id':identifier or str(uuid.uuid4()),'date':date,'technician':technician,'technicians':technicians,'start':start,'duration':duration,'timing':timing,'timeBasis':time_basis,
 
-                     'client':'Lunch' if is_lunch else text(data.get('client'),'a client name',160),'address':'' if is_lunch else text(data.get('address'),'an address',500),
+                     'client':text(data.get('client'),'a client name',160),'address':text(data.get('address'),'an address',500),
 
                      'bookingStatus':booking_status,'urgency':urgency,'bookingControlsVersion':1,'type':text(data.get('type',(old or {}).get('type','Unspecified')),'an appointment type',120),'notes':str(data.get('notes','')).strip(),'cancelled':False}
-
-        if is_lunch: appointment['source']='lunch'
 
         if len(appointment['notes'])>4000: raise Problem(400,'Keep appointment notes under 4,000 characters.')
 
@@ -345,7 +332,7 @@ def save(state,data,user):
 
         for other in rows.values():
 
-            if appointment.get('source')=='lunch' or other.get('source')=='lunch': continue
+            if is_lunch(appointment) or is_lunch(other): continue
 
             if old and old['start']!=appointment['start'] and other['id'] in schedule_links.connected_ids(state,old):continue
             if other['id']==appointment['id'] or other.get('cancelled') or other['date']!=appointment['date'] or not set(assigned(other)) & set(assigned(appointment)): continue
@@ -421,8 +408,8 @@ def travel_id(date,name,anchor,side):
     return 'travel:'+str(uuid.uuid5(uuid.NAMESPACE_URL,':'.join((name,anchor,side))))
 
 def travel_candidates(state,date):
-    bookings=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')!='lunch']
-    barriers=leave_blocks(state,date)+schedule_notes.blocks(state,date)+lunch_blocks(state,date)+[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and a.get('source')=='lunch']
+    bookings=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and not is_lunch(a)]
+    barriers=leave_blocks(state,date)+schedule_notes.blocks(state,date)
     result=[]
     config={**schedule_routes.configuration(),'depot':settings(state)['workshopAddress']}
     names={name for a in bookings for name in assigned(a)}
@@ -504,7 +491,7 @@ def save_travel(state,data,user):
 def time_string(value):return f'{value//60:02d}:{value%60:02d}'
 
 def read_without_travel(state,date):
-    return [a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled')]+lunch_blocks(state,date)+leave_blocks(state,date)+schedule_notes.blocks(state,date)
+    return [a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and not is_lunch(a)]+leave_blocks(state,date)+schedule_notes.blocks(state,date)
 
 
 def resize_booking(state,data,user,old):

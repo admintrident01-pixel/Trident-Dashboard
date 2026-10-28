@@ -32,10 +32,12 @@ class MoveDateTests(unittest.TestCase):
   state,_=schedule.save(self.state,{**self.booking,'date':self.target,'client':'Occupied'},self.user);before=copy.deepcopy(state)
   with self.assertRaisesRegex(Problem,'overlaps'):self.move(state,[self.a['id'],self.b['id']])
   self.assertEqual(state,before)
- def test_default_lunch_and_travel_selection(self):
-  lunch=next(a for a in schedule.lunch_blocks(self.state,self.date) if a['technician']=='Scott');result=self.move(self.state,[lunch['id']])
-  self.assertFalse(any(a['technician']=='Scott' for a in schedule.lunch_blocks(result,self.date)));self.assertEqual(len([a for a in result['appointments'].values() if a.get('source')=='lunch' and a['date']==self.target and not a.get('cancelled')]),1)
+ def test_date_move_leaves_lunch_shading_and_requires_appointment_for_travel(self):
+  result=self.move(self.state,[self.a['id']])
+  self.assertEqual(schedule.read(result,self.date)['lunchShading'],schedule.read(result,self.target)['lunchShading'])
+  self.assertEqual(schedule.lunch_blocks(result,self.date),[])
   with self.assertRaisesRegex(Problem,'associated appointment'):self.move(self.state,[schedule.travel_blocks(self.state,self.date)[0]['id']])
+
  def test_endpoint_permission_revision_and_history(self):
   api=test_accounts.AccountsAPI();api.setUp();api.store.state.update(self.state);body={'date':self.date,'targetDate':self.target,'action':'move_to_date','ids':[self.a['id']]}
   self.assertEqual(api.call('/api/schedule/travel','POST',body,token='tech')[0],403);self.assertEqual(api.call('/api/schedule/travel','POST',body,match=False)[0],409)

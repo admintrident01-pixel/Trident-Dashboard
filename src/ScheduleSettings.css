@@ -5,3 +5,6 @@
 .schedule-search-setting{display:grid;gap:5px;max-width:800px;font-size:13px;font-weight:600}
 .schedule-search-setting input{width:100%;min-width:0;box-sizing:border-box}
 .schedule-settings-time{display:grid;gap:5px;justify-items:start;font-size:13px;font-weight:600}
+.schedule-public-holidays{display:grid;gap:9px;max-width:800px;margin:10px 0}.schedule-public-holiday-row{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:10px;align-items:end}.schedule-public-holiday-row label{display:grid;gap:5px;font-size:12px;font-weight:600;min-width:0}.schedule-public-holiday-row input{min-width:0;width:100%;box-sizing:border-box}.schedule-public-holiday-row button{margin:0!important;min-height:34px}@media(max-width:600px){.schedule-public-holiday-row{grid-template-columns:1fr 1fr}.schedule-public-holiday-row button{grid-column:2;justify-self:end}.schedule-public-holiday-row label{grid-column:1/-1}}
+
+.trident-portal .schedule-order-preview .schedule-order-grid span{left:0;right:0;width:100%;box-sizing:border-box;background:#dce0e5;border:0;border-radius:0;color:#596675}

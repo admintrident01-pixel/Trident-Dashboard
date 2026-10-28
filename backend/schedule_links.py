@@ -43,7 +43,7 @@ def edge_id(name,left,right):return name+'|'+left+'|'+right
 
 def connections(state,date,travels=None):
     import schedule as s
-    blocks=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') ]+s.lunch_blocks(state,date)+(travels if travels is not None else s.travel_blocks(state,date))
+    blocks=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and not s.is_lunch(a)]+(travels if travels is not None else s.travel_blocks(state,date))
     result=[]
     for name in {n for b in blocks for n in s.assigned(b)}:
         rows=sorted([b for b in blocks if name in s.assigned(b)],key=lambda b:s.minutes(b['start']))
