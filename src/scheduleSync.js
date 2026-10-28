@@ -1,3 +1,4 @@
+import {bookingControls} from './scheduleBooking.js'
 import {assignedTechs,timeMinutes,timeText} from './scheduleMath.js'
 
 export function pendingSchedule(current,appointment,action='save'){
@@ -14,16 +15,18 @@ export async function scheduleRequest(request,path,options={}){
  finally{clearTimeout(timer)}
 }
 
-export const appointmentFields=['date','technicians','start','duration','timing','client','address','type','notes','bookingStatus','timeBasis']
-const comparable=(item,key)=>key==='technicians'?[...assignedTechs(item)].sort():item?.[key]??({bookingStatus:'action-needed',timeBasis:'start',notes:''}[key]??'')
+export const appointmentFields=['date','technicians','start','duration','timing','client','address','type','notes','bookingStatus','urgency','timeBasis']
+const comparable=(item,key)=>key==='technicians'?[...assignedTechs(item)].sort():bookingControls(item)?.[key]??({bookingStatus:'action-needed',urgency:'low',timeBasis:'start',notes:''}[key]??'')
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b)
 export const appointmentChanged=(base,mine)=>appointmentFields.some(key=>!equal(comparable(base,key),comparable(mine,key)))
 export function scheduleItem(snapshot,id){return [...(snapshot?.appointments||[]),...(snapshot?.lunchBlocks||[]),...(snapshot?.travelBlocks||[]),...(snapshot?.editingAppointment?[snapshot.editingAppointment]:[])].find(a=>a.id===id)}
 export function mergeAppointment(base,mine,latest){
- if(!base?.id)return {value:mine,conflicts:[]}
+ if(!base?.id)return {value:bookingControls(mine),conflicts:[]}
  if(!latest||!base.cancelled&&latest.cancelled)return {value:mine,conflicts:[],deleted:true}
- const value={...latest},conflicts=[]
+ const value={...bookingControls(latest)},conflicts=[]
+ mine=bookingControls(mine)
  for(const key of appointmentFields){
+  if(key==='timing'&&!mine.source)continue // Derived from booking status.
   const old=comparable(base,key),own=comparable(mine,key),remote=comparable(latest,key)
   if(!equal(own,old)){
    if(!equal(remote,old)&&!equal(own,remote))conflicts.push({key,mine:mine[key],theirs:latest[key]})
@@ -31,7 +34,7 @@ export function mergeAppointment(base,mine,latest){
   }
  }
  value.technician=assignedTechs(value)[0]||''
- return {value,conflicts}
+ return {value:bookingControls(value),conflicts}
 }
 
 // Retry only an explicit rejected write, never an uncertain network outcome.

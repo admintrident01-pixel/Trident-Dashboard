@@ -312,7 +312,7 @@ class Application:
       tag=schedule_history.etag(state);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',tag))
       payload={'unchanged':True} if environ.get('HTTP_IF_NONE_MATCH') in (tag,f'"{revision}"') and not schedule.schedule_links.active(state) else schedule_history.read(state,parse_qs(environ.get('QUERY_STRING','')).get('date',[''])[0],user)
       editing=parse_qs(environ.get('QUERY_STRING','')).get('appointment',[''])[0]
-      if editing and user.get('role')=='admin' and not payload.get('unchanged'):payload['editingAppointment']=state.get('appointments',{}).get(editing)
+      if editing and user.get('role')=='admin' and not payload.get('unchanged'):payload['editingAppointment']=schedule.schedule_booking.controls(state.get('appointments',{}).get(editing))
 
      elif path=='/api/schedule' and method=='POST':
 

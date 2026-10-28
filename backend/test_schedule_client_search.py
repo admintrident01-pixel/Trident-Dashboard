@@ -8,10 +8,10 @@ class ScheduleClientSearchTests(unittest.TestCase):
  def test_unspecified_is_additive_and_read_does_not_mutate_existing_settings(self):
   original=copy.deepcopy(self.state);settings=schedule.settings(self.state)
   self.assertEqual(settings['appointmentTypes'],['Repair','Visit','Unspecified']);self.assertEqual(self.state,original)
-  self.assertEqual(settings['typeDefaults'],original['scheduleSettings']['typeDefaults'])
+  self.assertEqual(settings['typeDefaults']['Repair']['colour'],'#123456');self.assertEqual(settings['typeDefaults']['Repair']['duration'],30);self.assertEqual(settings['typeDefaults']['Repair']['bookingStatus'],'action-needed');self.assertEqual(settings['typeDefaults']['Repair']['urgency'],'low')
   updated=schedule.save_settings(self.state,{'appointmentTypes':settings['appointmentTypes']})
   self.assertEqual(updated['scheduleSettings']['customSetting'],{'keep':True})
-  self.assertEqual(updated['scheduleSettings']['typeDefaults'],original['scheduleSettings']['typeDefaults'])
+  self.assertEqual(updated['scheduleSettings']['typeDefaults'],settings['typeDefaults'])
   self.assertEqual(schedule.settings({'scheduleSettings':{'appointmentTypes':['unspecified','Repair']}})['appointmentTypes'],['unspecified','Repair'])
  def test_new_booking_missing_type_defaults_to_unspecified_existing_type_survives(self):
   payload={'date':'2027-02-01','technician':'Scott','start':'09:00','duration':60,'client':'Client','address':'1 Road','timing':'flexible'}

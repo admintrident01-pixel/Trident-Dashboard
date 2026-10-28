@@ -41,7 +41,7 @@ class GapPackTests(unittest.TestCase):
   self.assertEqual(len(schedule.read(undo,self.date)['lunchBlocks']),2)
  def test_fixed_or_confirmed_anywhere_on_chosen_side_prevents_entire_move(self):
   for change in ({'timing':'fixed'},{'bookingStatus':'confirmed'}):
-   state,body=self.setup_gap();state['appointments'][self.early['id']].update(change);before=copy.deepcopy(state)
+   state,body=self.setup_gap();state['appointments'][self.early['id']].update(change);state['appointments'][self.early['id']].pop('bookingControlsVersion',None);before=copy.deepcopy(state)
    with self.assertRaises(Problem):schedule.save_travel(state,body,self.user)
    self.assertEqual(state,before)
  def test_leave_and_recurring_note_are_barriers(self):

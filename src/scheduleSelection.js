@@ -1,3 +1,4 @@
+import {isBooked} from './scheduleBooking.js'
 import {timeMinutes,timeText} from './scheduleMath.js'
 // Explicit selection includes its own anchored travel, never neighbouring bookings.
 export function linkedSelection(ids,blocks){
@@ -9,10 +10,8 @@ export function selectionDraft(blocks,delta,from='',to=''){
 }
 export function selectionMoveError(blocks,delta){
  if(blocks.some(b=>b.source==='leave'))return 'Approved leave cannot be moved with a selection.'
- const booked=blocks.find(b=>b.source!=='travel'&&b.bookingStatus==='confirmed')
- if(booked)return `${booked.client} is booked (Confirmed). Unbook it before moving.`
- const fixed=blocks.find(b=>b.source!=='travel'&&b.timing==='fixed')
- if(fixed)return `${fixed.client} is fixed. Consider making it flexible before moving.`
+ const booked=blocks.find(b=>b.source!=='travel'&&isBooked(b))
+ if(booked)return `${booked.client} is booked. Unbook it before moving.`
  if(blocks.some(b=>timeMinutes(b.start)+delta<0||timeMinutes(b.start)+b.duration+delta>1440))return 'The selection would leave the selected day.'
  return ''
 }

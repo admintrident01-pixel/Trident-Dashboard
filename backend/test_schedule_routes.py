@@ -46,7 +46,7 @@ class RoutingTests(unittest.TestCase):
   self.assertEqual(state['appointments'][second['id']]['start'],'10:00')
  def test_fixed_linked_booking_cannot_be_shifted(self):
   state,second=schedule.save(self.state,{**self.booking,'start':'10:30','client':'Second','timing':'fixed'},self.actor)
-  with self.assertRaisesRegex(Problem,'fixed'):schedule.save(state,{**self.first,'start':'08:30'},self.actor)
+  with self.assertRaisesRegex(Problem,'booked'):schedule.save(state,{**self.first,'start':'08:30'},self.actor)
  def test_insufficient_gap_preserves_full_estimate_and_flags_conflict(self):
   state,_=schedule.save(self.state,{**self.booking,'start':'10:15','client':'Second'},self.actor)
   b=next(b for b in schedule.travel_blocks(state,self.booking['date']) if b['origin']=='1 Road' and b['side']=='before' and b['anchorId']!=self.first['id'])

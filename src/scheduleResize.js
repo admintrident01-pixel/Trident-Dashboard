@@ -1,3 +1,4 @@
+import {isBooked} from './scheduleBooking.js'
 import {assignedTechs,timeMinutes,timeText} from './scheduleMath.js'
 
 // Pure, synchronous planner. No routing requests or persistence on pointer movement.
@@ -29,7 +30,7 @@ export function resizeSchedule(blocks,travels,original,draft,edge){
     if(a.id===original.id&&timeMinutes(draft.start)>=timeMinutes(original.start)&&timeMinutes(draft.start)+draft.duration<=timeMinutes(original.start)+original.duration)continue
     const oldA=originals.get(a.id),oldB=originals.get(b.id)
     const inDirection=oldB&&(direction>0?timeMinutes(oldB.start)>=timeMinutes(oldA.start):timeMinutes(oldB.start)<=timeMinutes(oldA.start))
-    if(b.id===original.id||b.source==='leave'||b.source==='travel'||b.timing==='fixed'||!inDirection)return issue(`${b.client} cannot move. Resize less, or make the neighbouring booking flexible.`)
+    if(b.id===original.id||b.source==='leave'||b.source==='travel'||isBooked(b)||!inDirection)return issue(`${b.client} cannot move. Resize less, or unbook the neighbouring appointment.`)
     const delta=direction>0?ae-bs:as-be
     const start=timeMinutes(b.start)+delta
     if(start<0||start+b.duration>1440)return issue('The booking or its travel would leave this day.')

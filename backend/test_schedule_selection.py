@@ -19,8 +19,8 @@ class SelectionTests(unittest.TestCase):
   old={t['id']:t for t in schedule.travel_blocks(self.state,self.date)}
   for t in schedule.travel_blocks(result,self.date):self.assertEqual(schedule.minutes(t['start'])-schedule.minutes(old[t['id']]['start']),30)
  def test_fixed_rejects_everything(self):
-  self.state['appointments'][self.b['id']]['timing']='fixed';before=copy.deepcopy(self.state)
-  with self.assertRaisesRegex(Problem,'fixed'):self.move(self.state,[self.a['id'],self.b['id']],15)
+  self.state['appointments'][self.b['id']]['timing']='fixed';self.state['appointments'][self.b['id']].pop('bookingControlsVersion',None);before=copy.deepcopy(self.state)
+  with self.assertRaisesRegex(Problem,'booked'):self.move(self.state,[self.a['id'],self.b['id']],15)
   self.assertEqual(self.state,before)
  def test_collision_and_day_boundary(self):
   with self.assertRaisesRegex(Problem,'overlap'):self.move(self.state,[self.a['id']],90)
@@ -29,7 +29,7 @@ class SelectionTests(unittest.TestCase):
   for ids,delta in [([],15),(['missing'],15),([self.a['id']],1),([self.a['id']],True)]:
    with self.assertRaises(Problem):self.move(self.state,ids,delta)
  def test_unchecked_linked_fixed_neighbour_stays_put(self):
-  self.state['appointments'][self.b['id']].update(start='09:30',timing='fixed');before=copy.deepcopy(self.state['appointments'][self.b['id']])
+  self.state['appointments'][self.b['id']].update(start='09:30',timing='fixed');self.state['appointments'][self.b['id']].pop('bookingControlsVersion',None);before=copy.deepcopy(self.state['appointments'][self.b['id']])
   result=self.move(self.state,[self.a['id']],-15)
   self.assertEqual(result['appointments'][self.b['id']],before)
   self.assertEqual(result['appointments'][self.a['id']]['start'],'08:45')
@@ -54,7 +54,7 @@ class SelectionTests(unittest.TestCase):
   self.assertEqual(schedule.minutes(result['travelBlocks'][travel['id']]['start']),schedule.minutes(travel['start'])-15)
 
  def test_checked_booking_transfers_without_moving_neighbour(self):
-  self.state['appointments'][self.b['id']].update(start='09:30',timing='fixed');before=copy.deepcopy(self.state['appointments'][self.b['id']])
+  self.state['appointments'][self.b['id']].update(start='09:30',timing='fixed');self.state['appointments'][self.b['id']].pop('bookingControlsVersion',None);before=copy.deepcopy(self.state['appointments'][self.b['id']])
   result=schedule.save_travel(self.state,{'date':self.date,'action':'move_selection','ids':[self.a['id']],'delta':0,'fromTechnician':'Scott','toTechnician':'Bala'},self.user)
   self.assertEqual(result['appointments'][self.a['id']]['technicians'],['Bala'])
   self.assertEqual(result['appointments'][self.a['id']]['start'],'09:00');self.assertEqual(result['appointments'][self.b['id']],before)

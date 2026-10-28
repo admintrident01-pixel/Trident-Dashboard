@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 
 from core import Problem
 
-import timesheets, leave, schedule_routes, schedule_links, schedule_notes
+import timesheets, leave, schedule_routes, schedule_links, schedule_notes, schedule_booking
 
 
 
@@ -39,8 +39,8 @@ def leave_blocks(state,date):
 
 DEFAULT_QUICK_NOTES=['Left Text','Left Vmail','Left Email']
 
-BOOKING_STATUSES=('action-needed','confirmed','option','high-priority')
-BOOKING_STATUS_LABELS={'confirmed':'Confirmed','action-needed':'Action needed','option':'Optional','high-priority':'High priority'}
+BOOKING_STATUSES=schedule_booking.STATUSES
+BOOKING_STATUS_LABELS=schedule_booking.LABELS
 
 
 
@@ -68,6 +68,7 @@ def settings(state):
 
     result.setdefault('quickNotes',DEFAULT_QUICK_NOTES.copy())
     result.setdefault('typeDefaults',{})
+    result['typeDefaults']={kind:{**value,**({'bookingStatus':'action-needed','urgency':'low','timing':'flexible','bookingControlsVersion':1} if value.get('bookingControlsVersion')!=1 else {})} for kind,value in result['typeDefaults'].items()}
     result.setdefault('appointmentTypes',DEFAULT_TYPES.copy())
     if not any(value.casefold()=='unspecified' for value in result['appointmentTypes']):result['appointmentTypes'].append('Unspecified')
     result.setdefault('clientSearchUrlTemplate',DEFAULT_CLIENT_SEARCH_URL)
@@ -128,8 +129,8 @@ def save_settings(state,data):
     validated={}
     for kind,value in defaults.items():
         if kind not in cleaned:continue
-        if not isinstance(value,dict) or not re.fullmatch(r'#[0-9a-fA-F]{6}',str(value.get('colour',''))) or type(value.get('duration')) is not int or not 15<=value['duration']<=1440 or value['duration']%15 or value.get('timing') not in ('fixed','flexible') or value.get('bookingStatus') not in BOOKING_STATUSES:raise Problem(400,'Use a colour, quarter-hour duration, timing and booking status for each type.')
-        validated[kind]={k:value[k] for k in ('colour','duration','timing','bookingStatus')}
+        if not isinstance(value,dict) or not re.fullmatch(r'#[0-9a-fA-F]{6}',str(value.get('colour',''))) or type(value.get('duration')) is not int or not 15<=value['duration']<=1440 or value['duration']%15 or value.get('bookingStatus') not in BOOKING_STATUSES or value.get('urgency','low') not in ('high','low'):raise Problem(400,'Use a colour, quarter-hour duration, booking status and High or Low urgency for each type.')
+        validated[kind]={**{k:value[k] for k in ('colour','duration','bookingStatus')},'urgency':value.get('urgency','low'),'timing':'fixed' if value['bookingStatus']=='confirmed' else 'flexible','bookingControlsVersion':1}
     search_template=client_search_template(data.get('clientSearchUrlTemplate',settings(state)['clientSearchUrlTemplate']))
     workshop=text(data.get('workshopAddress',settings(state)['workshopAddress']),'a workshop address',1000)
     result['scheduleSettings']={'workshopAddress':workshop,**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
@@ -224,7 +225,7 @@ def read(state,date):
 
     date=day(date)
 
-    appointments=[copy.deepcopy(a) for a in state.get('appointments',{}).values() if a['date']==date]
+    appointments=[schedule_booking.controls(copy.deepcopy(a)) for a in state.get('appointments',{}).values() if a['date']==date]
 
     blocks=leave_blocks(state,date)
 
@@ -302,16 +303,15 @@ def save(state,data,user):
 
             raise Problem(400,'Use a duration in 15-minute increments that finishes on the same day.')
 
-        timing=data.get('timing')
-
-        if timing not in ('fixed','flexible'): raise Problem(400,'Choose Fixed time or Flexible time.')
+        incoming={**(old or {}),**data}
+        booking_status=schedule_booking.status(incoming)
+        urgency=schedule_booking.urgency(incoming)
+        timing='fixed' if booking_status=='confirmed' else 'flexible'
 
         time_basis=data.get('timeBasis',(old or {}).get('timeBasis','start'))
         if time_basis not in ('start','end'):raise Problem(400,'Choose whether to plan from the start or end time.')
 
-        booking_status=data.get('bookingStatus',(old or {}).get('bookingStatus','action-needed'))
-
-        if booking_status not in BOOKING_STATUSES: raise Problem(400,'Choose a valid booking status.')
+        # Booking status owns the internal timing rule; urgency is independent.
 
         is_lunch=str(data.get('type','')).strip().casefold()=='lunch'
 
@@ -319,7 +319,7 @@ def save(state,data,user):
 
                      'client':'Lunch' if is_lunch else text(data.get('client'),'a client name',160),'address':'' if is_lunch else text(data.get('address'),'an address',500),
 
-                     'bookingStatus':booking_status,'type':text(data.get('type',(old or {}).get('type','Unspecified')),'an appointment type',120),'notes':str(data.get('notes','')).strip(),'cancelled':False}
+                     'bookingStatus':booking_status,'urgency':urgency,'bookingControlsVersion':1,'type':text(data.get('type',(old or {}).get('type','Unspecified')),'an appointment type',120),'notes':str(data.get('notes','')).strip(),'cancelled':False}
 
         if is_lunch: appointment['source']='lunch'
 
@@ -407,7 +407,7 @@ def queue_appointment_email(state,appointment):
 
         seen.add(email)
 
-        body=f"Hello {name},\n\nAppointment details\nClient: {appointment['client']}\nType: {appointment['type']}\nAddress: {appointment['address']}\nDate: {appointment['date']}\nTime: {appointment['start']}–{end//60:02d}:{end%60:02d} (Pacific/Auckland)\nDuration: {appointment['duration']} minutes\nBooking status: {BOOKING_STATUS_LABELS.get(appointment.get('bookingStatus','action-needed'),'Action needed')}\nTime preference: {appointment['timing']}\nTechnicians: {', '.join(assigned(appointment))}\nNotes: {appointment.get('notes') or 'None'}\n\nTrident Community Equipment"
+        body=f"Hello {name},\n\nAppointment details\nClient: {appointment['client']}\nType: {appointment['type']}\nAddress: {appointment['address']}\nDate: {appointment['date']}\nTime: {appointment['start']}–{end//60:02d}:{end%60:02d} (Pacific/Auckland)\nDuration: {appointment['duration']} minutes\nBooking status: {BOOKING_STATUS_LABELS[schedule_booking.status(appointment)]}\nUrgency: {schedule_booking.urgency(appointment).title()}\nTechnicians: {', '.join(assigned(appointment))}\nNotes: {appointment.get('notes') or 'None'}\n\nTrident Community Equipment"
 
         reminders.queue(result,email,'Appointment · '+appointment['date']+' · '+appointment['client'],body,'appointment')
 
@@ -539,7 +539,7 @@ def resize_booking(state,data,user,old):
                 if a['id']==old['id'] and start>=old_start and start+duration<=old_end:continue
                 old_b=originals.get(b['id']);old_a=originals[a['id']]
                 in_direction=old_b and (minutes(old_b['start'])>=minutes(old_a['start']) if direction>0 else minutes(old_b['start'])<=minutes(old_a['start']))
-                if b['id']==old['id'] or b.get('source') in ('leave','travel') or b.get('timing')=='fixed' or not in_direction:raise Problem(409,f"{b['client']} cannot move. Resize less, or make the neighbouring booking flexible.")
+                if b['id']==old['id'] or b.get('source') in ('leave','travel') or schedule_booking.booked(b) or not in_direction:raise Problem(409,f"{b['client']} cannot move. Resize less, or unbook the neighbouring appointment.")
                 delta=a_end-b_start if direction>0 else a_start-b_end
                 new_start=minutes(b['start'])+delta
                 if new_start<0 or new_start+b['duration']>1440:raise Problem(409,'The booking or its travel would leave this day.')

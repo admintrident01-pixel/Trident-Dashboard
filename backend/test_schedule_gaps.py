@@ -34,7 +34,7 @@ class GapSnapTests(unittest.TestCase):
   self.assertTrue(any(e['leftId']==body['upperId'] and e['rightId']==body['lowerId'] and e['linked'] for e in schedule_links.connections(result,self.date)))
  def test_fixed_appointment_below_is_detected_through_its_travel_block(self):
   state,body=self.setup_gap(below='fixed')
-  with self.assertRaisesRegex(Problem,'appointment below is fixed'):schedule.save_travel(state,body,self.user)
+  with self.assertRaisesRegex(Problem,'appointment below is booked'):schedule.save_travel(state,body,self.user)
  def test_stale_gap_is_rejected(self):
   state,body=self.setup_gap()
   with self.assertRaisesRegex(Problem,'empty space changed'):schedule.save_travel(state,{**body,'lowerId':'missing'},self.user)

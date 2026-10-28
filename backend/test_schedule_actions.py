@@ -19,7 +19,7 @@ class BookingActionsTests(unittest.TestCase):
         state,a=schedule.save(state,{**a,'start':'10:00'},self.user)
         self.assertEqual(a['bookingStatus'],'action-needed')
         self.assertEqual(a['timing'],'flexible')
-        for status in ('option','action-needed','high-priority'):
+        for status in ('option','action-needed'):
             state,a=schedule.save(state,{**a,'bookingStatus':status},self.user)
             self.assertEqual(a['bookingStatus'],status)
         with self.assertRaises(Problem):schedule.save(state,{**a,'bookingStatus':'invalid'},self.user)
@@ -84,9 +84,9 @@ class BookingActionsTests(unittest.TestCase):
         import schedule_history
         state,a=schedule.save(self.state,{**self.booking,'bookingStatus':'high-priority'},self.user)
         after,b=schedule.save(state,{**a,'start':'10:00'},self.user)
-        self.assertEqual(b['bookingStatus'],'high-priority')
+        self.assertEqual(b['bookingStatus'],'action-needed');self.assertEqual(b['urgency'],'high')
         after=schedule_history.record(state,after,self.user['email'],a['date'],'Move priority booking')
         restored=schedule_history.apply(after,self.user['email'],a['date'],'undo')
-        self.assertEqual(restored['appointments'][a['id']]['bookingStatus'],'high-priority')
+        self.assertEqual(restored['appointments'][a['id']]['bookingStatus'],'action-needed');self.assertEqual(restored['appointments'][a['id']]['urgency'],'high')
         self.assertEqual(restored['appointments'][a['id']]['start'],'09:00')
         self.assertEqual(schedule.BOOKING_STATUS_LABELS['option'],'Optional')

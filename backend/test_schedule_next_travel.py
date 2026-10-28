@@ -22,13 +22,13 @@ class NextTravelTests(unittest.TestCase):
   self.assertFalse(any(b['anchorId']==self.bottom['id'] and b['side']=='before' for b in rows))
   self.route_mock.assert_any_call('A Road','B Road',force=True)
  def test_fixed_requires_choice_then_yes_unlocks_only_lower(self):
-  self.state['appointments'][self.bottom['id']]['timing']='fixed'
+  self.state['appointments'][self.bottom['id']]['timing']='fixed';self.state['appointments'][self.bottom['id']].pop('bookingControlsVersion',None)
   with self.assertRaisesRegex(Problem,'Choose whether'):schedule.save_travel(self.state,self.action,self.user)
   result=schedule.save_travel(self.state,{**self.action,'makeFlexible':True},self.user)
   self.assertEqual(result['appointments'][self.top['id']],self.top)
   self.assertEqual(result['appointments'][self.bottom['id']]['timing'],'flexible');self.assertEqual(result['appointments'][self.bottom['id']]['start'],'10:15')
  def test_no_keeps_both_bookings_unchanged_and_anchors_travel(self):
-  self.state['appointments'][self.bottom['id']]['timing']='fixed';bottom=copy.deepcopy(self.state['appointments'][self.bottom['id']])
+  self.state['appointments'][self.bottom['id']]['timing']='fixed';self.state['appointments'][self.bottom['id']].pop('bookingControlsVersion',None);bottom=copy.deepcopy(self.state['appointments'][self.bottom['id']])
   result=schedule.save_travel(self.state,{**self.action,'makeFlexible':False},self.user)
   self.assertEqual(result['appointments'][self.top['id']],self.top);self.assertEqual(result['appointments'][self.bottom['id']],bottom)
   travel=next(b for b in schedule.travel_blocks(result,self.date) if b['anchorId']==self.top['id'] and b['side']=='after')
@@ -45,7 +45,7 @@ class NextTravelTests(unittest.TestCase):
   with self.assertRaisesRegex(Problem,'overlap'):schedule.save_travel(state,self.action,self.user)
   self.assertEqual(state,before)
  def test_undo_restores_hidden_travel_links_and_timing(self):
-  self.state['appointments'][self.bottom['id']]['timing']='fixed'
+  self.state['appointments'][self.bottom['id']]['timing']='fixed';self.state['appointments'][self.bottom['id']].pop('bookingControlsVersion',None)
   after=schedule.save_travel(self.state,{**self.action,'makeFlexible':True},self.user)
   after=schedule_history.record(self.state,after,self.user['email'],self.date,'Travel to next')
   restored=schedule_history.apply(after,self.user['email'],self.date,'undo')
@@ -58,7 +58,7 @@ class NextTravelTests(unittest.TestCase):
   status,body,_=api.call('/api/schedule/travel','POST',self.action);self.assertEqual(status,200);self.assertTrue(body['history']['undo']['available'])
 
  def test_no_with_insufficient_gap_retains_fixed_booking_and_flags_travel(self):
-  self.state['appointments'][self.bottom['id']].update(start='10:00',timing='fixed');before=copy.deepcopy(self.state['appointments'][self.bottom['id']])
+  self.state['appointments'][self.bottom['id']].update(start='10:00',timing='fixed');self.state['appointments'][self.bottom['id']].pop('bookingControlsVersion',None);before=copy.deepcopy(self.state['appointments'][self.bottom['id']])
   result=schedule.save_travel(self.state,{**self.action,'makeFlexible':False},self.user)
   self.assertEqual(result['appointments'][self.bottom['id']],before)
   travel=next(b for b in schedule.travel_blocks(result,self.date) if b['anchorId']==self.top['id'] and b['side']=='after')
@@ -78,6 +78,6 @@ class NextTravelTests(unittest.TestCase):
   travel=next(b for b in schedule.travel_blocks(result,self.date) if b['anchorId']==self.top['id'] and b['side']=='after')
   self.assertEqual(travel['start'],'10:00')
  def test_travel_only_does_not_require_unlock_choice(self):
-  self.state['appointments'][self.bottom['id']]['timing']='fixed'
+  self.state['appointments'][self.bottom['id']]['timing']='fixed';self.state['appointments'][self.bottom['id']].pop('bookingControlsVersion',None)
   result=schedule.save_travel(self.state,{**self.action,'pullBelow':False},self.user)
   self.assertEqual(result['appointments'][self.bottom['id']],self.state['appointments'][self.bottom['id']])

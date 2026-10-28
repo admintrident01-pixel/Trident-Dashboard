@@ -12,7 +12,7 @@ test('checked bookings include only their own travel, not unchecked neighbours',
  assert.deepEqual(linkedSelection(['a'],[a,b,travel],[{leftId:'a',rightId:'b',linked:true}]).map(x=>x.id),['a','t'])
 })
 test('fixed appointments, leave and crossing midnight block the whole move',()=>{
- assert.match(selectionMoveError([a,{...b,timing:'fixed'}],15),/fixed/)
+ assert.match(selectionMoveError([a,{...b,timing:'fixed'}],15),/booked/)
  assert.match(selectionMoveError([{...a,source:'leave'}],15),/leave/)
  assert.match(selectionMoveError([a],-600),/day/)
  assert.equal(selectionMoveError([a,b],15),'')

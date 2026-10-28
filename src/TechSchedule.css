@@ -181,9 +181,10 @@
 .trident-portal .tech-schedule .schedule-help{font-size:10px;padding:4px 6px}
 .trident-portal .tech-schedule .schedule-route-warning{padding:4px 7px;margin:2px 0 4px;font-size:11px;line-height:1.25}
 
-.schedule-appointment-dialog{width:min(860px,calc(100vw - 24px));padding:12px;box-sizing:border-box;max-height:calc(100dvh - 24px)}
+.schedule-appointment-dialog{position:fixed;inset:auto;margin:0;z-index:40;width:min(740px,calc(100vw - 24px));padding:12px;box-sizing:border-box;max-height:calc(100dvh - 24px);box-shadow:0 12px 40px #17345f45;background:white}
 .schedule-appointment-dialog>form{display:flex;flex-direction:column;max-height:calc(100dvh - 50px)}
 .schedule-appointment-dialog .schedule-dialog-heading{margin:0 0 8px;flex-shrink:0}.schedule-appointment-dialog h2{font-size:18px}
+.schedule-editor-handle{cursor:move;touch-action:none;user-select:none;border-bottom:1px solid #dce3ed;padding:2px 0 9px}.schedule-editor-handle:focus-visible{outline:2px solid #1669c1;outline-offset:2px}.schedule-editor-handle h2 small{display:block;font-size:10px;font-weight:normal;color:#687c97;margin-top:3px}.schedule-editor-handle button{cursor:pointer}.schedule-appointment .schedule-urgency{display:inline-block;width:max-content;max-width:100%;padding:0 4px;border:1px solid #9aacc4;border-radius:3px;background:#f8fafc;color:#455c7b;font-size:10px;line-height:12px}.schedule-appointment .schedule-urgency.high{background:#fff1f1;border-color:#df9a9a;color:#9c2424}.schedule-appointment-dialog .schedule-radio-group{display:flex;gap:5px;flex-wrap:wrap;align-content:start}.schedule-appointment-dialog .schedule-radio-group label{display:flex;gap:4px;align-items:center;border:1px solid #cbd5e2;border-radius:4px;padding:4px 6px;font-weight:normal}.schedule-appointment-dialog .schedule-radio-group input{width:auto;min-height:0;margin:0}
 .schedule-appointment-dialog .schedule-form-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;overflow-y:auto;min-height:0;padding:1px}
 .schedule-appointment-dialog .schedule-half{grid-column:span 2}.schedule-appointment-dialog .schedule-wide{grid-column:1/-1}
 .schedule-appointment-dialog .schedule-form-grid label{gap:3px}.schedule-appointment-dialog :is(input,select,textarea){box-sizing:border-box;width:100%;font-size:12px;padding:5px 7px;min-height:29px}
@@ -258,3 +259,5 @@
 @media(hover:none){.trident-portal .tech-schedule .schedule-client-search{opacity:1}.trident-portal .tech-schedule .schedule-appointment:has(.schedule-client-search)>strong{padding-right:36px}}
 @media(max-width:450px){.schedule-gap-preview td,.schedule-gap-preview th{padding:5px;font-size:11px}.schedule-gap-preview td{white-space:normal}}
 .schedule-gap-preview table{table-layout:fixed}.schedule-gap-preview th{overflow-wrap:anywhere}.schedule-gap-preview thead th:first-child{width:42%}
+
+.schedule-appointment .schedule-booking-tags{display:flex;align-items:center;gap:5px;line-height:13px}.schedule-booking-tags>span:first-child{font-weight:600}

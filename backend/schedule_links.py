@@ -2,7 +2,7 @@
 import copy, datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 from core import Problem
-import schedule_routes
+import schedule_routes, schedule_booking
 
 def active(state):
     return bool(schedule_routes.configuration()['key'] or state.get('scheduleLinks') or any('locked' in row for row in state.get('travelBlocks',{}).values()))
@@ -192,7 +192,7 @@ def snap_gap(state,data,user):
         for identifier in ids:
             block=by_id[identifier]
             if block.get('source')=='leave':raise Problem(409,f'The block {label} is approved leave. It cannot be snapped or linked across this gap.')
-            if block.get('source')!='travel' and block.get('timing')=='fixed':raise Problem(409,f"The appointment {label} is fixed ({block['client']}). Consider making it flexible before moving.")
+            if block.get('source')!='travel' and schedule_booking.booked(block):raise Problem(409,f"The appointment {label} is booked ({block['client']}). Unbook it before moving.")
             require_movable(block)
     if above & below:raise Problem(409,'These blocks already belong to the same linked group. Unlink them before closing this gap.')
     delta=gap['start']-gap['end'];result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
@@ -291,7 +291,7 @@ def travel_next(state,data,user):
     top=rows[index];bottom=rows[index+1]
     if bottom['id']!=data.get('lowerId'):raise Problem(409,'The next appointment changed. Reopen the menu and try again.')
     make_flexible=data.get('makeFlexible')
-    if bottom.get('timing')=='fixed' and data.get('pullBelow') is not False and type(make_flexible) is not bool:raise Problem(400,'Choose whether to make the lower appointment flexible.')
+    if schedule_booking.booked(bottom) and data.get('pullBelow') is not False and type(make_flexible) is not bool:raise Problem(400,'Choose whether to unbook the lower appointment.')
     route=schedule_routes.estimate(top['address'],bottom['address'],force=True)
     if 'duration' not in route:raise Problem(400,route.get('error','Travel could not be calculated. Check both appointment addresses.'))
     duration=route['duration'];end=s.minutes(top['start'])+top['duration']
@@ -303,10 +303,10 @@ def travel_next(state,data,user):
     result.setdefault('scheduleHiddenTravel',{}).pop(after_id,None)
     result['scheduleHiddenTravel'][before_id]=True
     result.setdefault('scheduleLinks',{})[edge_id(name,top['id'],bottom['id'])]=False
-    pull=data.get('pullBelow') is not False and (bottom.get('timing')!='fixed' or make_flexible is True)
+    pull=data.get('pullBelow') is not False and (not schedule_booking.booked(bottom) or make_flexible is True)
     if pull:
-        if bottom.get('bookingStatus')=='confirmed':require_movable(bottom)
-        if make_flexible is True:result['appointments'][bottom['id']]={**result['appointments'][bottom['id']],'timing':'flexible'}
+        if make_flexible is True:result['appointments'][bottom['id']]={**result['appointments'][bottom['id']],'timing':'flexible','bookingStatus':'action-needed','urgency':schedule_booking.urgency(bottom),'bookingControlsVersion':1}
+        else:require_movable(bottom)
         delta=end+duration-s.minutes(bottom['start'])
         result=move_selection(result,{'date':date,'ids':[bottom['id']],'delta':delta},user)
         result.setdefault('scheduleLinks',{})[edge_id(name,after_id,bottom['id'])]=True
@@ -320,8 +320,7 @@ def travel_next(state,data,user):
 
 def require_movable(block):
     if block.get('source')=='travel':return
-    if block.get('bookingStatus')=='confirmed':raise Problem(409,f"{block['client']} is booked (Confirmed). Unbook it before moving.")
-    if block.get('timing')=='fixed':raise Problem(409,f"{block['client']} is fixed. Consider making it flexible before moving.")
+    if schedule_booking.booked(block):raise Problem(409,f"{block['client']} is booked. Unbook it before moving.")
 
 
 def move_to_date(state,data,user,edited=None):

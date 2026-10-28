@@ -54,9 +54,9 @@ class RecurringNotes(unittest.TestCase):
   status,result,_=api.call('/api/schedule-notes','POST',data);self.assertEqual(status,200);self.assertEqual(len(result['series']),1)
   self.assertEqual(schedule.read(api.store.state,'2026-10-26')['noteBlocks'][0]['client'],'Paperwork')
  def test_type_defaults_validation_and_old_client_preservation(self):
-  defaults={'Other':{'colour':'#ab12cd','duration':45,'timing':'fixed','bookingStatus':'confirmed'}}
+  defaults={'Other':{'colour':'#ab12cd','duration':45,'timing':'fixed','bookingStatus':'confirmed','urgency':'low','bookingControlsVersion':1}}
   state=schedule.save_settings(self.state,{'appointmentTypes':['Other'],'typeDefaults':defaults})
   self.assertEqual(schedule.settings(state)['typeDefaults'],defaults)
   self.assertEqual(schedule.save_settings(state,{'appointmentTypes':['Other']})['scheduleSettings']['typeDefaults'],defaults)
-  for invalid in ({'colour':'red'},{'duration':31},{'timing':'wrong'},{'bookingStatus':'wrong'}):
+  for invalid in ({'colour':'red'},{'duration':31},{'urgency':'wrong'},{'bookingStatus':'wrong'}):
    with self.assertRaises(Problem):schedule.save_settings(state,{'appointmentTypes':['Other'],'typeDefaults':{'Other':{**defaults['Other'],**invalid}}})

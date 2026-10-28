@@ -21,8 +21,8 @@ class MoveDateTests(unittest.TestCase):
   self.assertEqual(result['appointments'][self.b['id']]['date'],self.target);self.assertEqual(edited['notes'],'Moved')
   result=self.move(self.state,[self.b['id']]);self.assertEqual(result['appointments'][self.a['id']],self.state['appointments'][self.a['id']])
  def test_fixed_and_booked_are_named_and_must_be_changed_first(self):
-  for field,value,word in [('timing','fixed','fixed'),('bookingStatus','confirmed','Unbook')]:
-   state=copy.deepcopy(self.state);state['appointments'][self.b['id']][field]=value;before=copy.deepcopy(state)
+  for field,value,word in [('timing','fixed','booked'),('bookingStatus','confirmed','Unbook')]:
+   state=copy.deepcopy(self.state);state['appointments'][self.b['id']][field]=value;state['appointments'][self.b['id']].pop('bookingControlsVersion',None);before=copy.deepcopy(state)
    with self.assertRaisesRegex(Problem,word):self.move(state,[self.a['id'],self.b['id']])
    self.assertEqual(state,before)
   state,a=schedule.save(self.state,{**self.a,'bookingStatus':'confirmed'},self.user)

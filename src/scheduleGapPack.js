@@ -1,3 +1,4 @@
+import {isBooked} from './scheduleBooking.js'
 /** Preview a whole side of a technician's gap, including linked team work and travel. */
 import {assignedTechs,timeMinutes,timeText} from './scheduleMath.js'
 export function gapPackPlan(blocks,connections,technician,gap,direction){
@@ -20,8 +21,7 @@ export function gapPackPlan(blocks,connections,technician,gap,direction){
   if(!b)return issue('A linked block changed. Refresh the schedule and preview again.')
   if(b.source==='leave')return issue('Approved leave cannot move. Choose the other side of the gap, or update Leave forms.')
   if(b.source==='note')return issue('Recurring notes cannot move. Choose the other side, or update Schedule settings.')
-  if(b.source!=='travel'&&b.bookingStatus==='confirmed')return issue(`${b.client} is booked (Confirmed). Unbook it before moving.`)
-  if(b.source!=='travel'&&b.timing==='fixed')return issue(`${b.client} is fixed. Make it flexible before moving.`)
+  if(b.source!=='travel'&&isBooked(b))return issue(`${b.client} is booked. Unbook it before moving.`)
   if(b.source==='travel'&&b.linked===false&&b.locked!==false)return issue('Unlock detached travel before moving it.')
   if(b.source==='travel'&&(b.routeError||b.routeConflict))return issue('Review the affected travel before closing this gap.')
   if(timeMinutes(b.start)+delta<0||timeMinutes(b.start)+delta+b.duration>1440)return issue('The blocks or their travel would leave the selected day.')
