@@ -160,8 +160,60 @@ def pdf(report_tables,title,date):
         canvas.saveState();canvas.setFont('Helvetica',8);canvas.setFillColor(colors.HexColor('#627a93'));canvas.drawString(28,19,'Trident Dashboard');canvas.drawRightString(page_size[0]-28,19,f'Page {document.page}');canvas.restoreState()
     doc.build(story,onFirstPage=footer,onLaterPages=footer);return out.getvalue()
 
+def asset_detail_pdf(state,asset_id):
+    """Read-only A5 sheet, using recorded asset values rather than receipt guesses."""
+    from pathlib import Path
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A5
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle
+    data=stock.read(state)
+    if not isinstance(asset_id,str) or asset_id not in data['assets']:raise Problem(404,'This asset no longer exists. Refresh stock and try again.')
+    asset=data['assets'][asset_id];product=data['products'].get(asset['productId'],{})
+    # The first label is the oldest known number. A later relabel date is not
+    # evidence of when the physical item was originally added to stock.
+    first=(asset.get('numberHistory') or [{}])[0]
+    fonts=Path(__file__).parent/'fonts'
+    for name,file in [('TridentAsset','LiberationSans-Regular.ttf'),('TridentAssetBold','LiberationSans-Bold.ttf')]:
+        if name not in pdfmetrics.getRegisteredFontNames():pdfmetrics.registerFont(TTFont(name,str(fonts/file)))
+    navy=colors.HexColor('#17365f');muted=colors.HexColor('#61738b')
+    styles={k:ParagraphStyle('asset-'+k,fontName='TridentAssetBold' if k in ('brand','title','label') else 'TridentAsset',fontSize=size,leading=size+4,textColor=navy if k!='label' else muted) for k,size in [('brand',10),('title',22),('body',10),('label',8.5)]}
+    def para(value,style='body'):
+        text=str(value).strip() if value is not None else ''
+        text=re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]','',text) or 'Not recorded'
+        return Paragraph(escape(text).replace('\n','<br/>'),styles[style])
+    def dated(value):
+        try:return dt.date.fromisoformat(value).strftime('%d %b %Y')
+        except (TypeError,ValueError):return value or 'Not recorded'
+    added=dated(first.get('addedAt')) if first.get('addedAt') else stock.label_added(first)
+    reference=lambda value:((value.get('referenceType') or 'Reference')+' '+value['reference']) if value.get('reference') else 'Not recorded'
+    rows=[('Product code',product.get('code')),('Available','Yes' if asset['status']=='Available' else 'No'),('Status',asset['status']),('Location',asset.get('location')),('Stock type',asset.get('pool')),('Added to stock',added),('Added reference',stock.label_reference(first)),('Client',asset.get('client')),('Current SO / PO',reference(asset)),('Trident job ID',asset.get('jobId'))]
+    for label,key in [('Allocated from','allocatedAt'),('Delivered','dispatchedAt'),('Refurb completed','refurbCompletedAt')]:
+        if asset.get(key):rows.append((label,dated(asset[key])))
+    for label,key in [('Refurb technician','refurbTechnician'),('Collection client','pickupClient'),('Collection reference','pickupReference'),('Collection job ID','pickupJobId')]:
+        if asset.get(key):rows.append((label,asset[key]))
+    if asset.get('sourceReferences'):rows.append(('Source references','\n'.join(((r.get('type') or 'Reference')+' '+r['number']) for r in asset['sourceReferences'] if r.get('number'))))
+    date=dt.datetime.now(ZoneInfo('Pacific/Auckland')).strftime('%d %b %Y, %I:%M %p')
+    out=io.BytesIO();doc=SimpleDocTemplate(out,pagesize=A5,leftMargin=28,rightMargin=28,topMargin=26,bottomMargin=36,title='Asset '+asset['number'],author='Trident Dashboard')
+    table=Table([[para(label,'label'),para(value)] for label,value in rows],colWidths=[105,doc.width-105],hAlign='LEFT',splitInRow=1)
+    table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),0),('RIGHTPADDING',(0,0),(0,-1),10),('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6),('LINEBELOW',(0,0),(-1,-1),.35,colors.HexColor('#e2e8f0'))]))
+    def footer(canvas,document):
+        canvas.setStrokeColor(colors.HexColor('#d4dfeb'));canvas.line(28,28,A5[0]-28,28)
+        canvas.setFont('TridentAsset',6.5);canvas.setFillColor(muted)
+        canvas.drawString(28,17,'Printed '+date+' NZ time')
+        canvas.drawRightString(A5[0]-28,17,'A5 | '+str(document.page))
+    story=[para('TRIDENT / ASSET DETAILS','brand'),Spacer(1,12),para(asset['number'],'title'),Spacer(1,8),para(product.get('description')),Spacer(1,14),table]
+    doc.build(story,onFirstPage=footer,onLaterPages=footer)
+    name=re.sub(r'[^A-Za-z0-9_-]+','-',asset['number']).strip('-')[:80] or 'details'
+    return {'name':'Trident-asset-'+name+'.pdf','mime':'application/pdf','file':base64.b64encode(out.getvalue()).decode()}
+
 def create(state,p,template=None):
     scope=p.get('scope');format=p.get('format')
+    if scope=='asset_detail':
+        if format!='pdf':raise Problem(400,'Asset details are available as a PDF.')
+        return asset_detail_pdf(state,p.get('assetId'))
     if format not in ('xlsx','pdf') or scope not in ('workbook',*SCOPES):raise Problem(400,'Choose a valid report and format.')
     date=dt.datetime.now(ZoneInfo('Pacific/Auckland')).date().isoformat()
     if scope=='stock_take':
