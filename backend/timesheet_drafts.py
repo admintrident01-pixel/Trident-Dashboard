@@ -25,9 +25,8 @@ def save(state,data,user):
     except ValueError:raise Problem(400,'Choose a valid Monday.')
     if date.weekday()!=0:raise Problem(400,'Choose a Monday for the week starting date.')
     old=existing(state,data,user)
-    if not old:
-        duplicate=next((r for r in state.get('timesheetDrafts',{}).values() if r['owner']==user['email'] and r['technician']==name and r['weekStart']==week),None)
-        if duplicate:raise Problem(409,'A draft already exists for this week. Reopen it from history.')
+    from timesheet_period import require_available
+    require_available(state,name,week,user,exclude_draft=old['id'] if old else None)
     days=data.get('days')
     if not isinstance(days,list) or len(days)!=7:raise Problem(400,'The draft must contain seven days.')
     cleaned=[];total=decimal.Decimal(0)
@@ -61,6 +60,6 @@ def submit(state,data,user):
     if not isinstance(data,dict):raise Problem(400,'Invalid time sheet.')
     accounts.own(user,data.get('technician'))
     old=existing(state,data,user)
-    result,entry=timesheets.save(state,data)
+    result,entry=timesheets.save(state,data,user=user,exclude_draft=old['id'] if old else None)
     if old:del result['timesheetDrafts'][old['id']]
     return result,entry

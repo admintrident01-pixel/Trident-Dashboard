@@ -96,3 +96,4 @@
 .week-quick-picker{display:flex;gap:6px;align-items:center}.week-quick-picker input{flex:1;min-width:0}.week-quick-picker #last-week{white-space:nowrap;padding:6px 9px;font-size:12px;min-height:34px;margin:0;width:auto}
 
 .timesheet-form .head>p{margin:0 0 5px}.timesheet-help summary{font-size:12px;cursor:pointer}.timesheet-help p{font-size:12px;line-height:1.5;margin:8px 0 0}
+#period-conflict{width:min(540px,calc(100vw - 32px));border:1px solid #cad7e8;border-radius:10px;padding:24px;color:#20334d;box-shadow:0 16px 60px #17345f40}#period-conflict::backdrop{background:#17345f70}#period-conflict h2{font-size:20px;color:#17345f;margin:0 0 10px}#period-conflict>p{font-size:13px;line-height:1.5;color:#60738e}#period-existing>div{padding:12px 0;border-top:1px solid #e0e7f1}#period-existing p{font-size:13px;margin:0 0 10px}#period-conflict>button{margin-top:12px}

@@ -30,8 +30,9 @@ export default function App(){
 
  const [session,setSession]=useState(loadSession),[error,setError]=useState(''),[document,setDocument]=useState(''),[timesheetDocument,setTimesheetDocument]=useState(''),[selectedPage,setPage]=useState(loadPage)
  const page=canAccessPage(selectedPage,session)?selectedPage:'home'
+ const [timesheetOpenRequest,setTimesheetOpenRequest]=useState(null)
  const [visitedPages,setVisitedPages]=useState(()=>({[loadPage()]:true}))
- const visitPage=useCallback(next=>{setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
+ const visitPage=useCallback(next=>{if(next!=='timesheet')setTimesheetOpenRequest(null);setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
 
  useEffect(()=>saveSession(session),[session])
  useEffect(()=>{const titles={home:'Home',quotes:'Quotes',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
@@ -98,7 +99,7 @@ export default function App(){
 
  useEffect(()=>{const handler=e=>{if(e.origin===location.origin&&e.data?.type==='trident-signin-expired'){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('Your session expired. Sign in again.')}};window.addEventListener('message',handler);return()=>window.removeEventListener('message',handler)},[])
 
- useEffect(()=>{const listener=e=>{if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheet-height'&&Number.isFinite(e.data.height)&&e.data.height>0&&e.data.height<20000)setTimesheetHeight(e.data.height);if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheets-updated')window.dispatchEvent(new Event('trident-timesheets-updated'))};window.addEventListener('message',listener);return()=>window.removeEventListener('message',listener)},[])
+ useEffect(()=>{const listener=e=>{if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheet-height'&&Number.isFinite(e.data.height)&&e.data.height>0&&e.data.height<20000)setTimesheetHeight(e.data.height);if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheets-updated')window.dispatchEvent(new Event('trident-timesheets-updated'));if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-open-submitted-timesheet'&&typeof e.data.id==='string')setTimesheetOpenRequest({id:e.data.id,nonce:Date.now()})};window.addEventListener('message',listener);return()=>window.removeEventListener('message',listener)},[])
  useEffect(()=>{if(page==='timesheet'&&timesheetDocument)timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin)},[page,timesheetDocument])
 
  useEffect(()=>{const refresh=()=>quoteFrame.current?.contentWindow.postMessage({type:'trident-quote-settings-updated'},location.origin);window.addEventListener('trident-settings-saved',refresh);return()=>window.removeEventListener('trident-settings-saved',refresh)},[])
@@ -168,7 +169,7 @@ export default function App(){
 
   {page==='timesheet'&&!timesheetDocument&&<p className="module-loading" role="status">Loading your time sheet…</p>}
 
-  {timesheetDocument&&<section className="quote-module timesheet-module" hidden={page!=='timesheet'} aria-label="Time sheet"><iframe ref={timesheetFrame} title="Trident time sheet" onLoad={()=>{if(pendingDraft.current){timesheetFrame.current.contentWindow.postMessage({type:'trident-resume-timesheet-draft',id:pendingDraft.current},location.origin);pendingDraft.current=''}}} style={{height:timesheetHeight}} srcDoc={timesheetDocument}/>{page==='timesheet'&&<TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/>}</section>}
+  {timesheetDocument&&<section className="quote-module timesheet-module" hidden={page!=='timesheet'} aria-label="Time sheet"><iframe ref={timesheetFrame} title="Trident time sheet" onLoad={()=>{if(pendingDraft.current){timesheetFrame.current.contentWindow.postMessage({type:'trident-resume-timesheet-draft',id:pendingDraft.current},location.origin);pendingDraft.current=''}}} style={{height:timesheetHeight}} srcDoc={timesheetDocument}/>{page==='timesheet'&&<TimesheetHistory openRequest={timesheetOpenRequest} request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/>}</section>}
 
   {(page==='leave'||visitedPages.leave)&&<section hidden={page!=='leave'}><LeaveForms isAdmin={isAdmin} request={request} active={page==='leave'} onChanged={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin);window.dispatchEvent(new Event('trident-leave-updated'))}}/></section>}
 

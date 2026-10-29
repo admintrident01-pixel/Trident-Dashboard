@@ -6,7 +6,8 @@ class TimesheetDeleteTests(unittest.TestCase):
         self.payload={'technician':'Scott Yearbury','signature':'Scott','weekStart':'2027-02-01','days':[{'status':'Work','method':'direct','hours':8}]+[{'status':'Work','method':'direct','hours':0} for _ in range(6)]}
         self.state,self.old=timesheets.save({},self.payload)
         new=copy.deepcopy(self.payload);new['days'][0]['hours']=9
-        self.state,self.current=timesheets.save(self.state,new)
+        # Existing historical duplicates remain recoverable and keep report fallback.
+        self.state,self.current=timesheets.save(self.state,new,check_period=False)
         self.old['submittedAt']='2027-02-01T00:00:00Z';self.current['submittedAt']='2027-02-02T00:00:00Z'
         self.body={'id':self.current['id'],'revision':1,'confirmed':True}
     def test_validation_and_immutability(self):

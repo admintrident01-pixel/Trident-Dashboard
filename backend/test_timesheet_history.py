@@ -38,7 +38,8 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(api.call('/api/timesheet-edit','POST',self.change)[0],409)
 
     def test_editing_earlier_submission_becomes_current_report(self):
-        state,later=timesheets.save(self.state,self.payload)
+        # Seed historical duplicates to verify their reporting and correction support.
+        state,later=timesheets.save(self.state,self.payload,check_period=False)
         later['submittedAt']='2027-02-02T00:00:00+00:00'
         state['timesheets'][self.row['id']]['submittedAt']='2027-02-01T00:00:00+00:00'
         state,row=timesheets.edit_submission(state,self.change,'admin@example.nz')
@@ -57,9 +58,9 @@ class HistoryTests(unittest.TestCase):
             report=next(r for r in weekly_report.week_rows(state,week) if r['name']=='Scott Yearbury')
             self.assertEqual(report['days'][0]['work'],expected)
         self.assertEqual(self.state['timesheets'][row['id']]['weekStart'],'2027-02-01')
-    def test_destination_collision_requires_confirmation(self):
+    def test_destination_collision_cannot_create_a_second_submission(self):
         state,existing=timesheets.save(self.state,{**self.payload,'weekStart':'2027-02-08'})
         change={**self.change,'weekStart':'2027-02-08'}
         with self.assertRaises(Problem):timesheets.edit_submission(state,change,'admin@example.nz')
-        result,row=timesheets.edit_submission(state,{**change,'replaceWeekConfirmed':True},'admin@example.nz')
-        self.assertEqual(result['timesheets'][existing['id']],existing);self.assertEqual(len(result['timesheets']),2)
+        with self.assertRaises(Problem):timesheets.edit_submission(state,{**change,'replaceWeekConfirmed':True},'admin@example.nz')
+        self.assertEqual(state['timesheets'][existing['id']],existing)

@@ -23,6 +23,8 @@ import office_files
 import schedule_history
 import schedule_live
 import quote_catalog
+import schedule_search
+import timesheet_period
 from performance import measure,request_metrics
 
 import staff_setup
@@ -323,6 +325,8 @@ class Application:
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
 
+     elif path=='/api/schedule/search' and method=='GET':payload=schedule_search.search(state,parse_qs(environ.get('QUERY_STRING','')))
+
      elif path in ('/api/schedule','/api/schedule/routes') and method=='GET':
       params=parse_qs(environ.get('QUERY_STRING',''));fast=path=='/api/schedule' and params.get('view',[''])[0]=='bookings'
       tag=schedule_history.etag(state);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',tag))
@@ -512,8 +516,6 @@ class Application:
 
      elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/timesheet-drafts','/api/staff-settings','/api/vehicles','/api/vehicle-order','/api/vehicle-checks','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
 
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh and try again.')
-
       length=int(environ.get('CONTENT_LENGTH') or 0)
 
       if length<1 or length>MAX_BODY:raise Problem(400,'Upload exceeds the allowed size.')
@@ -521,6 +523,15 @@ class Application:
       body=environ['wsgi.input'].read(length)
 
       if len(body)!=length:raise Problem(400,'Incomplete upload.')
+
+      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':
+       if path in ('/api/timesheets','/api/timesheet-drafts'):
+        try:candidate=json.loads(body)
+        except Exception:raise Problem(400,'Invalid time sheet.')
+        if not isinstance(candidate,dict):raise Problem(400,'Invalid time sheet.')
+        accounts.own(user,candidate.get('technician'))
+        timesheet_period.require_available(state,candidate.get('technician'),candidate.get('weekStart'),user,exclude_draft=candidate.get('draftId'))
+       raise Problem(409,'Another change was saved. Refresh and try again.')
 
       upload=None;garbage=[]
 
@@ -648,7 +659,7 @@ class Application:
 
      else:raise Problem(404,'Not found.')
 
-  except Problem as e:status=e.status;payload={'error':str(e)};mime='application/json'
+  except Problem as e:status=e.status;payload={'error':str(e),**getattr(e,'details',{})};mime='application/json'
 
   except Exception:logging.exception('Quote API request failed');status=500;payload={'error':'The online service could not complete this request. Refresh Home before retrying.'};mime='application/json'
 

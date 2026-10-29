@@ -66,6 +66,7 @@ def settings(state):
 
     result.setdefault('lunchStart','12:00')
     result.setdefault('publicHolidays',[])
+    result.setdefault('columnWidths',{})
 
     result.setdefault('quickNotes',DEFAULT_QUICK_NOTES.copy())
     result.setdefault('typeDefaults',{})
@@ -143,7 +144,9 @@ def save_settings(state,data):
         validated[kind]={**{k:value[k] for k in ('colour','duration','bookingStatus')},'urgency':value.get('urgency','low'),'timing':'fixed' if value['bookingStatus']=='confirmed' else 'flexible','bookingControlsVersion':1}
     search_template=client_search_template(data.get('clientSearchUrlTemplate',settings(state)['clientSearchUrlTemplate']))
     workshop=text(data.get('workshopAddress',settings(state)['workshopAddress']),'a workshop address',1000)
-    result['scheduleSettings']={'workshopAddress':workshop,**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'publicHolidays':public_holidays,'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
+    widths=data.get('columnWidths',settings(state)['columnWidths'])
+    if not isinstance(widths,dict) or len(widths)>500 or any(not isinstance(name,str) or len(name)>160 or type(value) is not int or not 50<=value<=200 for name,value in widths.items()):raise Problem(400,'Use column widths from 50% to 200%.')
+    result['scheduleSettings']={'workshopAddress':workshop,**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'publicHolidays':public_holidays,'columnWidths':{**settings(state)['columnWidths'],**widths},'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
 
     return result
 
@@ -234,7 +237,7 @@ def read(state,date,fast=False):
 
     names.sort(key=lambda name:types.get(name,'technician')=='office')
 
-    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date,cache_only=True) if fast else schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'lunchShading':{'start':settings(state)['lunchStart'],'duration':30},'publicHolidays':settings(state)['publicHolidays'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date,cache_only=True) if fast else travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
+    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date,cache_only=True) if fast else schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'lunchShading':{'start':settings(state)['lunchStart'],'duration':30},'publicHolidays':settings(state)['publicHolidays'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'columnWidths':settings(state)['columnWidths'],'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date,cache_only=True) if fast else travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
 
 
 

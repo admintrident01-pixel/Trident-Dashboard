@@ -47,7 +47,7 @@ def minutes(value):
     hour, minute = map(int, value.split(':'))
     return hour * 60 + minute
 
-def save(state, data):
+def save(state, data, user=None, exclude_submission=None, exclude_draft=None, check_period=True):
     if not isinstance(data, dict):
         raise Problem(400, 'Invalid time sheet.')
     technician = text(data.get('technician'), 'technician name', 160, True)
@@ -59,6 +59,9 @@ def save(state, data):
         raise Problem(400, 'Choose a valid week starting date.')
     if date.weekday() != 0:
         raise Problem(400, 'The week starting date must be a Monday.')
+    if check_period:
+        from timesheet_period import require_available
+        require_available(state,technician,week,user,exclude_submission,exclude_draft)
     days = data.get('days')
     if not isinstance(days, list) or len(days) != 7:
         raise Problem(400, 'The time sheet must contain seven days.')
@@ -113,11 +116,9 @@ def edit_submission(state, data, actor):
         raise Problem(409, 'This time sheet changed. Refresh and reopen it.')
     if data.get('technician') != old['technician']:
         raise Problem(400, 'Keep the original technician for a correction.')
-    if data.get('weekStart') != old['weekStart'] and any(s['id'] != old['id'] and s['technician'].casefold() == old['technician'].casefold() and s['weekStart'] == data.get('weekStart') for s in state.get('timesheets',{}).values()) and data.get('replaceWeekConfirmed') is not True:
-        raise Problem(400, 'This person already has a submission for the new week. Confirm that this correction should become the current submission.')
     reason=text(data.get('editReason'), 'correction reason', 1000, True)
     payload={**data, 'signature':old['signature']}
-    _, entry=save(state,payload)
+    _, entry=save(state,payload,user={'role':'admin','email':actor},exclude_submission=old['id'],check_period=payload.get('weekStart')!=old['weekStart'])
     previous={k:copy.deepcopy(v) for k,v in old.items() if k!='editHistory'}
     history=copy.deepcopy(old.get('editHistory',[]))
     stamp=datetime.datetime.now(datetime.timezone.utc).isoformat()

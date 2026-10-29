@@ -138,7 +138,7 @@ class TestAPI(unittest.TestCase):
   d={'id':new['id'],'revision':1,'status':'Declined'};self.assertEqual(self.call('/api/leave-decision','POST',d,6)[0],400)
   d['decisionNotes']='Alternative dates needed';self.assertEqual(self.call('/api/leave-decision','POST',d,6)[0],200)
   self.assertEqual(len(json.loads(self.call('/api/leave')[2])['requests']),2)
-  self.assertEqual(self.call('/api/timesheets','POST',sheet,7)[0],400)
+  self.assertEqual(self.call('/api/timesheets','POST',sheet,7)[0],409)
  def test_staff_settings_persist_and_validate(self):
   self.assertEqual(self.call('/api/staff-settings',token='')[0],401)
   self.assertEqual(len(json.loads(self.call('/api/staff-settings')[2])['technicians']),8)
