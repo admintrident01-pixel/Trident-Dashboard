@@ -216,6 +216,7 @@ def lunch_blocks(state,date):
 def read(state,date,fast=False):
 
     date=day(date)
+    schedule_routes.observe_controls(state.get('travelBlocks',{}))
 
     appointments=[schedule_booking.controls(copy.deepcopy(a)) for a in state.get('appointments',{}).values() if a['date']==date and not is_lunch(a)]
 
@@ -443,6 +444,7 @@ def travel_candidates(state,date):
     return result
 
 def travel_blocks(state,date,cache_only=False):
+    schedule_routes.observe_controls(state.get('travelBlocks',{}))
     if schedule_links.active(state):return schedule_links.travel_blocks(state,date,cache_only=True) if cache_only else schedule_links.travel_blocks(state,date)
     rows=[]
     for candidate in travel_candidates(state,date):
