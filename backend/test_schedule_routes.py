@@ -88,7 +88,7 @@ class RoutingTests(unittest.TestCase):
   import io,urllib.error,json
   error=urllib.error.HTTPError('https://routes.googleapis.com',403,'Forbidden',{},io.BytesIO(json.dumps({'error':{'message':'do not expose credentials','details':[{'reason':'SERVICE_DISABLED'}]}}).encode()))
   with patch.object(schedule_routes,'estimate',new=self.original_estimate),patch.object(schedule_routes.urllib.request,'urlopen',side_effect=error):
-   result=schedule_routes.estimate('Unique route for failure test','Destination')
+   result=schedule_routes.estimate('Unique route for failure test','Destination',force=True)
   self.assertIn('disabled',result['error']);self.assertNotIn('credentials',result['error'])
  def test_public_schedule_does_not_include_routing_key(self):
   import json
@@ -112,5 +112,6 @@ class RoutingTests(unittest.TestCase):
   import io,json
   def response(*args,**kwargs):return io.BytesIO(json.dumps({'routes':[{'duration':'901s','distanceMeters':5000}]}).encode())
   with patch.object(schedule_routes,'estimate',new=self.original_estimate),patch.object(schedule_routes.urllib.request,'urlopen',side_effect=response) as request:
-   for force in (False,False,True):self.assertEqual(schedule_routes.estimate('Fresh route cache test','Destination',force=force)['duration'],30)
-   self.assertEqual(request.call_count,2)
+   for force in (False,False):self.assertTrue(schedule_routes.estimate('Fresh route cache test','Destination',force=force)['manualOnly'])
+   self.assertEqual(schedule_routes.estimate('Fresh route cache test','Destination',force=True)['duration'],30)
+   self.assertEqual(request.call_count,1)

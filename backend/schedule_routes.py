@@ -1,27 +1,9 @@
-"""Server-only routing with durable plans; refreshes never renew saved journeys."""
-import json, math, os, re, time, urllib.request, urllib.error, threading, logging
-import route_plans
+"""Manual-only Google routing: reads never call the paid provider."""
+import json, math, os, re, time, urllib.request, urllib.error, threading
 from pathlib import Path
 
-_cache={}
 _itinerary_cache={}
 _lock=threading.Lock()
-_request_locks=[threading.Lock() for _ in range(64)]
-_controls_signature=None
-
-def observe_controls(controls):
-    """A deliberate shared travel edit invalidates worker-local copies only.
-
-    Reload the durable plan after another worker recalculates it, without making
-    another Google request. Unchanged polling does not touch shared storage.
-    """
-    global _controls_signature
-    signature=json.dumps(controls,sort_keys=True,separators=(',',':'))
-    with _lock:
-        if _controls_signature is not None and signature!=_controls_signature:
-            _cache.clear();_itinerary_cache.clear()
-        _controls_signature=signature
-
 def configuration():
     local={}
     if os.environ.get('TRIDENT_LOCAL_DATA'):
@@ -39,48 +21,18 @@ def missing_location(value):
     return value in placeholders or any(value.startswith(label+' ') and value[len(label)+1:] in placeholders for label in ('address','location','site','destination','client address'))
 
 def estimate(origin,destination,force=False,cache_only=False):
-    # Check before cache/config/provider lookup: old guessed routes must never win.
+    # Both normal and fast schedule reads stop here, including cold workers,
+    # changed addresses and failed routes. Only an explicit write action may pay.
     if missing_location(origin) or missing_location(destination):
         return {'error':'Location not confirmed. Default travel is 0.25 hours; add a real address to calculate it.','defaultDuration':15,'locationMissing':True}
-    if force:
-        with _lock:_itinerary_cache.clear()
-    cache_key=tuple(' '.join(value.split()).casefold() for value in (origin,destination))
-    with _lock:
-        cached=_cache.get(cache_key)
-        if not force and cached and cached[0]>time.monotonic():return cached[1].copy()
-        if not force and not cache_only and cached and 'duration' in cached[1]:return cached[1].copy()
-    # The bookings-only response stays non-blocking. The route response loads
-    # durable plans in the background after a worker restart, without Google.
-    if cache_only:return {**cached[1],'pending':True} if cached else {'pending':True}
-    name=route_plans.key(origin,destination)
-    with _request_locks[int(name[:8],16)%len(_request_locks)]:
-        with _lock:
-            cached=_cache.get(cache_key)
-            if not force and cached and (cached[0]>time.monotonic() or 'duration' in cached[1]):return cached[1].copy()
-        try:
-            backend=route_plans.store();generation,record=backend.read(name)
-            if record and not force:result=route_plans.result(record)
-            else:
-                config=configuration()
-                if not config['key']:return {'error':'Automatic routing is not configured.'}
-                lease,result=route_plans.claim(backend,name,generation,record,force=force)
-        except Exception:
-            logging.warning('Travel plan storage unavailable; Google Maps was not called.')
-            return {'error':'Saved travel calculations are temporarily unavailable. Google Maps was not called.','defaultDuration':15}
-        if (not record or force) and lease:
-            result=_provider(origin,destination,config)
-            try:route_plans.finish(backend,name,lease,result)
-            except Exception:logging.warning('Travel plan could not be saved; automatic provider retry is blocked by its reservation.')
-            # Keep a good saved plan when a deliberate retry fails.
-            remembered=lease[1].get('previous') if 'duration' not in result else None
-            if remembered:
-                with _lock:_cache[cache_key]=(float('inf'),remembered.copy())
-                return result.copy()
-        if not result.get('pending'):
-            with _lock:
-                if len(_cache)>=1000:_cache.pop(next(iter(_cache)))
-                _cache[cache_key]=(float('inf'),result.copy())
-        return result.copy()
+    if not force or cache_only:
+        return {'manualOnly':True,'defaultDuration':15,'error':'Travel has not been calculated. Choose Calculate with Google Maps, or enter a planned travel time.'}
+    with _lock:_itinerary_cache.clear()
+    config=configuration()
+    if not config['key']:return {'error':'Google Maps routing is not configured.'}
+    # Do not persist raw route responses or populate a reusable provider cache.
+    # The explicit schedule action retains the selected travel-block duration.
+    return _provider(origin,destination,config)
 
 def _provider(origin,destination,config):
     body={'origin':{'address':origin},'destination':{'address':destination},'travelMode':'DRIVE','routingPreference':'TRAFFIC_UNAWARE','regionCode':'NZ'}

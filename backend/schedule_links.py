@@ -21,6 +21,8 @@ def travel_blocks(state,date,cache_only=False):
         locked=saved.get('locked',True)
         linked=saved.get('linked',True)
         route=routes.get((c.get('origin',''),c.get('destination','')),{}) if locked else {}
+        if route.get('manualOnly') and isinstance(saved.get('duration'),(int,float)):
+            route={'duration':saved['duration'],'planned':True}
         # Do not draw a guessed duration while the first provider result is pending.
         # A saved override or previous cached estimate can stay visible meanwhile.
         if route.get('pending') and route.get('duration') is None and not saved:continue
@@ -32,7 +34,7 @@ def travel_blocks(state,date,cache_only=False):
         # Keep the complete estimate visible; never silently shorten a journey.
         conflict=duration>c['maxDuration'] if linked else False
         if not 0<=start<1440 or start+duration>1440:continue
-        block={**c,'source':'travel','type':'Travel','timing':'fixed','cancelled':False,'start':s.time_string(start),'duration':duration,'version':saved.get('version',0),'locked':locked,'linked':linked,'routePending':bool(route.get('pending')),'routeError':route.get('error',''),'estimatedSeconds':route.get('seconds'),'routeConflict':conflict,'notes':('Calculating travel…' if route.get('pending') else 'Calculated by Google Maps; rounded up to 15 minutes.' if route.get('duration') else 'Manual travel time.' if not locked else route.get('error',''))}
+        block={**c,'source':'travel','type':'Travel','timing':'fixed','cancelled':False,'start':s.time_string(start),'duration':duration,'version':saved.get('version',0),'locked':locked,'linked':linked,'routePlanned':bool(route.get('planned')),'routePending':bool(route.get('pending')),'routeError':route.get('error',''),'estimatedSeconds':route.get('seconds'),'routeConflict':conflict,'notes':('Calculating travel…' if route.get('pending') else 'Calculated by Google Maps; rounded up to 15 minutes.' if route.get('duration') else 'Manual travel time.' if not locked else route.get('error',''))}
         if not linked and saved.get('technician'):
             block.update(technician=saved['technician'],technicians=[saved['technician']])
         barriers=s.leave_blocks(state,date)+s.schedule_notes.blocks(state,date)+s.lunch_blocks(state,date)
@@ -83,7 +85,13 @@ def save_control(state,data,user):
     if not current or current['version']!=data.get('version'):raise Problem(409,'This travel block changed. Refresh the schedule.')
     old=result.setdefault('travelBlocks',{}).get(current['id'],{})
     update={**old,'duration':current['duration'],'locked':current.get('locked',True),'linked':current.get('linked',True),'start':current['start'],'date':date,'version':old.get('version',0)+1,'updatedBy':user['email']}
-    if action=='recalculate':
+    if action=='planned_time':
+        duration=data.get('duration')
+        if type(duration) is not int or not 15<=duration<=1440 or duration%15:raise Problem(400,'Enter travel time in 15-minute increments.')
+        start=s.minutes(current['start'])+current['duration']-duration if current['side']=='before' and update['linked'] else s.minutes(current['start'])
+        if start<0 or start+duration>1440:raise Problem(400,'The travel time must fit within the selected day.')
+        update.update(duration=duration,locked=False,start=s.time_string(start))
+    elif action=='recalculate':
         route=schedule_routes.estimate(current.get('origin',''),current.get('destination',''),force=True)
         if 'duration' not in route:raise Problem(400,route.get('error','Travel could not be calculated. Check the route addresses.'))
         update.update(locked=True,duration=route['duration'])

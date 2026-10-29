@@ -69,6 +69,8 @@ export function overlapLanes(blocks,technician,range){
  finish();return result
 }
 export function travelSourceLabel(block){
+ if(block.routePlanned)return 'Saved travel time'
+ if(block.routeError&&block.estimatedSeconds==null)return 'Travel — needs review'
  if(block.routePending)return block.estimatedSeconds!=null?'Cached route · refreshing…':'Calculating travel…'
  if(block.locked===false)return 'Manual travel'
  return block.estimatedSeconds!=null&&!block.routeError?'Calculated by Google Maps':'Automatic travel — calculation needs review'

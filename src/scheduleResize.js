@@ -45,6 +45,7 @@ export function resizeSchedule(blocks,travels,original,draft,edge){
 
 export function travelReview(block){
  if(block.routePending&&!block.routeError&&!block.routeConflict)return 'pending'
+ if(block.routePlanned&&!block.routeError&&!block.routeConflict)return 'manual'
  if(block.routeError||block.routeConflict||block.locked!==false&&block.estimatedSeconds==null)return 'review'
  return block.locked===false?'manual':'calculated'
 }
