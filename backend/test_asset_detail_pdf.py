@@ -14,11 +14,11 @@ class AssetDetailPDFTests(unittest.TestCase):
         result=stock_reports.create(state,{'scope':'asset_detail','format':'pdf','assetId':'a'})
         reader=PdfReader(io.BytesIO(base64.b64decode(result['file'])))
         return result,reader,'\n'.join(p.extract_text() for p in reader.pages)
-    def test_a5_sheet_has_requested_fields_and_never_changes_any_stock_values(self):
+    def test_a4_top_half_has_requested_fields_and_never_changes_any_stock_values(self):
         state=fixture();before=copy.deepcopy(state);result,pdf,text=self.render(state)
         self.assertEqual(len(pdf.pages),1)
-        self.assertAlmostEqual(float(pdf.pages[0].mediabox.width),148/25.4*72,places=2)
-        self.assertAlmostEqual(float(pdf.pages[0].mediabox.height),210/25.4*72,places=2)
+        self.assertAlmostEqual(float(pdf.pages[0].mediabox.width),210/25.4*72,places=2)
+        self.assertAlmostEqual(float(pdf.pages[0].mediabox.height),297/25.4*72,places=2)
         for expected in ('QA-101','BED-ETUDE','Example bed','Available','Yes','14 Oct 2026','PO-123','Not recorded','Store'):self.assertIn(expected,text)
         self.assertEqual(result['mime'],'application/pdf');self.assertEqual(result['name'],'Trident-asset-QA-101.pdf');self.assertEqual(state,before)
     def test_availability_is_yes_only_for_available_status(self):
@@ -40,7 +40,28 @@ class AssetDetailPDFTests(unittest.TestCase):
         state=fixture();state['stock']['products']['p']['description']='Long example description '*50+'END OF DESCRIPTION'
         state['stock']['assets']['a']['reference']='REFERENCE-'+'x'*200
         _,pdf,text=self.render(state);self.assertIn('END OF DESCRIPTION',' '.join(text.split()))
-        self.assertTrue(all(abs(float(p.mediabox.width)-148/25.4*72)<.01 for p in pdf.pages));self.assertLessEqual(len(pdf.pages),4)
+        self.assertTrue(all(abs(float(p.mediabox.width)-210/25.4*72)<.01 for p in pdf.pages));self.assertLessEqual(len(pdf.pages),4)
+        self.assert_top_half(pdf)
+    def assert_top_half(self,pdf):
+        import pdfplumber
+        # Inspect actual glyph bounds: pypdf visitor matrices are approximate
+        # when paragraphs span multiple table rows or pages.
+        with pdfplumber.open(io.BytesIO(pdf.stream.getvalue())) as rendered:
+            for page in rendered.pages:
+                self.assertTrue(all(char['bottom']<=page.height/2 for char in page.chars))
+    def test_only_black_ink_description_heading_and_equal_large_identifiers(self):
+        from pypdf.generic import ContentStream
+        _,pdf,text=self.render(fixture());self.assert_top_half(pdf)
+        self.assertNotIn('TRIDENT / ASSET DETAILS',text)
+        for operands,op in ContentStream(pdf.pages[0].get_contents(),pdf).operations:
+            if op in (b'rg',b'RG',b'g',b'G'):self.assertTrue(all(float(v)==0 for v in operands),(op,operands))
+        identifiers={}
+        def visit(text,cm,tm,font,size):
+            for value in ('QA-101','BED-ETUDE'):
+                if value in text:identifiers[value]=(size,cm[4]+tm[4])
+        pdf.pages[0].extract_text(visitor_text=visit)
+        self.assertEqual(identifiers['QA-101'][0],identifiers['BED-ETUDE'][0]);self.assertGreaterEqual(identifiers['QA-101'][0],30)
+        self.assertGreater(identifiers['BED-ETUDE'][1],identifiers['QA-101'][1])
     def test_export_api_remains_admin_only_and_is_a_read_not_a_commit(self):
         api=test_accounts.AccountsAPI();api.setUp();api.store.state.update(fixture());before=copy.deepcopy(api.store.state);revision=api.store.revision
         body={'scope':'asset_detail','format':'pdf','assetId':'a'}
