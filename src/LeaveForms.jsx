@@ -1,4 +1,5 @@
 import SortableTable from './SortableTable'
+import {defaultLeaveTechnician} from './leaveDefaults'
 import TimeEntry from './TimeEntry'
 import {leaveOperationId,mergeLeaveRequest,refreshLeaveRequests,saveLeaveOperation} from './leaveSync.js'
 import './LeaveForms.css'
@@ -11,7 +12,7 @@ const label=d=>new Date(d+'T12:00:00').toLocaleDateString('en-NZ')
 
 function datesFor(form){const start=Date.parse(form.startDate+'T00:00:00Z'),end=Date.parse(form.endDate+'T00:00:00Z'),days=[];if(!Number.isFinite(start)||!Number.isFinite(end)||end<start||end-start>365*86400000)return days;for(let n=start;n<=end;n+=86400000){const d=new Date(n);if(form.includeWeekends||![0,6].includes(d.getUTCDay()))days.push(d.toISOString().slice(0,10))}return days}
 
-export default function LeaveForms({request,active,onChanged,isAdmin}){
+export default function LeaveForms({request,active,onChanged,isAdmin,technician}){
 
  const [data,setData]=useState(null),[form,setForm]=useState(null),[selected,setSelected]=useState(null),[notes,setNotes]=useState(''),[filter,setFilter]=useState('Pending'),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false)
  const busyRef=useRef(false),loadEpoch=useRef(0),decisionOperation=useRef(null)
@@ -33,7 +34,7 @@ export default function LeaveForms({request,active,onChanged,isAdmin}){
 
  async function reload(){if(busyRef.current)return;setError('');const epoch=++loadEpoch.current;try{if(await refreshLeaveRequests(request,{accept:()=>epoch===loadEpoch.current,onData:setData,setSelected}))setMessage('Leave requests refreshed. Your unfinished form and decision notes are kept.')}catch(e){setError(e.message)}}
 
- function newRequest(){setSelected(null);setError('');setMessage('');setForm({operationId:leaveOperationId(),technician:data.technicians[0]?.name||'',leaveType:'Annual leave',other:'',startDate:today(),endDate:today(),startTime:'08:00',endTime:'16:00',hoursPerDay:8,includeWeekends:false,reason:''})}
+ function newRequest(){setSelected(null);setError('');setMessage('');setForm({operationId:leaveOperationId(),technician:defaultLeaveTechnician(data.technicians,technician),leaveType:'Annual leave',other:'',startDate:today(),endDate:today(),startTime:'08:00',endTime:'16:00',hoursPerDay:8,includeWeekends:false,reason:''})}
 
  function edit(key,value){setForm(current=>{const next={...current,[key]:value};if(key==='startTime'||key==='endTime')next.hoursPerDay=Math.max(0,(timeMinutes(next.endTime)-timeMinutes(next.startTime))/60);return next})}
 

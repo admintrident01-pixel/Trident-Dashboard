@@ -58,7 +58,7 @@ def itinerary_totals(appointments,names,depot=None,travel_overrides=None,date=No
     from concurrent.futures import ThreadPoolExecutor
     depot=depot or configuration()['depot'];legs={}
     for name in names:
-        rows=sorted([a for a in appointments if not a.get('cancelled') and not a.get('source') and name in a.get('technicians',[a.get('technician')])],key=lambda a:(a['start'],a['id']))
+        rows=sorted([a for a in appointments if not a.get('cancelled') and not a.get('source') and str(a.get('type','')).casefold()!='notes' and name in a.get('technicians',[a.get('technician')])],key=lambda a:(a['start'],a['id']))
         stops=[depot]
         for a in rows:
             import schedule as s

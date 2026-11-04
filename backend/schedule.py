@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 
 from core import Problem
 
-import timesheets, leave, schedule_routes, schedule_links, schedule_notes, schedule_booking
+import timesheets, leave, schedule_routes, schedule_links, schedule_notes, schedule_booking, schedule_contact
 
 
 
@@ -44,7 +44,7 @@ BOOKING_STATUS_LABELS=schedule_booking.LABELS
 
 
 
-DEFAULT_TYPES=['Equipment repair','Equipment assessment','Delivery','Collection','Vehicle service','Client visit','Other','Unspecified']
+DEFAULT_TYPES=['Equipment repair','Equipment assessment','Delivery','Collection','Vehicle service','Client visit','Other','Unspecified','Notes']
 DEFAULT_CLIENT_SEARCH_URL='https://www.google.com/search?q={client}'
 
 def client_search_template(value):
@@ -307,11 +307,14 @@ def save(state,data,user):
 
         # Booking status owns the internal timing rule; urgency is independent.
 
+        appointment_type=text(data.get('type',(old or {}).get('type','Unspecified')),'an appointment type',120)
+        address=str(data.get('address','')).strip() if appointment_type.casefold()=='notes' else text(data.get('address'),'an address',500)
+        if len(address)>500:raise Problem(400,'Keep the address under 500 characters.')
         appointment={'id':identifier or str(uuid.uuid4()),'date':date,'technician':technician,'technicians':technicians,'start':start,'duration':duration,'timing':timing,'timeBasis':time_basis,
 
-                     'client':text(data.get('client'),'a client name',160),'address':text(data.get('address'),'an address',500),
+                     'client':text(data.get('client'),'a client name or note title',160),'address':address,'contactStatus':schedule_contact.saved(data,old),
 
-                     'bookingStatus':booking_status,'urgency':urgency,'bookingControlsVersion':1,'type':text(data.get('type',(old or {}).get('type','Unspecified')),'an appointment type',120),'notes':str(data.get('notes','')).strip(),'cancelled':False}
+                     'bookingStatus':booking_status,'urgency':urgency,'bookingControlsVersion':1,'type':appointment_type,'notes':str(data.get('notes','')).strip(),'cancelled':False}
 
         if len(appointment['notes'])>4000: raise Problem(400,'Keep appointment notes under 4,000 characters.')
 
@@ -411,8 +414,9 @@ def travel_id(date,name,anchor,side):
     return 'travel:'+str(uuid.uuid5(uuid.NAMESPACE_URL,':'.join((name,anchor,side))))
 
 def travel_candidates(state,date):
-    bookings=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and not is_lunch(a)]
-    barriers=leave_blocks(state,date)+schedule_notes.blocks(state,date)
+    day_appointments=[a for a in state.get('appointments',{}).values() if a['date']==date and not a.get('cancelled') and not is_lunch(a)]
+    bookings=[a for a in day_appointments if str(a.get('type','')).casefold()!='notes']
+    barriers=leave_blocks(state,date)+schedule_notes.blocks(state,date)+[a for a in day_appointments if str(a.get('type','')).casefold()=='notes']
     result=[]
     config={**schedule_routes.configuration(),'depot':settings(state)['workshopAddress']}
     names={name for a in bookings for name in assigned(a)}
@@ -461,6 +465,7 @@ def save_travel(state,data,user):
         import schedule_release
         return (schedule_release.swap_headers if action=='swap_headers' else schedule_release.workshop_travel)(state,data,user)
     if action=='delete_selection':return schedule_links.delete_selection(state,data,user)
+    if action=='booking_selection':return schedule_links.booking_selection(state,data,user)
     if action=='move_to_date':return schedule_links.move_to_date(state,data,user)
     if action=='move_selection':return schedule_links.move_selection(state,data,user)
     if action=='travel_next':return schedule_links.travel_next(state,data,user)

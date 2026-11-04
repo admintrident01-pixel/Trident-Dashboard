@@ -1,7 +1,7 @@
 import {assignedTechs,timeMinutes} from './scheduleMath.js'
 const mapsUrl=stops=>{const query=new URLSearchParams({api:'1',origin:stops[0],destination:stops.at(-1),travelmode:'driving'});if(stops.length>2)query.set('waypoints',stops.slice(1,-1).join('|'));return 'https://www.google.com/maps/dir/?'+query}
 export function wholeRoute(appointments,technician,depot,travelBlocks=[]){
- const bookings=appointments.filter(a=>!a.cancelled&&!a.source&&assignedTechs(a).includes(technician)).slice().sort((a,b)=>timeMinutes(a.start)-timeMinutes(b.start)||a.id.localeCompare(b.id))
+ const bookings=appointments.filter(a=>!a.cancelled&&!a.source&&a.type?.toLowerCase()!=='notes'&&assignedTechs(a).includes(technician)).slice().sort((a,b)=>timeMinutes(a.start)-timeMinutes(b.start)||a.id.localeCompare(b.id))
  if(!bookings.length)return {error:'No appointments for this technician on this day.'}
  if(!depot)return {error:'Set the depot address before showing the route.'}
  if(travelBlocks.some(b=>b.technician===technician&&b.routeLocationMissing))return {error:'Add a confirmed location to every appointment before showing the whole route. Placeholder locations are not sent to Google.'}

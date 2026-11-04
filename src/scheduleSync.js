@@ -20,7 +20,7 @@ export async function scheduleRequest(request,path,options={}){
  finally{clearTimeout(timer)}
 }
 
-export const appointmentFields=['date','technicians','start','duration','timing','client','address','type','notes','bookingStatus','urgency','timeBasis']
+export const appointmentFields=['date','technicians','start','duration','timing','client','address','type','notes','bookingStatus','urgency','timeBasis','contactStatus']
 const comparable=(item,key)=>key==='technicians'?[...assignedTechs(item)].sort():bookingControls(item)?.[key]??({bookingStatus:'action-needed',urgency:'low',timeBasis:'start',notes:''}[key]??'')
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b)
 export const appointmentChanged=(base,mine)=>appointmentFields.some(key=>!equal(comparable(base,key),comparable(mine,key)))

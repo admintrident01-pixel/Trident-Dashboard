@@ -31,6 +31,10 @@ export default function App(){
  const [session,setSession]=useState(loadSession),[error,setError]=useState(''),[document,setDocument]=useState(''),[timesheetDocument,setTimesheetDocument]=useState(''),[selectedPage,setPage]=useState(loadPage)
  const page=canAccessPage(selectedPage,session)?selectedPage:'home'
  const [timesheetOpenRequest,setTimesheetOpenRequest]=useState(null)
+ const [navigationMode,setNavigationMode]=useState(()=>{try{return localStorage.getItem('trident-navigation-mode')||'pinned'}catch{return 'pinned'}})
+ const [navigationOpen,setNavigationOpen]=useState(false)
+ const navigationVisible=navigationMode==='pinned'||navigationOpen
+ function navigationPreference(mode){setNavigationMode(mode);setNavigationOpen(false);try{localStorage.setItem('trident-navigation-mode',mode)}catch{/* Keep this window's preference. */}}
  const [visitedPages,setVisitedPages]=useState(()=>({[loadPage()]:true}))
  const visitPage=useCallback(next=>{if(next!=='timesheet')setTimesheetOpenRequest(null);setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
 
@@ -127,15 +131,15 @@ export default function App(){
 
  if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Dashboard</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
 
- return session?<div className={`workspace${localMode?' is-local':''}`}>
+ return session?<div className={`workspace${localMode?' is-local':''}${navigationVisible?'':' navigation-hidden'}`}>
 
-  <a className="skip-content" href="#workspace-content" onClick={e=>{e.preventDefault();window.document.getElementById('workspace-content')?.focus()}}>Skip to page content</a><header className="portal-header">
+  <a className="skip-content" href="#workspace-content" onClick={e=>{e.preventDefault();window.document.getElementById('workspace-content')?.focus()}}>Skip to page content</a>{!navigationVisible&&<div className="portal-navigation-reveal"><button aria-label="Show navigation" onClick={()=>setNavigationOpen(true)}><Icon name="menu" size={13}/>Show navigation</button></div>}<header className="portal-header" hidden={!navigationVisible}>
 
    <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate('home')}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
 
    <nav aria-label="Main navigation">{[['home','Home'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
 
-   <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button onClick={signOut}>Sign out</button></div>
+   <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button className="portal-pin" aria-label={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} aria-pressed={navigationMode==='pinned'} title={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} onClick={()=>navigationPreference(navigationMode==='pinned'?'hidden':'pinned')}><Icon name="custom-pin" size={14}/></button><button className="portal-hide" aria-label="Hide navigation" title="Hide navigation" onClick={()=>navigationPreference('hidden')}><Icon name="chevron-up" size={14}/></button><button onClick={signOut}>Sign out</button></div>
 
   </header>
 
@@ -171,7 +175,7 @@ export default function App(){
 
   {timesheetDocument&&<section className="quote-module timesheet-module" hidden={page!=='timesheet'} aria-label="Time sheet"><iframe ref={timesheetFrame} title="Trident time sheet" onLoad={()=>{if(pendingDraft.current){timesheetFrame.current.contentWindow.postMessage({type:'trident-resume-timesheet-draft',id:pendingDraft.current},location.origin);pendingDraft.current=''}}} style={{height:timesheetHeight}} srcDoc={timesheetDocument}/>{page==='timesheet'&&<TimesheetHistory openRequest={timesheetOpenRequest} request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/>}</section>}
 
-  {(page==='leave'||visitedPages.leave)&&<section hidden={page!=='leave'}><LeaveForms isAdmin={isAdmin} request={request} active={page==='leave'} onChanged={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin);window.dispatchEvent(new Event('trident-leave-updated'))}}/></section>}
+  {(page==='leave'||visitedPages.leave)&&<section hidden={page!=='leave'}><LeaveForms technician={session.technician} isAdmin={isAdmin} request={request} active={page==='leave'} onChanged={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin);window.dispatchEvent(new Event('trident-leave-updated'))}}/></section>}
 
   {page==='office'&&<Suspense fallback={<p className="module-loading" role="status">Opening shared resources…</p>}><OfficeFiles request={request} isAdmin={isAdmin}/></Suspense>}
   {isAdmin&&page==='stock'&&<StockPage request={request}/>}

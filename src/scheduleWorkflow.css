@@ -1,0 +1,21 @@
+.trident-portal .tech-schedule{padding-top:1px}
+.schedule-unified-toolbar{margin-top:0!important;padding-top:0!important}
+.schedule-hours-view{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
+.schedule-notices{position:relative;flex:none;z-index:35}
+.schedule-notices summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:2px;min-height:28px;min-width:28px;padding:2px 5px;border:1px solid #d6ad43;border-radius:4px;color:#956700;background:#fff3cd}
+.schedule-notices summary::-webkit-details-marker{display:none}
+.schedule-notices:not(.has-notices) summary{opacity:.55}
+.schedule-notices summary:focus-visible{outline:2px solid #3472ac;outline-offset:1px}
+.schedule-notices-panel{position:absolute;top:calc(100% + 4px);left:0;width:min(380px,calc(100vw - 35px));max-height:50vh;overflow:auto;background:#fffdf5;color:#62480d;border:1px solid #d6ad43;border-radius:6px;box-shadow:0 8px 24px #17345f30;padding:10px;font-size:12px;line-height:1.45}
+.schedule-notices-panel p{margin:0 0 10px;white-space:normal}
+.schedule-notices-panel p+p{border-top:1px solid #eadfbc;padding-top:8px}
+.schedule-appointment .schedule-booking-tags{gap:4px;flex-wrap:wrap}
+.schedule-appointment .schedule-contact-icons{display:inline-flex;align-items:center;gap:3px;margin-left:auto;flex:none;white-space:nowrap;line-height:15px}
+.schedule-contact-mark{display:inline-flex;width:15px;height:15px;align-items:center;justify-content:center;flex:none}
+.schedule-contact-mark.is-marked,.schedule-contact-action.is-marked{color:#138541}
+.schedule-contact-mark.is-unmarked{color:#687786;opacity:.3}
+.schedule-contact-mark .app-icon{width:15px;height:15px}
+.schedule-contact-action[aria-checked=true]{background:#eaf7ee!important}
+.schedule-client-line{user-select:none}
+.trident-portal .tech-schedule .schedule-history-actions{gap:3px;flex-wrap:wrap}
+.portal-header nav{flex-wrap:nowrap!important;min-width:0;overflow-x:auto;white-space:nowrap}.portal-header nav button{flex:none}

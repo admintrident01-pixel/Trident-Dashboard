@@ -55,7 +55,7 @@
 .portal-header{padding-left:4px;padding-right:6px;gap:4px}.portal-brand{margin:0;padding:0}.portal-header nav{margin:0;gap:2px}.portal-account{margin-left:auto;gap:7px}@media(max-width:800px){.portal-header{padding-left:3px;padding-right:4px;gap:3px}}
 
 /* Compact, independent reminder rules and recipient lists. */
-.reminder-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.portal-header[hidden]{display:none}.portal-header,.portal-header nav{gap:1px!important}.portal-header{padding:0 1px!important}.portal-header nav button{margin:0}.portal-account{gap:3px}.portal-account .portal-pin,.portal-account .portal-hide{display:flex;align-items:center;justify-content:center;padding:4px;min-width:23px}.portal-pin[aria-pressed=true]{background:#ffffff25}.workspace.navigation-hidden{--portal-height:20px}.portal-navigation-reveal{height:20px;display:flex;align-items:center;background:#172f4e}.portal-navigation-reveal button{display:flex;align-items:center;gap:4px;font-size:10px;line-height:18px;padding:0 6px;border:0;color:white;background:transparent}.portal-navigation-reveal button:focus-visible{outline:2px solid #f0bd59;outline-offset:-2px}.reminder-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
 .reminder-settings-page .reminder-rule{margin:0;padding:14px;min-width:0}
 .reminder-rule h2{margin:0 0 12px}.reminder-rule .leave-field-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .reminder-service{padding:10px 14px!important;margin-bottom:12px!important}.reminder-service p{margin:3px 0}
@@ -129,3 +129,5 @@
 .reminder-settings-page>.page-heading>div{min-width:0;flex:1}
 .reminder-settings-page>.page-heading>button{flex:none}
 @media(min-width:381px) and (max-width:520px){.reminder-step-pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.portal-header nav{flex-wrap:nowrap!important;min-width:0;overflow-x:auto;white-space:nowrap}.portal-header nav button{flex:none}

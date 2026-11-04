@@ -277,6 +277,25 @@ def move_selection(state,data,user):
     return result
 
 
+def booking_selection(state,data,user):
+    """One atomic, undoable booking-status edit; anchored travel is untouched."""
+    import schedule as s
+    date=s.day(data.get('date'));ids=data.get('ids');status=data.get('bookingStatus')
+    if not isinstance(ids,list) or not ids or len(ids)>1000 or any(not isinstance(i,str) for i in ids):raise Problem(400,'Select appointments to update.')
+    if status not in schedule_booking.STATUSES:raise Problem(400,'Choose a valid booking status.')
+    blocks={b['id']:b for b in day_blocks(state,date)}
+    if any(i not in blocks for i in ids):raise Problem(409,'The selected blocks changed. Refresh and select them again.')
+    if any(blocks[i].get('source') in ('leave','note','lunch') for i in ids):raise Problem(409,'Leave and recurring notes keep their own status.')
+    appointments=[blocks[i] for i in set(ids) if not blocks[i].get('source')]
+    if not appointments:raise Problem(400,'Select at least one appointment. Travel has no booking status.')
+    result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
+    for block in appointments:
+        # Interpret existing marks before editing, retaining the owner's conflict rule.
+        current=schedule_booking.controls(block)
+        result['appointments'][block['id']]={**current,'bookingStatus':status,'timing':'fixed' if status=='confirmed' else 'flexible','version':block.get('version',0)+1,'updatedAt':now,'updatedBy':user['email']}
+    return result
+
+
 def delete_selection(state,data,user):
     import schedule as s
     date=s.day(data.get('date'));ids=data.get('ids')

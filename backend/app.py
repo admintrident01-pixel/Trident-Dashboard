@@ -367,7 +367,7 @@ class Application:
       p=self.body(environ);before=state
       if p.get('action') in ('undo','redo'):state=schedule_history.apply(state,email,schedule.day(p.get('date')),p['action'])
       else:
-       state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'swap_headers':'Reassign technician headers','workshop_travel':'Workshop travel','move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','pack_gap':'Close schedule gap','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
+       state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'swap_headers':'Reassign technician headers','workshop_travel':'Workshop travel','move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','booking_selection':'Change selected booking status','pack_gap':'Close schedule gap','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
       self.commit(revision,state,actor=email,before=before);payload=schedule_history.read(state,p['date'],user);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(state)))
      elif path=='/api/schedule-notes' and method=='GET':payload=schedule.schedule_notes.read(state)
      elif path=='/api/schedule-notes' and method=='POST':
