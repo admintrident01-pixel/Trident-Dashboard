@@ -83,7 +83,7 @@ export default function VehicleChecks({request,active,isAdmin,technician,onManag
  const colours=data.colourSettings||defaultVehicleColours
  const readonly=screen==='view'||(!isAdmin&&!!form?.id),history=data.checks.filter(c=>!filter||c.vehicleId===filter).sort((a,b)=>b.checkDate.localeCompare(a.checkDate)||b.createdAt.localeCompare(a.createdAt))
 
- const field=(key,label,type='text',required=false)=> <label className="vehicle-field" key={key}>{label}{required&&<span className="required-mark"> *</span>}<input aria-label={label} type={type} required={required} min={type==='number'?0:undefined} step={type==='number'?1:undefined} max={type==='number'?10000000:undefined} maxLength={key==='vehicleYear'?4:160} disabled={readonly} value={form[key]??''} onChange={e=>edit(key,e.target.value)}/></label>
+ const field=(key,label,type='text',required=false)=> <label className="vehicle-field" key={key}>{label}{required&&<span className="required-mark"> *</span>}<input aria-label={label} type={type} required={required} min={type==='number'?0:undefined} step={type==='number'?1:undefined} max={type==='number'?10000000:undefined} maxLength={key==='vehicleYear'?4:160} disabled={readonly} value={form[key]??''} onInput={e=>edit(key,e.target.value)}/></label>
 
  return <main style={vehicleColourStyle(colours)} className={`workspace-page vehicles-page ${screen==='form'||readonly?'vehicle-form-page':''}`}>
 

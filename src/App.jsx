@@ -3,6 +3,7 @@ import TimesheetHistory from './TimesheetHistory'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import './App.css'
+import './MyDay.css'
 
 
 
@@ -13,8 +14,10 @@ import EmailSignIn from './EmailSignIn'
 import ReminderDashboard from './ReminderDashboard'
 import {loadSession,saveSession} from './session'
 import {loadPage,canAccessPage} from './navigation'
+import {myDayPilot} from './myDayModel'
 
 const StockPage=lazy(()=>import('./StockPage'))
+const MyDay=lazy(()=>import('./MyDay'))
 const WeeklyReport=lazy(()=>import('./WeeklyReport'))
 const SettingsPage=lazy(()=>import('./SettingsPage'))
 const VehicleChecks=lazy(()=>import('./VehicleChecks'))
@@ -39,7 +42,7 @@ export default function App(){
  const visitPage=useCallback(next=>{if(next!=='timesheet')setTimesheetOpenRequest(null);setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
 
  useEffect(()=>saveSession(session),[session])
- useEffect(()=>{const titles={home:'Home',quotes:'Quotes',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
+ useEffect(()=>{const titles={home:'Home','my-day':'My day',quotes:'Quotes',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
 
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}`)},[page,session])
  useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}visitPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page,visitPage])
@@ -51,7 +54,8 @@ export default function App(){
 
  const isAdmin=session?.role==='admin'
 
- const allowed=key=>isAdmin||['home','timesheet','leave','vehicles','schedule'].includes(key)
+ const pilot=myDayPilot(session)
+ const allowed=key=>key==='my-day'?pilot:isAdmin||['home','timesheet','leave','vehicles','schedule'].includes(key)
 
  const request=useCallback(async(path,init={})=>{
 
@@ -91,9 +95,9 @@ export default function App(){
 
   fetch('/timesheet.html').then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
 
-   const config=JSON.stringify({api,token:session.token,origin:location.origin}).replace(/</g,'\\u003c')
+   const config=JSON.stringify({api,token:session.token,origin:location.origin,pilot:myDayPilot(session)}).replace(/</g,'\\u003c')
 
-   const bridge=`<script>(()=>{const c=${config},original=window.fetch.bind(window);window.fetch=async(input,init={})=>{const url=typeof input==='string'?input:input.url;if(new URL(url,c.origin).pathname.startsWith('/api/')){const headers=new Headers(init.headers);headers.set('Authorization','Bearer '+c.token);const started=performance.now();const response=await original(c.api+new URL(url,c.origin).pathname+new URL(url,c.origin).search,{...init,headers});performance.measure('trident.api.request',{start:started,duration:performance.now()-started});if(response.status===401)parent.postMessage({type:'trident-signin-expired'},c.origin);return response;}return original(input,init);};})();</script>`
+   const bridge=`<script>(()=>{const c=${config},original=window.fetch.bind(window);if(c.pilot)window.addEventListener('DOMContentLoaded',()=>document.body.classList.add('my-day-pilot'));window.fetch=async(input,init={})=>{const url=typeof input==='string'?input:input.url;if(new URL(url,c.origin).pathname.startsWith('/api/')){const headers=new Headers(init.headers);headers.set('Authorization','Bearer '+c.token);const started=performance.now();const response=await original(c.api+new URL(url,c.origin).pathname+new URL(url,c.origin).search,{...init,headers});performance.measure('trident.api.request',{start:started,duration:performance.now()-started});if(response.status===401)parent.postMessage({type:'trident-signin-expired'},c.origin);return response;}return original(input,init);};})();</script>`
 
    if(!cancelled)setTimesheetDocument(html.replace('<head>','<head>'+bridge))
 
@@ -131,13 +135,13 @@ export default function App(){
 
  if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Dashboard</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
 
- return session?<div className={`workspace${localMode?' is-local':''}${navigationVisible?'':' navigation-hidden'}`}>
+ return session?<div className={`workspace${localMode?' is-local':''}${navigationVisible?'':' navigation-hidden'}${pilot?' my-day-pilot':''}`}>
 
   <a className="skip-content" href="#workspace-content" onClick={e=>{e.preventDefault();window.document.getElementById('workspace-content')?.focus()}}>Skip to page content</a>{!navigationVisible&&<div className="portal-navigation-reveal"><button aria-label="Show navigation" onClick={()=>setNavigationOpen(true)}><Icon name="menu" size={13}/>Show navigation</button></div>}<header className="portal-header" hidden={!navigationVisible}>
 
    <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate('home')}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
 
-   <nav aria-label="Main navigation">{[['home','Home'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
+   <nav aria-label="Main navigation">{[['home','Home'],['my-day','My day'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
 
    <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button className="portal-pin" aria-label={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} aria-pressed={navigationMode==='pinned'} title={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} onClick={()=>navigationPreference(navigationMode==='pinned'?'hidden':'pinned')}><Icon name="custom-pin" size={14}/></button><button className="portal-hide" aria-label="Hide navigation" title="Hide navigation" onClick={()=>navigationPreference('hidden')}><Icon name="chevron-up" size={14}/></button><button onClick={signOut}>Sign out</button></div>
 
@@ -153,6 +157,7 @@ export default function App(){
    <div className="home-intro"><span className="home-eyebrow">Trident Community Equipment</span><h1>Welcome to your workspace</h1><p>Choose where you’d like to work.</p></div>
 
    <div className="module-grid">{[
+ ['my-day','My day','Your appointments, recorded hours and due tasks.','calendar'],
  ['quotes','Quotes','Create quotes, manage drafts and view completed quotes.','file-text'],
  ['schedule','Tech schedule','Plan appointments and see the whole team’s day.','calendar'],
  ['timesheet','Time sheet','Enter weekly hours, review leave and submit your time sheet.','clock'],
@@ -167,6 +172,8 @@ export default function App(){
    {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/></>}
   </main>}
 
+  {pilot&&page==='my-day'&&<MyDay request={request} session={session} onNavigate={navigate}/>}
+  {pilot&&['timesheet','leave','vehicles'].includes(page)&&<div className="mobile-my-day-return"><button onClick={()=>navigate('my-day')}>← My day</button></div>}
   {page==='quotes'&&!document&&<p className="module-loading" role="status">Loading your quotes…</p>}
 
   {document&&<section className="quote-module" hidden={page!=='quotes'} aria-label="Quotes"><iframe ref={quoteFrame} title="Trident quote builder" srcDoc={document}/></section>}
