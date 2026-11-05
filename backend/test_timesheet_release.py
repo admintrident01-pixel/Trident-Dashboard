@@ -13,7 +13,7 @@ class ExcelExport(unittest.TestCase):
  def book(self,data):return openpyxl.load_workbook(io.BytesIO(base64.b64decode(data['file'])))
  def test_weekly_numbers_blanks_notes_and_no_mutation(self):
   before=copy.deepcopy(self.state);book=self.book(weekly_export.weekly(self.state,{'week':self.week}))
-  self.assertEqual(book.sheetnames,['Weekly hours','Daily detail','13-week averages','Report details'])
+  self.assertEqual(book.sheetnames,['Labour Report','Weekly hours','Daily detail','13-week averages','Report details'])
   self.assertEqual(book['Weekly hours']['C2'].value,8.5);self.assertEqual(book['Weekly hours']['C3'].value,0);self.assertIsNone(book['Weekly hours']['D3'].value)
   self.assertEqual(book['Daily detail']['J2'].data_type,'s');self.assertTrue(book['Daily detail']['J2'].value.startswith('='))
   self.assertEqual(book['Weekly hours'].freeze_panes,'B2');self.assertEqual(book['Weekly hours'].page_setup.orientation,'landscape')

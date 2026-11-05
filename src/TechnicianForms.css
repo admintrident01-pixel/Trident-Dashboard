@@ -1,0 +1,43 @@
+.inspection-list{margin:12px 0 18px}.inspection-list>summary{cursor:pointer;font-weight:700;padding:10px 0;color:#17345f}.inspection-answer{display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}.inspection-answer span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.vehicle-mobile-summary,.vehicle-mobile-compare{display:none}
+@media(max-width:600px){.technician-page .vehicle-mobile-summary{display:grid;gap:12px;margin:16px 0}.technician-page .vehicle-mobile-card{padding:16px;border:1px solid #d4dfec;border-radius:10px;background:#fff}.vehicle-mobile-card header{display:flex;justify-content:space-between;align-items:center;gap:8px}.vehicle-mobile-card h2{margin:0;font-size:20px}.vehicle-mobile-card header>span{padding:6px;border-radius:5px;font-size:12px}.vehicle-mobile-card>p{font-size:13px;color:#526b88;line-height:1.4}.vehicle-mobile-card dl{display:grid;grid-template-columns:1fr 1fr;gap:14px}.vehicle-mobile-card dt{font-size:12px;color:#62748b;margin-bottom:5px}.vehicle-mobile-card dd{margin:0;font-size:14px}.vehicle-mobile-card>button{width:100%;margin-top:10px}.technician-page .vehicle-mobile-compare{display:block;width:100%;margin:12px 0}.technician-page .fleet-comparison:not(.is-open){display:none}.technician-page .check-due-legend{font-size:11px;gap:5px}.technician-page .vehicle-history .settings-actions{flex-wrap:wrap}}
+@media(max-width:600px){
+ .technician-page .portal-header nav{overflow-x:auto!important;overflow-y:hidden!important;min-width:0;max-width:100%}
+ .technician-page :is(.leave-page,.vehicles-page){padding:14px 12px;min-width:0}
+ .technician-page .page-heading{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:16px}
+ .technician-page .page-heading .settings-actions{display:flex;justify-content:flex-start;flex-wrap:wrap;gap:8px;width:100%;margin:0}
+ .technician-page :is(.leave-page,.vehicles-page) button{min-height:44px}
+ .technician-page .vehicle-field :is(input,select,textarea){font-size:16px!important;min-height:44px!important;height:auto;max-width:100%;box-sizing:border-box}
+ .technician-page :is(.leave-field-grid,.vehicle-form-card){grid-template-columns:minmax(0,1fr)}
+ .technician-page .vehicle-form-card{padding:14px;margin-bottom:14px}
+ .technician-page .vehicle-form-card>h2{font-size:17px;margin-top:0}
+ .technician-page .vehicle-form-banner{display:none}
+ .technician-page .vehicle-steps{display:flex;flex-wrap:nowrap;gap:5px}
+ .technician-page .vehicle-steps li{min-width:0;flex:1;padding:8px 6px;font-size:11px;line-height:1.4}
+ .technician-page .vehicle-form-page form>.settings-actions,.technician-page .leave-form>.settings-actions{display:flex;gap:10px;position:sticky;bottom:0;z-index:2;background:#fff;padding:12px 0 max(12px,env(safe-area-inset-bottom));margin-bottom:0;border-top:1px solid #d4dfec}
+ .technician-page .vehicle-form-page form>.settings-actions>button,.technician-page .leave-form>.settings-actions>button{flex:1;margin:0}
+ .technician-page .overall-result>label,.technician-page .vehicle-follow-up fieldset>label{display:inline-flex;gap:8px;align-items:center;min-height:44px;padding:8px 12px;border:1px solid #cbd9e9;border-radius:7px;margin:4px 8px 4px 0}
+ .technician-page .overall-result label:has(input:checked),.technician-page .vehicle-follow-up label:has(input:checked){border-color:#426c9a;background:#eaf1fa}
+ .technician-page .inspection-list>.table-scroll{overflow:visible}
+ .technician-page .inspection-checklist{display:block;min-width:0;width:100%;border:0}
+ .technician-page .inspection-checklist thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .technician-page .inspection-checklist tbody{display:block}
+ .technician-page .inspection-checklist tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0;padding:10px;border:1px solid #d4dfec;border-radius:8px;background:#fff}
+ .technician-page .inspection-checklist th{grid-column:1/-1;text-align:left;border:0;background:none;padding:0 0 4px;font-size:14px;white-space:normal}
+ .technician-page .inspection-checklist td{border:0;padding:0}
+ .technician-page .inspection-answer{display:flex;min-height:44px;gap:5px;border:1px solid #d4dfec;border-radius:6px;width:100%;font-size:12px}
+ .technician-page .inspection-answer:has(input:checked){background:#e7f1ed;border-color:#3b8064}
+ .technician-page .inspection-answer span{position:static;clip-path:none;overflow:visible;width:auto;height:auto}
+ .technician-page .inspection-answer input{width:18px;height:18px;margin:0}
+ .technician-page .leave-form .leave-field-grid{gap:14px;margin-bottom:14px}
+ .technician-page .leave-form .leave-form-heading{gap:5px;align-items:flex-start;flex-direction:column}
+ .technician-page .leave-form .leave-weekends{min-height:44px;display:flex;align-items:center}
+ .technician-page .leave-form .vehicle-field:has(.time-entry),.technician-page .leave-form .vehicle-field:has(.trident-time-entry){min-width:0}
+ .technician-page .leave-summary{display:flex;flex-wrap:wrap;gap:7px}
+ .technician-page .leave-detail dl{display:block}.technician-page .leave-detail dt{font-size:12px;color:#62748b;margin:12px 0 4px}.technician-page .leave-detail dd{margin:0;overflow-wrap:anywhere}
+ .technician-page .report-hint{font-size:12px;line-height:1.5}
+ .technician-page .leave-form .time-entry{max-width:100%}
+}
+
+.leave-time-pair{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:600px){.technician-page .leave-time-pair{gap:10px}.technician-page .leave-time-pair .trident-time-entry{grid-template-columns:46px 8px 46px;width:108px;gap:4px}.technician-page .leave-time-pair .trident-time-digit{width:46px!important;height:44px;min-height:44px}.technician-page .leave-time-pair .trident-time-period{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;height:44px}.technician-page .leave-time-pair .trident-time-period-button{width:100%!important;height:43px;min-height:43px!important;font-size:12px!important}}

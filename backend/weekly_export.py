@@ -1,7 +1,7 @@
 """Read-only Excel equivalents of Labour payables reports; no extra runtime packages."""
 import base64,datetime as dt,io,zipfile,copy
 from xml.etree import ElementTree as ET
-import stock_reports,weekly_report
+import stock_reports,weekly_report,weekly_template
 from core import Problem
 MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 def mode_of(data):
@@ -55,7 +55,7 @@ def weekly(state,data):
  average=weekly_report.averages(state,week)
  averages=[[r['name'],r['allAverage'] if mode=='all' else r['paidAverage'],r['chargedAverage'],r['workWeeks'],r['chargedWeeks']] for r in average['rows']]
  info=[['Week starting',week],['Payable hours','Work, sick, annual and other approved leave' if mode=='all' else 'Work and sick leave; annual and other leave shown separately'],['Average period',average['start']+' to '+average['end']],['Average basis','13 completed weeks, including missing and zero weeks'],['Charged hours','Blank means not entered; zero means explicitly entered as zero'],['Report type','Saved register snapshot. Editing this file does not change the website.']]
- return pack([('Weekly hours',headers,summary),('Daily detail',['Staff member','Date','Work hours','Sick leave hours','Annual leave hours','Other leave hours','Payable hours','Charged hours','Submission','Daily notes','Other leave description'],detail),('13-week averages',['Staff member','Average payable / week','Average charged / week','Payable weeks recorded','Charged weeks recorded'],averages),('Report details',['Setting','Value'],info)],f'Trident-weekly-{mode}-hours-{week}.xlsx')
+ return weekly_template.create(state,week,rows,metric,[('Weekly hours',headers,summary),('Daily detail',['Staff member','Date','Work hours','Sick leave hours','Annual leave hours','Other leave hours','Payable hours','Charged hours','Submission','Daily notes','Other leave description'],detail),('13-week averages',['Staff member','Average payable / week','Average charged / week','Payable weeks recorded','Charged weeks recorded'],averages),('Report details',['Setting','Value'],info)],f'Trident-weekly-{mode}-hours-{week}.xlsx')
 def period_annotations(state,result):
  first=weekly_report.week_date(result['start']);details=[]
  for offset in range(result['weeks']):

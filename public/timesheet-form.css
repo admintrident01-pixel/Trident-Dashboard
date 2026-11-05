@@ -98,29 +98,39 @@
 .timesheet-form .head>p{margin:0 0 5px}.timesheet-help summary{font-size:12px;cursor:pointer}.timesheet-help p{font-size:12px;line-height:1.5;margin:8px 0 0}
 #period-conflict{width:min(540px,calc(100vw - 32px));border:1px solid #cad7e8;border-radius:10px;padding:24px;color:#20334d;box-shadow:0 16px 60px #17345f40}#period-conflict::backdrop{background:#17345f70}#period-conflict h2{font-size:20px;color:#17345f;margin:0 0 10px}#period-conflict>p{font-size:13px;line-height:1.5;color:#60738e}#period-existing>div{padding:12px 0;border-top:1px solid #e0e7f1}#period-existing p{font-size:13px;margin:0 0 10px}#period-conflict>button{margin-top:12px}
 
-/* Pilot phone layout retains the original form controls and validation. */
+/* Daily cards on phones; the desktop table and the same calculation controls remain. */
 @media screen and (max-width:600px){
- .my-day-pilot.timesheet-form .wrap{padding:8px;max-width:100%;box-sizing:border-box}
- .my-day-pilot.timesheet-form .tablewrap{overflow:visible}
- .my-day-pilot.timesheet-form table{display:block;min-width:0;width:100%}
- .my-day-pilot.timesheet-form thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
- .my-day-pilot.timesheet-form tbody{display:block}
- .my-day-pilot.timesheet-form tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;border:1px solid #cad7e8;border-radius:10px;margin:12px 0;padding:12px;background:white}
- .my-day-pilot.timesheet-form td{display:block;min-width:0;padding:0;border:0}
- .my-day-pilot.timesheet-form td::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;margin:0 0 5px;color:#526b88}
- .my-day-pilot.timesheet-form td:first-child{font-weight:700;font-size:18px}.my-day-pilot.timesheet-form td:first-child::before{display:none}
- .my-day-pilot.timesheet-form td:last-child{grid-column:1/-1}
- .my-day-pilot.timesheet-form input,.my-day-pilot.timesheet-form select,.my-day-pilot.timesheet-form textarea{font-size:16px;min-height:44px;max-width:100%;box-sizing:border-box}
- .my-day-pilot.timesheet-form .unpaid-lunch{min-width:0;width:100%}
- .my-day-pilot.timesheet-form .fields,.my-day-pilot.timesheet-form .foot{grid-template-columns:1fr}
- .my-day-pilot.timesheet-form .actions{display:flex;flex-wrap:wrap;gap:8px}.my-day-pilot.timesheet-form .actions .btn{min-height:44px;margin:0}
- .my-day-pilot.timesheet-form .time-entry{max-width:100%}
+ .trident-timesheet.timesheet-form .wrap{padding:8px;max-width:100%;box-sizing:border-box;margin:0 auto}
+ .trident-timesheet.timesheet-form .tablewrap{overflow:visible;padding:0 10px}
+ .trident-timesheet.timesheet-form .tablewrap table{display:block;min-width:0;width:100%}
+ .trident-timesheet.timesheet-form thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .trident-timesheet.timesheet-form tbody{display:block}
+ .trident-timesheet.timesheet-form tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"day date" "status method" "hours lunch" "start finish" "total total" "notes notes";gap:12px 10px;border:1px solid #cad7e8;border-radius:10px;margin:12px 0;padding:14px;background:white}
+ .trident-timesheet.timesheet-form td{display:block;min-width:0;padding:0;border:0}
+ .trident-timesheet.timesheet-form td::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;margin:0 0 6px;color:#526b88}
+ .trident-timesheet.timesheet-form td:nth-child(1){grid-area:day;font-size:18px;align-self:center}.trident-timesheet.timesheet-form td:first-child::before{display:none}
+ .trident-timesheet.timesheet-form td:nth-child(2){grid-area:date}.trident-timesheet.timesheet-form td:nth-child(3){grid-area:status}.trident-timesheet.timesheet-form td:nth-child(4){grid-area:method}
+ .trident-timesheet.timesheet-form td:nth-child(5){grid-area:hours}.trident-timesheet.timesheet-form td:nth-child(6){grid-area:start}.trident-timesheet.timesheet-form td:nth-child(7){grid-area:finish}
+ .trident-timesheet.timesheet-form td:nth-child(8){grid-area:lunch}.trident-timesheet.timesheet-form td:nth-child(9){grid-area:total;display:flex;align-items:center;justify-content:space-between;padding:10px;background:#edf3fa;border-radius:6px;font-size:18px}
+ .trident-timesheet.timesheet-form td:nth-child(9)::before{margin:0;font-size:13px}.trident-timesheet.timesheet-form td:last-child{grid-area:notes}
+ .trident-timesheet.timesheet-form tr[data-method="direct"]{grid-template-areas:"day date" "status method" "hours lunch" "total total" "notes notes"}
+ .trident-timesheet.timesheet-form tr[data-method="direct"] td:nth-child(6),.trident-timesheet.timesheet-form tr[data-method="direct"] td:nth-child(7){display:none}
+ .trident-timesheet.timesheet-form tr[data-method="times"]{grid-template-areas:"day date" "status method" "start finish" "lunch total" "notes notes"}
+ .trident-timesheet.timesheet-form tr[data-method="times"] td:nth-child(5){display:none}
+ .trident-timesheet.timesheet-form tr[data-status="leave"]{grid-template-areas:"day date" "status status" "hours total" "notes notes"}
+ .trident-timesheet.timesheet-form tr[data-status="leave"] td:nth-child(4),.trident-timesheet.timesheet-form tr[data-status="leave"] td:nth-child(6),.trident-timesheet.timesheet-form tr[data-status="leave"] td:nth-child(7),.trident-timesheet.timesheet-form tr[data-status="leave"] td:nth-child(8){display:none}
+ .trident-timesheet.timesheet-form :is(input,select,textarea){font-size:16px;min-height:44px;max-width:100%;box-sizing:border-box}
+ .trident-timesheet.timesheet-form :is(.status,.mode,.date,.unpaid-lunch){min-width:0;width:100%}.trident-timesheet.timesheet-form .direct{max-width:100%}
+ .trident-timesheet.timesheet-form .fields,.trident-timesheet.timesheet-form .foot{grid-template-columns:1fr;padding:14px}
+ .trident-timesheet.timesheet-form .summary{padding:4px 14px 14px}.trident-timesheet.timesheet-form .summary .metric{padding:10px}
+ .trident-timesheet.timesheet-form .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.trident-timesheet.timesheet-form .actions .btn{min-height:44px;margin:0;padding:10px}
+ .trident-timesheet.timesheet-form .actions #submit{grid-column:1/-1}.trident-timesheet.timesheet-form .actions .msg{grid-column:1/-1;font-size:13px;line-height:1.4}
+ .trident-timesheet.timesheet-form .trident-time-entry{grid-template-columns:46px 8px 46px;width:108px;gap:4px;max-width:100%}
+ .trident-timesheet.timesheet-form .trident-time-entry .trident-time-digit{width:46px!important;height:44px;min-height:44px}
+ .trident-timesheet.timesheet-form .trident-time-entry .trident-time-period{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;height:44px;margin-top:2px}
+ .trident-timesheet.timesheet-form .trident-time-entry .trident-time-period-button{width:100%!important;height:43px;min-height:43px!important;font-size:12px!important}
+ .trident-timesheet.timesheet-form .trident-time-period-button+button{border-top:0;border-left:1px solid #ccd8e6}
+ .trident-timesheet.timesheet-form .timesheet-review-link{width:calc(100% - 28px);margin:0 14px 12px;font:inherit;display:flex;justify-content:center;align-items:center;min-height:44px;background:#eaf0f8;border:1px solid #cad7e8;border-radius:6px;color:#17345f;text-decoration:none;font-weight:700;grid-column:1/-1}
+ #period-conflict{padding:18px;max-height:85dvh;overflow:auto}#period-conflict button{min-height:44px}
 }
-
-@media screen and (max-width:600px){
- .my-day-pilot.timesheet-form .tablewrap table{min-width:0;width:100%}
- .my-day-pilot.timesheet-form .status,.my-day-pilot.timesheet-form .mode,.my-day-pilot.timesheet-form .date{min-width:0}
- .my-day-pilot.timesheet-form .trident-time-period{height:88px}
- .my-day-pilot.timesheet-form .trident-time-period-button{height:43px;min-height:43px!important}
- .my-day-pilot.timesheet-form .trident-time-digit{height:44px;min-height:44px}
-}
+@media(min-width:601px){.timesheet-review-link{display:none}}

@@ -4,6 +4,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import './App.css'
 import './MyDay.css'
+import './TechnicianForms.css'
 
 
 
@@ -135,7 +136,7 @@ export default function App(){
 
  if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Dashboard</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
 
- return session?<div className={`workspace${localMode?' is-local':''}${navigationVisible?'':' navigation-hidden'}${pilot?' my-day-pilot':''}`}>
+ return session?<div className={`workspace${localMode?' is-local':''}${navigationVisible?'':' navigation-hidden'}${pilot?' my-day-pilot':''}${['timesheet','vehicles','leave'].includes(page)?' technician-page':''}`}>
 
   <a className="skip-content" href="#workspace-content" onClick={e=>{e.preventDefault();window.document.getElementById('workspace-content')?.focus()}}>Skip to page content</a>{!navigationVisible&&<div className="portal-navigation-reveal"><button aria-label="Show navigation" onClick={()=>setNavigationOpen(true)}><Icon name="menu" size={13}/>Show navigation</button></div>}<header className="portal-header" hidden={!navigationVisible}>
 
@@ -173,7 +174,7 @@ export default function App(){
   </main>}
 
   {pilot&&page==='my-day'&&<MyDay request={request} session={session} onNavigate={navigate}/>}
-  {pilot&&['timesheet','leave','vehicles'].includes(page)&&<div className="mobile-my-day-return"><button onClick={()=>navigate('my-day')}>← My day</button></div>}
+  {pilot&&['timesheet','leave','vehicles'].includes(page)&&<div className="mobile-my-day-return"><button type="button" aria-label="Back to My day" onClick={()=>navigate('my-day')}><Icon name="arrow-left" size={16}/>My day</button></div>}
   {page==='quotes'&&!document&&<p className="module-loading" role="status">Loading your quotes…</p>}
 
   {document&&<section className="quote-module" hidden={page!=='quotes'} aria-label="Quotes"><iframe ref={quoteFrame} title="Trident quote builder" srcDoc={document}/></section>}
