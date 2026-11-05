@@ -46,7 +46,7 @@ export default function MyDay({request,session,onNavigate}){
    <section className="my-day-attention"><h2>Needs attention</h2>
     {data.attention.filter(r=>r.kind==='vehicle').map(r=><button key={r.id} onClick={()=>go('vehicles')}><Icon name="truck"/><span><strong>Vehicle check · {r.registration||'Your vehicle'}</strong><small>{remaining(r.daysRemaining)}{r.due?' · '+label(r.due):''}</small></span><Icon name="chevron-right"/></button>)}
     {!data.attention.some(r=>r.kind==='vehicle')&&<button onClick={()=>go('vehicles')}><Icon name="truck"/><span><strong>Vehicle checks</strong><small>No active vehicle assigned</small></span><Icon name="chevron-right"/></button>}
-    <button onClick={()=>go('timesheet')}><Icon name="clock"/><span><strong>Time sheet · {due.status}</strong><small>Week {label(due.weekStart)} · {remaining(due.daysRemaining)}</small><small>Due {label(due.due.slice(0,10))} at {nzTime(due.due)}</small></span><Icon name="chevron-right"/></button>
+    <button onClick={()=>go('timesheet')}><Icon name="clock"/><span><strong>Time sheet · {due.status}</strong><small>Week {label(due.weekStart)} · {due.status==='Submitted'?'Complete':remaining(due.daysRemaining)}</small><small>Due {label(due.due.slice(0,10))} at {nzTime(due.due)}</small></span><Icon name="chevron-right"/></button>
     <button onClick={()=>go('leave')}><Icon name="calendar"/><span><strong>Leave requests</strong><small>{data.leave[0]?`${data.leave[0].status} · ${label(data.leave[0].startDate)}`:'No submitted requests'}</small></span><Icon name="chevron-right"/></button>
    </section>
    <div className="my-day-section-heading"><h2>Appointments ({data.appointments.length})</h2><span>Tap a job for actual times</span></div>
