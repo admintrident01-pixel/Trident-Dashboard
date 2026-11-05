@@ -4,5 +4,6 @@ __pycache__/
 *.xlsx
 !standard_soh_template.xlsx
 !stock_take_template.xlsx
+!weekly_hours_template.xlsx
 *.pdf
 *.db
