@@ -11,7 +11,7 @@ import TimeEntry from './TimeEntry'
 import {gapPackPlan} from './scheduleGapPack'
 import {clientSearchUrl} from './clientSearch'
 import {appointmentTimeForm,updateAppointmentTime,appointmentTimeError} from './appointmentTime'
-import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react'
+import {useCallback,useEffect,useEffectEvent,useLayoutEffect,useRef,useState} from 'react'
 import {overlapLanes,travelSourceLabel,travelTooltip,scheduleGaps,technicianBookedMinutes,bookedTimeLabel,assignedTechs,reassignTechnician,blockPosition,hourMarks,moveAppointment,rangeFor,timeMinutes,timeText,pointerMinute} from './scheduleMath'
 import './TechSchedule.css'
 import './scheduleWorkflow.css'
@@ -29,7 +29,7 @@ const axisTime=minute=>{const [time,period]=clockTime(minute).split(' ');return 
 const defaultAppointmentTypes=['Equipment repair','Equipment assessment','Delivery','Collection','Vehicle service','Client visit','Other','Unspecified','Notes']
 const blank=(date,technician,start='08:00')=>({date,technician:technician||'',technicians:technician?[technician]:[],start,duration:60,timing:'flexible',client:'',address:'',type:'Unspecified',notes:'',bookingStatus:'action-needed',urgency:'low',bookingControlsVersion:1})
 
-export default function TechSchedule({request,isAdmin,active,draftOwner}){
+export default function TechSchedule({request,isAdmin,active,draftOwner,incomingJob,onIncomingConsumed}){
  const draftKey='trident-schedule-drafts-v1:'+draftOwner
  const [drafts,setDrafts]=useState(()=>readScheduleDrafts(sessionStorage,draftKey)),[editConflict,setEditConflict]=useState(null),[draftWarning,setDraftWarning]=useState('')
  const liveRefreshRef=useRef(null)
@@ -192,6 +192,13 @@ export default function TechSchedule({request,isAdmin,active,draftOwner}){
  const travelBlocks=visibleData?.travelBlocks||[]
  const appointments=scheduleAppointments(visibleData),leaveBlocks=[...(visibleData?.leaveBlocks||[]),...(visibleData?.noteBlocks||[])],normalRange=rangeFor([],'normal',visibleData?.workHours),range=rangeFor([...appointments,...leaveBlocks,...travelBlocks],hoursView==='normal'?'full':hoursView,visibleData?.workHours),hours=hourMarks(range)
  const scrollRef=useScheduleScroll(active&&!!visibleData&&hoursView==='normal',date,normalRange.start,normalRange.end)
+ const receiveImportedJob=useEffectEvent(()=>{
+  if(formRef.current){setMessage('An imported job is waiting. Save or close the current appointment to open it.');return}
+  open({...blank(date,'',data.workHours?.start||'08:00'),...incomingJob.fields})
+  onIncomingConsumed()
+ })
+ useEffect(()=>{if(!active||!visibleData||!incomingJob)return;let cancelled=false;Promise.resolve().then(()=>{if(!cancelled)receiveImportedJob()});return()=>{cancelled=true}},[active,visibleData,incomingJob,form])
+
  const outsideHours=hoursView==='normal'&&[...appointments,...leaveBlocks,...travelBlocks].some(a=>!a.cancelled&&(timeMinutes(a.start)<normalRange.start||timeMinutes(a.start)+a.duration>normalRange.end))
  const searchTarget=useRef('')
  function findAppointment(row){searchTarget.current=row.id;setFilter('');setDate(row.date);setSelected([row.id]);setCancelled(!!row.cancelled);setHoursView('fit');setMessage('Showing '+row.client+' on '+dayLabel(row.date,{day:'numeric',month:'short',year:'numeric'})+'.')}

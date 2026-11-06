@@ -453,7 +453,7 @@ async function showHome(ask=true){
  $('quoteEditor').hidden=true;$('homePage').hidden=false;for(const id of ['save','load','reset','confirmQuote','emailQuote'])$(id).hidden=true;updateDeleteDraftButton();
  try{await renderHome(true);}catch(e){$('homeEmpty').hidden=false;$('homeEmpty').textContent='Unable to load quotes: '+e.message;}
 }
-async function startNewQuote(){const generation=++quoteOpenGeneration;if(!dashboardLoaded){try{await loadQuoteDefaults();}catch(e){quoteConfirmationStatus(e.message);return;}}if(generation!==quoteOpenGeneration)return;sourceDraftName='';if(editorChanged()&&!confirm('Start another quote without saving these changes?'))return;fresh();showEditor();editorBaseline=editorSignature();quoteConfirmationStatus('This number will be reserved when you save the draft or finalise the quote.');}
+async function startNewQuote(){const generation=++quoteOpenGeneration;if(!dashboardLoaded){try{await loadQuoteDefaults();}catch(e){quoteConfirmationStatus(e.message);return;}}if(generation!==quoteOpenGeneration)return;sourceDraftName='';if(editorChanged()&&!confirm('Start another quote without saving these changes?'))return;fresh();showEditor();editorBaseline=editorSignature();quoteConfirmationStatus('This number will be reserved when you save the draft or finalise the quote.');return true;}
 async function openQuote(q){
  const generation=++quoteOpenGeneration;sourceDraftName='';try{q=await quoteDetail(q);if(generation!==quoteOpenGeneration)return;
   const data=structuredClone(q.data);if(!data.fields.type)data.fields.type=settings.types[0].name;
@@ -498,7 +498,7 @@ async function migrateOlderDrafts(){
 $('homeButton').onclick=()=>showHome();$('newQuote').onclick=startNewQuote;$('reset').onclick=startNewQuote;
 $('save').onclick=()=>saveQuote('Draft');$('confirmQuote').onclick=()=>saveQuote('Finalised');$('load').onclick=()=>{homeFilter='Draft';showHome();};
 $('quoteSearch').oninput=()=>{clearTimeout(quoteSearchTimer);dashboardGeneration++;dashboardController?.abort();quoteSearchTimer=setTimeout(renderHome,250);};document.querySelectorAll('[data-quote-filter]').forEach(b=>b.onclick=()=>{homeFilter=b.dataset.quoteFilter;renderHome();});
-window.addEventListener('DOMContentLoaded',()=>showHome(false));$('downloadExcel').onclick=async()=>{try{const r=await fetch('/api/workbook');if(!r.ok)throw Error((await r.json()).error);const url=URL.createObjectURL(await r.blob()),a=document.createElement('a');a.href=url;a.download='Trident-Quote-Settings.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){quoteConfirmationStatus(e.message);}};
+var quoteStartup=Promise.resolve();window.addEventListener('DOMContentLoaded',()=>{quoteStartup=showHome(false);const ready=()=>parent.postMessage({type:'trident-quote-import-ready'},parent.location.origin);quoteStartup.then(ready,ready)});$('downloadExcel').onclick=async()=>{try{const r=await fetch('/api/workbook');if(!r.ok)throw Error((await r.json()).error);const url=URL.createObjectURL(await r.blob()),a=document.createElement('a');a.href=url;a.download='Trident-Quote-Settings.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){quoteConfirmationStatus(e.message);}};
 
 async function deleteQuote(q){
  if(confirmingQuote)return;
@@ -524,6 +524,15 @@ function updateDeleteDraftButton(){
  $('deleteDraft').hidden=$('quoteEditor').hidden||activeQuote?.state!=='Draft';
  $('deleteDraft').disabled=confirmingQuote;
 }
+const importedJobTransfers=new Set();let importingJob=false;
+window.addEventListener('message',async event=>{
+ if(event.source!==parent||event.origin!==parent.location.origin||event.data?.type!=='trident-import-quote')return;
+ const id=event.data.id,fields=event.data.fields,limits={client:160,clientAddress:500,clientLocality:322,to:160,ref:240,equipment:401,job:4000};
+ const reply=(accepted,error='')=>parent.postMessage({type:'trident-quote-imported',id,accepted,error},parent.location.origin);
+ if(!/^[a-f0-9-]{36}$/.test(id||'')||!fields||Object.entries(fields).some(([key,value])=>!limits[key]||typeof value!=='string'||value.length>limits[key])){reply(false,'Imported quote fields are invalid.');return;}
+ if(importedJobTransfers.has(id)){reply(true);return;}if(importingJob)return;importingJob=true;
+ try{await quoteStartup;if(!await startNewQuote()){reply(false,'The existing quote was kept. Return to Import job when ready.');return;}for(const [key,value] of Object.entries(fields))$(key).value=value;render();importedJobTransfers.add(id);quoteConfirmationStatus('Imported dbFLEX job. Review the client, recipient and prices. Normal draft autosave applies.');reply(true);}catch(e){reply(false,e.message);}finally{importingJob=false;}
+});
 $('deleteDraft').onclick=async()=>{
  if(confirmingQuote||activeQuote?.state!=='Draft')return;
  const q=quoteCatalog.find(q=>q.id===activeQuote.id);
