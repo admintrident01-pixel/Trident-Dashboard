@@ -7,6 +7,7 @@ import schedule, schedule_booking, schedule_notes, reminders, timesheets, timesh
 ZONE=ZoneInfo('Pacific/Auckland')
 def require(user,linked=True):
     if not user.get('email') or user.get('role') not in ('admin','tech'):raise Problem(403,'Sign in to view your day.')
+    if user['email'].strip().lower()=='scott@trice.nz' or user.get('technician','').strip().casefold()=='scott yearbury':raise Problem(403,'My day is not enabled for this account.')
     if linked and not user.get('technician'):raise Problem(409,'Ask an administrator to link your account to your staff identity first.')
 
 def date(value):

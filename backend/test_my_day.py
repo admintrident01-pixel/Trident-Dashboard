@@ -36,6 +36,12 @@ class MyDayTests(unittest.TestCase):
   unlinked={**other,'technician':''}
   self.assertTrue(my_day.read(updated,unlinked,self.day,self.now)['setupRequired'])
   with self.assertRaises(Problem):my_day.operation(updated,unlinked,command,self.now)
+ def test_scott_is_excluded_by_verified_account_or_linked_identity(self):
+  before=copy.deepcopy(self.state)
+  for user in ({**self.user,'email':' SCOTT@TRICE.NZ '},{**self.user,'technician':' Scott Yearbury '}):
+   with self.assertRaises(Problem):my_day.read(self.state,user,self.day,self.now)
+   with self.assertRaises(Problem):my_day.operation(self.state,user,{},self.now)
+  self.assertEqual(self.state,before)
  def test_timer_retry_is_idempotent_and_preserves_all_other_sections(self):
   (state,_),command=self.command(self.state,'start');again,replayed=my_day.operation(state,self.user,command,self.now+dt.timedelta(minutes=20))
   self.assertTrue(replayed);self.assertEqual(state,again)
@@ -92,6 +98,13 @@ class MyDayAPI(unittest.TestCase):
  def setUp(self):
   self.api=test_accounts.AccountsAPI();self.api.setUp();self.day=dt.datetime.now(my_day.ZONE).date().isoformat()
   self.api.store.state['vehicles']=[]
+  self.api.store.state['users']['tech@example.nz'].update(name='Other member',technician='Other member')
+ def test_scott_denied_on_read_and_write_for_both_roles_without_mutation(self):
+  for role in ('admin','tech'):
+   self.api.store.state['users']['tech@example.nz'].update(role=role,technician='Scott Yearbury')
+   before=copy.deepcopy(self.api.store.state)
+   for method in ('GET','POST'):self.assertEqual(self.api.call('/api/my-day',method,{'date':self.day},token='tech')[0],403)
+   self.assertEqual(self.api.store.state,before)
  def test_authenticated_members_can_read_own_day_but_anonymous_access_is_denied(self):
   before=copy.deepcopy(self.api.store.state)
   self.assertEqual(self.api.call('/api/my-day',token='tech')[0],200)

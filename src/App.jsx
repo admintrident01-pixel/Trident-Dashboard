@@ -14,7 +14,7 @@ import EmailSignIn from './EmailSignIn'
 
 import ReminderDashboard from './ReminderDashboard'
 import {loadSession,saveSession} from './session'
-import {loadPage,canAccessPage} from './navigation'
+import {loadPage,canAccessPage,homePage} from './navigation'
 import {myDayEnabled} from './myDayModel'
 
 const StockPage=lazy(()=>import('./StockPage'))
@@ -33,7 +33,7 @@ const api=localMode?'http://127.0.0.1:18782':(import.meta.env.VITE_API_URL||'htt
 export default function App(){
 
  const [session,setSession]=useState(loadSession),[error,setError]=useState(''),[document,setDocument]=useState(''),[timesheetDocument,setTimesheetDocument]=useState(''),[selectedPage,setPage]=useState(loadPage)
- const page=canAccessPage(selectedPage,session)?(selectedPage==='home'?'my-day':selectedPage):'my-day'
+ const page=canAccessPage(selectedPage,session)?(selectedPage==='home'?homePage(session):selectedPage):homePage(session)
  const [timesheetOpenRequest,setTimesheetOpenRequest]=useState(null)
  const [navigationMode,setNavigationMode]=useState(()=>{try{return localStorage.getItem('trident-navigation-mode')||'pinned'}catch{return 'pinned'}})
  const [navigationOpen,setNavigationOpen]=useState(false)
@@ -140,7 +140,7 @@ export default function App(){
 
   <a className="skip-content" href="#workspace-content" onClick={e=>{e.preventDefault();window.document.getElementById('workspace-content')?.focus()}}>Skip to page content</a>{!navigationVisible&&<div className="portal-navigation-reveal"><button aria-label="Show navigation" onClick={()=>setNavigationOpen(true)}><Icon name="menu" size={13}/>Show navigation</button></div>}<header className="portal-header" hidden={!navigationVisible}>
 
-   <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate('my-day')}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
+   <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate(homePage(session))}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
 
    <nav aria-label="Main navigation">{[['my-day','My day'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources'],['workspace','Workspace']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
 

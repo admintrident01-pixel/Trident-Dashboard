@@ -1,4 +1,4 @@
-export const myDayEnabled=session=>!!session?.email&&['admin','tech'].includes(session.role)
+export const myDayEnabled=session=>!!session?.email&&['admin','tech'].includes(session.role)&&session.email.trim().toLowerCase()!=='scott@trice.nz'&&session.technician?.trim().toLowerCase()!=='scott yearbury'
 export const nzDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Auckland',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
 export function shiftDay(day,amount){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+amount);return d.toISOString().slice(0,10)}
 export function recordedMinutes(jobs,now){return Object.values(jobs||{}).reduce((sum,j)=>sum+(j?.sessions||[]).reduce((n,s)=>n+Math.max(0,((s.end?Date.parse(s.end):now)-Date.parse(s.start))/60000),0),0)}

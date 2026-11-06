@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {myDayEnabled,recordedMinutes,shiftDay,mapsLink,nzTime} from '../src/myDayModel.js'
-import {canAccessPage,loadPage} from '../src/navigation.js'
+import {canAccessPage,loadPage,homePage} from '../src/navigation.js'
 test('all signed-in members can open My day while privileged pages stay restricted',()=>{
  assert.equal(myDayEnabled({email:'tech@trice.nz',role:'tech'}),true)
  assert.equal(canAccessPage('my-day',{email:'bala@trice.nz',role:'admin'}),true)
@@ -14,6 +14,16 @@ test('My day is the default home while the existing workspace stays reachable',(
  try{for(const hash of ['','#home','#unknown']){global.window={location:{hash}};assert.equal(loadPage(),'my-day')}
  global.window={location:{hash:'#workspace'}};assert.equal(loadPage(),'workspace')
  }finally{global.window=previous}
+})
+test('Scott stays on the existing home with his other permissions unchanged',()=>{
+ for(const session of [{email:' SCOTT@TRICE.NZ ',role:'admin'},{email:'other@trice.nz',technician:' Scott Yearbury ',role:'tech'}]){
+  assert.equal(canAccessPage('my-day',session),false)
+  assert.equal(homePage(session),'workspace')
+  assert.equal(canAccessPage('workspace',session),true)
+  assert.equal(canAccessPage('schedule',session),true)
+ }
+ assert.equal(canAccessPage('settings',{email:'scott@trice.nz',role:'admin'}),true)
+ assert.equal(homePage({email:'other@trice.nz',role:'tech'}),'my-day')
 })
 test('recorded time sums multiple periods and one active clock without planned hours',()=>{
  const now=Date.parse('2026-11-05T01:00:00Z')
