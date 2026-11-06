@@ -2,9 +2,18 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import vm from 'node:vm'
+import {canAccessPage} from '../src/navigation.js'
 import {validateJobImport,transferId,jobAddress,jobImportNotes,appointmentImport,quoteImport} from '../src/jobImportModel.js'
 const id='12345678-1234-4234-8234-123456789012',now=Date.now(),source='https://capitalmobility.dbflex.net/secure/db/96562/preview.aspx?t=736016&id=70001&back=private-return-state'
 const payload=()=>({version:1,transferId:id,createdAt:now,source:{recordId:'70001',jobNumber:'90001',url:source},fields:{client:'Example Client',street:'12 Example Road',suburb:'Example Town',city:'Example Town',phone:'Example phone',invoiceTo:'Example payer',make:'Example make',model:'Example model',problem:'Repair notes',jobNotes:'Plain job notes'}})
+
+test('job import permits admins except Scott without changing their other page permissions',()=>{
+ assert.equal(canAccessPage('job-import',{role:'admin',email:'bala@trice.nz'}),true)
+ assert.equal(canAccessPage('job-import',{role:'admin',email:'another-admin@example.invalid'}),true)
+ for(const session of [null,{role:'tech',email:'tech@example.invalid'},{role:'admin',email:' Scott@trice.nz '},{role:'admin',email:'other@example.invalid',technician:' Scott Yearbury '}])assert.equal(canAccessPage('job-import',session),false)
+ assert.equal(canAccessPage('schedule',{role:'admin',email:'scott@trice.nz'}),true)
+ assert.equal(canAccessPage('quotes',{role:'admin',email:'scott@trice.nz'}),true)
+})
 test('import validates source and expiry, drops unrequested fields and strips return-state URL',()=>{
  const raw=payload();raw.fields.accClaimNumber='PRIVATE';raw.fields.attachments=['private'];const copy=structuredClone(raw)
  const result=validateJobImport(raw,id,now)

@@ -136,9 +136,9 @@ export default function App(){
 
  const navigate=next=>{if(next===page)return;if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Save them before leaving. Leave anyway?'))return;if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?'))return;visitPage(next);window.scrollTo({top:0,behavior:'instant'})}
  useEffect(()=>{const warn=e=>{if(timesheetFrame.current?.contentWindow.tridentTimesheetHasUnsavedChanges?.()){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[])
- function importAppointment(job,notes){setIncomingJob({id:job.transferId,fields:appointmentImport(job,notes)});navigate('schedule')}
+ function importAppointment(job,notes){if(!canAccessPage('job-import',session))return;setIncomingJob({id:job.transferId,fields:appointmentImport(job,notes)});navigate('schedule')}
  function sendQuoteImport(){if(quoteImportRef.current&&quoteFrame.current)quoteFrame.current.contentWindow.postMessage({type:'trident-import-quote',...quoteImportRef.current},location.origin)}
- function importQuote(job,notes){quoteImportRef.current={id:job.transferId,fields:quoteImport(job,notes)};navigate('quotes');sendQuoteImport()}
+ function importQuote(job,notes){if(!canAccessPage('job-import',session))return;quoteImportRef.current={id:job.transferId,fields:quoteImport(job,notes)};navigate('quotes');sendQuoteImport()}
  useEffect(()=>{const receive=e=>{if(e.origin!==location.origin||e.source!==quoteFrame.current?.contentWindow)return;if(e.data?.type==='trident-quote-import-ready'&&quoteImportRef.current)quoteFrame.current.contentWindow.postMessage({type:'trident-import-quote',...quoteImportRef.current},location.origin);if(e.data?.type==='trident-quote-imported'&&e.data.id===quoteImportRef.current?.id){if(e.data.accepted)quoteImportRef.current=null;else setError(e.data.error||'The existing quote was kept. Return to Import job to try again.')}};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive)},[])
  const signOut=async()=>{if(timesheetFrame.current?.contentWindow.tridentTimesheetHasUnsavedChanges?.()&&!window.confirm('Your time sheet has unsaved changes. Save a draft before signing out. Sign out anyway?'))return;if(window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Sign out anyway?'))return;if(quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before signing out. Sign out anyway?'))return;try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
 
@@ -181,7 +181,7 @@ export default function App(){
    {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/></>}
   </main>}
 
-  {isAdmin&&(page==='job-import'||visitedPages['job-import'])&&<section hidden={page!=='job-import'}><JobImport onAppointment={importAppointment} onQuote={importQuote}/></section>}
+  {canAccessPage('job-import',session)&&(page==='job-import'||visitedPages['job-import'])&&<section hidden={page!=='job-import'}><JobImport onAppointment={importAppointment} onQuote={importQuote}/></section>}
   {hasMyDay&&page==='my-day'&&<MyDay request={request} session={session} onNavigate={navigate}>{isAdmin&&<ReminderDashboard request={request}/>}</MyDay>}
   {hasMyDay&&['timesheet','leave','vehicles'].includes(page)&&<div className="mobile-my-day-return"><button type="button" aria-label="Back to My day" onClick={()=>navigate('my-day')}><Icon name="arrow-left" size={16}/>My day</button></div>}
   {page==='quotes'&&!document&&<p className="module-loading" role="status">Loading your quotes…</p>}

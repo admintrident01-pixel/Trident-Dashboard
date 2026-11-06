@@ -1,7 +1,8 @@
 dbFLEX job shortcut for Trident - local review, not yet published
 
 No dbFLEX API key or new cloud service is required. Your normal dbFLEX and
-Trident logins are still required. The Trident receiver is admin-only.
+Trident logins are still required. The Trident receiver is for admins except
+Scott (scott@trice.nz / Scott Yearbury). His existing admin tools are unchanged.
 
 After the receiver is published:
 1. Install public/trident-dbflex.user.js using Tampermonkey's dashboard/editor.

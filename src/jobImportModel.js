@@ -20,3 +20,4 @@ export function jobImportNotes(job){const f=job.fields;return [
  ].filter(Boolean).join('\n\n')}
 export function appointmentImport(job,notes){return {client:job.fields.client,address:jobAddress(job.fields),notes}}
 export function quoteImport(job,notes){const f=job.fields;return {client:f.client,clientAddress:f.street,clientLocality:locality(f),to:f.invoiceTo,ref:[job.source.jobNumber,f.poNumber&&'PO '+f.poNumber].filter(Boolean).join(' · '),equipment:[f.make,f.model].filter(Boolean).join(' '),job:notes}}
+export const jobImportEnabled=session=>session?.role==='admin'&&!!session.email&&session.email.trim().toLowerCase()!=='scott@trice.nz'&&session.technician?.trim().toLowerCase()!=='scott yearbury'
