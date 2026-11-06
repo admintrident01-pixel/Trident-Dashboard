@@ -21,8 +21,21 @@ class MyDayTests(unittest.TestCase):
    data=my_day.read(self.state,self.user,self.day,self.now)
   self.assertEqual([a['id'] for a in data['appointments']],['a']);self.assertEqual(data['plannedMinutes'],60)
   self.assertEqual(data['appointments'][0]['notes'],'Stored job notes');self.assertEqual(self.state,original)
-  for user in ({**self.user,'email':'other@example.nz'},{**self.user,'email':'bala@trice.nz.evil'},{**self.user,'technician':''}):
+  for user in ({**self.user,'email':''},{**self.user,'role':'guest'}):
    with self.assertRaises(Problem):my_day.read(self.state,user,self.day,self.now)
+ def test_members_have_private_logs_and_unlinked_accounts_get_setup_guidance(self):
+  (state,_),_=self.command(self.state,'times',sessions=[{'start':'08:00','end':'09:00'}])
+  other={'email':'other@example.nz','technician':'Other','role':'tech'}
+  view=my_day.read(state,other,self.day,self.now)
+  self.assertEqual(set(a['id'] for a in view['appointments']),{'a','b'})
+  self.assertEqual(view['day']['jobs'],{})
+  command={'operationId':'other_member_operation_123','revision':0,'date':self.day,'action':'times','jobId':'b','sessions':[{'start':'10:00','end':'11:00'}],'email':self.user['email'],'technician':'Bala'}
+  updated,_=my_day.operation(state,other,command,self.now)
+  self.assertEqual(my_day.book(updated,self.user),my_day.book(state,self.user))
+  self.assertIn('b',my_day.book(updated,other)['days'][self.day]['jobs'])
+  unlinked={**other,'technician':''}
+  self.assertTrue(my_day.read(updated,unlinked,self.day,self.now)['setupRequired'])
+  with self.assertRaises(Problem):my_day.operation(updated,unlinked,command,self.now)
  def test_timer_retry_is_idempotent_and_preserves_all_other_sections(self):
   (state,_),command=self.command(self.state,'start');again,replayed=my_day.operation(state,self.user,command,self.now+dt.timedelta(minutes=20))
   self.assertTrue(replayed);self.assertEqual(state,again)
@@ -48,9 +61,25 @@ class MyDayTests(unittest.TestCase):
   (state,_),_=self.command(state,'reopen');(state,_),_=self.command(state,'times',jobId='custom:1234567890123456',sessions=[])
   history=state['myDayLogs'][self.user['email']]['history']
   self.assertEqual(history[-1]['before']['jobs']['custom:1234567890123456']['sessions'][0]['start'],'2026-11-04T19:00:00+00:00')
- def test_future_times_dates_and_dst_ambiguity_fail_without_mutation(self):
-  for sessions in ([{'start':'13:00','end':'14:00'}],[{'start':'09:00','end':'08:00'}],[{'start':'09:99','end':'10:00'}]):
+ def test_manual_future_times_and_dates_preserve_other_records_and_history(self):
+  original=copy.deepcopy(self.state)
+  (state,_),command=self.command(self.state,'times',sessions=[{'start':'13:00','end':'14:00'}])
+  session=my_day.book(state,self.user)['days'][self.day]['jobs']['a']['sessions'][0]
+  self.assertEqual(my_day.local_time(self.day,'14:00').isoformat(),session['end'])
+  again,replayed=my_day.operation(state,self.user,command,self.now)
+  self.assertTrue(replayed);self.assertEqual(state,again)
+  for key in original:self.assertEqual(state[key],original[key])
+  tomorrow='2026-11-06';custom='custom:1234567890123456'
+  (state,_),_=self.command(state,'create',date=tomorrow,jobId=custom,title='Custom work')
+  (state,_),_=self.command(state,'times',date=tomorrow,jobId=custom,sessions=[{'start':'18:00','end':'19:00'}])
+  self.assertEqual(len(my_day.book(state,self.user)['history']),3)
+  with self.assertRaises(Problem):self.command(state,'start',date=tomorrow,jobId=custom)
+  self.assertEqual(self.state,original)
+ def test_invalid_order_and_dst_ambiguity_fail_without_mutation(self):
+  original=copy.deepcopy(self.state)
+  for sessions in ([{'start':'09:00','end':'08:00'}],[{'start':'09:00','end':'09:00'}],[{'start':'09:99','end':'10:00'}]):
    with self.assertRaises(Problem):self.command(self.state,'times',sessions=sessions)
+  self.assertEqual(self.state,original)
   with self.assertRaises(Problem):my_day.local_time('2026-09-27','02:30')
   with self.assertRaises(Problem):my_day.local_time('2026-04-05','02:30')
  def test_cross_midnight_requires_explicit_correction(self):
@@ -63,9 +92,10 @@ class MyDayAPI(unittest.TestCase):
  def setUp(self):
   self.api=test_accounts.AccountsAPI();self.api.setUp();self.day=dt.datetime.now(my_day.ZONE).date().isoformat()
   self.api.store.state['vehicles']=[]
- def test_gate_is_server_side_and_no_side_effects_for_denied_accounts(self):
+ def test_authenticated_members_can_read_own_day_but_anonymous_access_is_denied(self):
   before=copy.deepcopy(self.api.store.state)
-  for method in ('GET','POST'):self.assertEqual(self.api.call('/api/my-day',method,{'date':self.day},token='tech')[0],403)
+  self.assertEqual(self.api.call('/api/my-day',token='tech')[0],200)
+  for method in ('GET','POST'):self.assertIn(self.api.call('/api/my-day',method,{'date':self.day},token='')[0],(401,403))
   self.assertEqual(before,self.api.store.state)
   self.assertEqual(self.api.call('/api/my-day')[0],200)
  def test_cas_rebase_rechecks_receipt_and_preserves_concurrent_business_edit(self):

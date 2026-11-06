@@ -1,11 +1,19 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {myDayPilot,recordedMinutes,shiftDay,mapsLink,nzTime} from '../src/myDayModel.js'
-import {canAccessPage} from '../src/navigation.js'
-test('pilot gates navigation regardless of admin role',()=>{
- assert.equal(myDayPilot({email:'bala@trice.nz'}),true)
+import {myDayEnabled,recordedMinutes,shiftDay,mapsLink,nzTime} from '../src/myDayModel.js'
+import {canAccessPage,loadPage} from '../src/navigation.js'
+test('all signed-in members can open My day while privileged pages stay restricted',()=>{
+ assert.equal(myDayEnabled({email:'tech@trice.nz',role:'tech'}),true)
  assert.equal(canAccessPage('my-day',{email:'bala@trice.nz',role:'admin'}),true)
- for(const email of ['other@trice.nz','bala@trice.nz.evil',''])assert.equal(canAccessPage('my-day',{email,role:'admin'}),false)
+ assert.equal(canAccessPage('my-day',{email:'other@trice.nz',role:'tech'}),true)
+ assert.equal(canAccessPage('settings',{email:'other@trice.nz',role:'tech'}),false)
+ for(const session of [null,{email:'',role:'admin'},{email:'other@trice.nz',role:'guest'}])assert.equal(canAccessPage('my-day',session),false)
+})
+test('My day is the default home while the existing workspace stays reachable',()=>{
+ const previous=global.window
+ try{for(const hash of ['','#home','#unknown']){global.window={location:{hash}};assert.equal(loadPage(),'my-day')}
+ global.window={location:{hash:'#workspace'}};assert.equal(loadPage(),'workspace')
+ }finally{global.window=previous}
 })
 test('recorded time sums multiple periods and one active clock without planned hours',()=>{
  const now=Date.parse('2026-11-05T01:00:00Z')

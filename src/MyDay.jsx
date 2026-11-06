@@ -7,7 +7,7 @@ const label=day=>new Date(day+'T00:00:00Z').toLocaleDateString('en-NZ',{timeZone
 const remaining=n=>n==null?'Due date not recorded':n<0?`${Math.abs(n)} day${n===-1?'':'s'} overdue`:n===0?'Due today':`${n} day${n===1?'':'s'} left`
 const status=a=>({'confirmed':'Booked','option':'Optional','action-needed':'Not booked'}[a.bookingStatus]||'Note')
 
-export default function MyDay({request,session,onNavigate}){
+export default function MyDay({request,session,onNavigate,children}){
  const key='trident-my-day-pending:'+session.email
  const [day,setDay]=useState(nzDay),[savedData,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[pending,setPending]=useState(()=>{try{return JSON.parse(localStorage.getItem(key))}catch{return null}}),[modal,setModal]=useState(null),[title,setTitle]=useState(''),[periods,setPeriods]=useState([]),[now,setNow]=useState(0)
  const dialog=useRef(null),epoch=useRef(0),saving=useRef(false),operation=useRef(pending),clock=useRef({server:0,local:0}),lastLoad=useRef(0)
@@ -30,33 +30,34 @@ export default function MyDay({request,session,onNavigate}){
   finally{saving.current=false;setBusy(false)}
  }
  function open(job){setError('');setTitle(job.client||job.title||'');setPeriods((data.day.jobs[job.id]?.sessions||[]).map(s=>({start:nzTime(s.start),end:nzTime(s.end)})));setModal({kind:'job',job})}
- const logs=data?.day.jobs||{},actual=recordedMinutes(logs,now),locked=busy||!!pending,finished=!!data?.day.finishedAt
+ const logs=data?.day?.jobs||{},actual=recordedMinutes(logs,now),locked=busy||!!pending,finished=!!data?.day?.finishedAt
  const custom=Object.values(logs).filter(j=>j.source==='custom'||!data?.appointments.some(a=>a.id===j.id))
  const due=data?.timesheet
  const go=page=>{if(!busy)onNavigate(page)}
  return <main className="my-day workspace-page">
-  <header className="my-day-heading"><div><p className="my-day-eyebrow">My day · Pilot</p><h1>{data?.technician||session.technician}</h1></div><button disabled={busy} onClick={refresh} aria-label="Refresh My day"><Icon name="refresh-cw" size={18}/></button></header>
+  <header className="my-day-heading"><div><p className="my-day-eyebrow">My day</p><h1>{data?.technician||session.technician}</h1></div><button disabled={busy} onClick={refresh} aria-label="Refresh My day"><Icon name="refresh-cw" size={18}/></button></header>
   <div className="my-day-dates"><button disabled={busy} aria-label="Previous day" onClick={()=>setDay(shiftDay(day,-1))}><Icon name="chevron-left"/></button><label><span className="sr-only">My day date</span><input disabled={busy} type="date" value={day} onInput={e=>e.target.value&&setDay(e.target.value)}/></label><button disabled={busy} aria-label="Next day" onClick={()=>setDay(shiftDay(day,1))}><Icon name="chevron-right"/></button><button disabled={busy} onClick={()=>setDay(nzDay())}>Today</button></div>
   <p className="my-day-date-label">{label(day)} · Auckland time</p>
   {error&&<p role="alert" className="my-day-error">{error}</p>}
   {pending&&<aside className="my-day-retry" role="status">An action is waiting for confirmation. Your saved timer may already be running. <button disabled={busy||!data} onClick={()=>save(null,{},true)}>Retry saved action</button></aside>}
-  {!data?<p role="status">Loading your day…</p>:<>
+  {!data?<p role="status">Loading your day…</p>:data.setupRequired?<p className="my-day-empty">Ask an administrator to link your account to your staff name in Settings to see your appointments and record work.</p>:<>
    {data.active&&data.active.date!==day&&<aside className="my-day-retry">Timer running on {label(data.active.date)}: {data.active.title}. <button disabled={busy} onClick={()=>setDay(data.active.date)}>Open that day</button></aside>}
    <section className="my-day-hours" aria-label="Daily hours"><div><span>Recorded work</span><strong>{hours(actual)} <small>hrs</small></strong><span>{data.active?.date===day?'Timer running':'Saved work periods'}</span></div><div><span>Planned appointments</span><strong>{hours(data.plannedMinutes)} <small>hrs</small></strong><button onClick={()=>setModal({kind:'summary'})}>Day summary</button></div><button className="primary-action" disabled={locked} onClick={()=>save(finished?'reopen':'finish')}>{finished?'Reopen day':'Finish day'}</button>{finished&&<p>Day finished. Reopen to correct your work log.</p>}</section>
-   <section className="my-day-attention"><h2>Needs attention</h2>
-    {data.attention.filter(r=>r.kind==='vehicle').map(r=><button key={r.id} onClick={()=>go('vehicles')}><Icon name="truck"/><span><strong>Vehicle check · {r.registration||'Your vehicle'}</strong><small>{remaining(r.daysRemaining)}{r.due?' · '+label(r.due):''}</small></span><Icon name="chevron-right"/></button>)}
-    {!data.attention.some(r=>r.kind==='vehicle')&&<button onClick={()=>go('vehicles')}><Icon name="truck"/><span><strong>Vehicle checks</strong><small>No active vehicle assigned</small></span><Icon name="chevron-right"/></button>}
-    <button onClick={()=>go('timesheet')}><Icon name="clock"/><span><strong>Time sheet · {due.status}</strong><small>Week {label(due.weekStart)} · {due.status==='Submitted'?'Complete':remaining(due.daysRemaining)}</small><small>Due {label(due.due.slice(0,10))} at {nzTime(due.due)}</small></span><Icon name="chevron-right"/></button>
-    <button onClick={()=>go('leave')}><Icon name="calendar"/><span><strong>Leave requests</strong><small>{data.leave[0]?`${data.leave[0].status} · ${label(data.leave[0].startDate)}`:'No submitted requests'}</small></span><Icon name="chevron-right"/></button>
-   </section>
    <div className="my-day-section-heading"><h2>Appointments ({data.appointments.length})</h2><span>Tap a job for actual times</span></div>
    {!data.appointments.length&&<p className="my-day-empty">No appointments assigned to you on this day.</p>}
    {data.appointments.map(a=><article className="my-day-job" key={a.id}><button className="my-day-job-open" onClick={()=>open(a)}><span className="my-day-job-time">{a.start}–{String(Math.floor((Number(a.start.slice(0,2))*60+Number(a.start.slice(3))+a.duration)/60)).padStart(2,'0')}:{String((Number(a.start.slice(3))+a.duration)%60).padStart(2,'0')}<small>{status(a)}</small></span><h3>{a.client}</h3><p>{a.type}</p>{a.address&&<p><Icon name="map-pin" size={16}/>{a.address}</p>}{a.notes&&<p className="my-day-job-notes">{a.notes}</p>}<span className="my-day-recorded">Recorded {hours(recordedMinutes({job:logs[a.id]},now))} hrs{data.active?.jobId===a.id&&data.active.date===day?' · Running':''}</span></button>{mapsLink(a.address)&&<a className="my-day-map" href={mapsLink(a.address)} target="_blank" rel="noopener noreferrer"><Icon name="navigation" size={18}/>Open in Google Maps</a>}</article>)}
    {!!data.recurringNotes.length&&<section className="my-day-notes"><h2>Schedule notes</h2>{data.recurringNotes.map(a=><p key={a.id}><strong>{a.start} · {a.client}</strong>{a.notes&&<span>{a.notes}</span>}</p>)}</section>}
    <div className="my-day-section-heading"><h2>Other recorded work</h2><button disabled={locked||finished} onClick={()=>{setTitle('');setModal({kind:'custom'})}}>+ Custom job</button></div>
    {custom.map(j=><button className="my-day-custom" key={j.id} onClick={()=>open(j)}><strong>{j.title}</strong><span>{hours(recordedMinutes({job:j},now))} hrs{data.active?.jobId===j.id&&data.active.date===day?' · Running':''}</span><Icon name="chevron-right"/></button>)}
+   <section className="my-day-attention"><h2>Reminders</h2>
+    {data.attention.filter(r=>r.kind==='vehicle').map(r=><button key={r.id} onClick={()=>go('vehicles')}><Icon name="truck"/><span><strong>Vehicle check · {r.registration||'Your vehicle'}</strong><small>{remaining(r.daysRemaining)}{r.due?' · '+label(r.due):''}</small></span><Icon name="chevron-right"/></button>)}
+    {!data.attention.some(r=>r.kind==='vehicle')&&<button onClick={()=>go('vehicles')}><Icon name="truck"/><span><strong>Vehicle checks</strong><small>No active vehicle assigned</small></span><Icon name="chevron-right"/></button>}
+    <button onClick={()=>go('timesheet')}><Icon name="clock"/><span><strong>Time sheet · {due.status}</strong><small>Week {label(due.weekStart)} · {due.status==='Submitted'?'Complete':remaining(due.daysRemaining)}</small><small>Due {label(due.due.slice(0,10))} at {nzTime(due.due)}</small></span><Icon name="chevron-right"/></button>
+    <button onClick={()=>go('leave')}><Icon name="calendar"/><span><strong>Leave requests</strong><small>{data.leave[0]?`${data.leave[0].status} · ${label(data.leave[0].startDate)}`:'No submitted requests'}</small></span><Icon name="chevron-right"/></button>
+   </section>
    <p className="my-day-footnote">Recorded hours are your personal work log. Submit your time sheet separately.</p>
   </>}
+  {children}
   <dialog aria-labelledby="my-day-dialog-title" className="my-day-dialog" ref={dialog} onCancel={e=>{if(busy)e.preventDefault();else setModal(null)}} onClose={()=>setModal(null)}>
    {modal&&data&&<><header><h2 id="my-day-dialog-title">{modal.kind==='summary'?'Day summary':modal.kind==='custom'?'Custom job':title}</h2><button disabled={busy} aria-label="Close job window" onClick={()=>setModal(null)}><Icon name="x"/></button></header>
     {error&&<p role="alert" className="my-day-error">{error}</p>}

@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {assignedTechs,reassignTechnician,blockPosition,moveAppointment,rangeFor} from '../src/scheduleMath.js'
+import {assignedTechs,reassignTechnician,blockPosition,moveAppointment,rangeFor,scrollDayLayout,pointerMinute} from '../src/scheduleMath.js'
 const booking={start:'09:00',duration:60,timing:'flexible'}
 test('block width follows booked duration',()=>{
  assert.deepEqual(blockPosition(booking,{start:480,end:1080}),{left:10,width:10})
@@ -36,6 +36,19 @@ test('normal workday clips partially visible bookings and hides out-of-hours blo
  const range={start:480,end:960}
  assert.deepEqual(blockPosition({...booking,start:'07:30',duration:60},range),{left:0,width:6.25})
  assert.equal(blockPosition({...booking,start:'18:00'},range).width,0)
+})
+
+test('scrolling a full day preserves normal workday scale and quarter-hour placement',()=>{
+ const normal={start:450,end:960},full={start:0,end:1440}
+ for(const viewport of [320,600,900]){
+  const layout=scrollDayLayout(viewport,24,normal)
+  const normalHourHeight=60/(normal.end-normal.start)*(viewport-24)
+  const late=blockPosition({...booking,start:'19:00'},full)
+  assert.ok(Math.abs(late.width/100*layout.trackHeight-normalHourHeight)<1e-9)
+  assert.ok(Math.abs(layout.scrollTop/layout.trackHeight*1440-450)<1e-9)
+  const rect={top:-layout.scrollTop+24,height:layout.trackHeight}
+  assert.equal(pointerMinute(full,rect,{y:rect.top+19.25/24*rect.height},true),1155)
+ }
 })
 test('dragging a shared booking replaces only the dragged technician and avoids duplicates',()=>{
  const team={...booking,technician:'Scott',technicians:['Scott','Bala']}

@@ -1,15 +1,13 @@
-"""Private pilot work log. No schedule, payroll, mail or routing side effects."""
+"""Private member work log. No schedule, payroll, mail or routing side effects."""
 import copy, datetime as dt, hashlib, json, re, uuid
 from zoneinfo import ZoneInfo
 from core import Problem
 import schedule, schedule_booking, schedule_notes, reminders, timesheets, timesheet_drafts
 
 ZONE=ZoneInfo('Pacific/Auckland')
-PILOT='bala@trice.nz'
-
-def require(user):
-    if user.get('email','').lower()!=PILOT:raise Problem(403,'My day is currently available to the pilot account only.')
-    if not user.get('technician'):raise Problem(409,'Ask an administrator to link your account to your staff identity first.')
+def require(user,linked=True):
+    if not user.get('email') or user.get('role') not in ('admin','tech'):raise Problem(403,'Sign in to view your day.')
+    if linked and not user.get('technician'):raise Problem(409,'Ask an administrator to link your account to your staff identity first.')
 
 def date(value):
     try:
@@ -25,7 +23,8 @@ def own_appointments(state,user,day):
 def book(state,user):return state.get('myDayLogs',{}).get(user['email'],{'revision':0,'days':{},'operations':{}})
 
 def read(state,user,day,now=None):
-    require(user);day=date(day);now=now or dt.datetime.now(dt.timezone.utc);local=now.astimezone(ZONE)
+    require(user,linked=False);day=date(day);now=now or dt.datetime.now(dt.timezone.utc);local=now.astimezone(ZONE)
+    if not user.get('technician'):return {'date':day,'today':local.date().isoformat(),'serverNow':now.isoformat(),'technician':user.get('name') or user['email'],'setupRequired':True,'revision':0}
     rows=[schedule_booking.controls(a) for a in own_appointments(state,user,day)]
     notes=[a for a in schedule_notes.blocks(state,day) if user['technician'] in schedule.assigned(a)]
     log=book(state,user);record=copy.deepcopy(log['days'].get(day,{'jobs':{},'finishedAt':None}))
@@ -67,9 +66,9 @@ def operation(state,user,data,now=None):
         if receipt['digest']!=digest:raise Problem(409,'This operation key was already used for different details.')
         return state,True
     if type(data.get('revision')) is not int or data['revision']!=old['revision']:raise Problem(409,'Your work log changed on another device. Refresh and review it before saving again.')
-    if len(old.get('operations',{}))>=10000:raise Problem(409,'Your pilot log needs archiving. Contact the administrator; existing hours are preserved.')
+    if len(old.get('operations',{}))>=10000:raise Problem(409,'Your work log needs archiving. Contact the administrator; existing hours are preserved.')
     result=copy.deepcopy(state);log=copy.deepcopy(old);record=log['days'].setdefault(day,{'jobs':{},'finishedAt':None})
-    if day>now.astimezone(ZONE).date().isoformat():raise Problem(400,'Record actual work on today or a previous day.')
+    if day>now.astimezone(ZONE).date().isoformat() and action not in ('create','times'):raise Problem(400,'Live timers and Finish day are available on today or a previous day.')
     if record.get('finishedAt') and action!='reopen':raise Problem(409,'This day is finished. Reopen it before changing recorded hours.')
     active=[(d,k,j,s) for d,v in log['days'].items() for k,j in v['jobs'].items() for s in j['sessions'] if not s.get('end')]
     if action=='reopen':record['finishedAt']=None
@@ -108,7 +107,7 @@ def operation(state,user,data,now=None):
             for item in raw:
                 if not isinstance(item,dict):raise Problem(400,'Enter a valid work period.')
                 start=local_time(day,item.get('start'));end=local_time(day,item.get('end'))
-                if end<=start or end>now:raise Problem(400,'Finish must be after start and cannot be in the future.')
+                if end<=start:raise Problem(400,'Finish must be after start.')
                 sessions.append({'id':uuid.uuid4().hex,'start':start.isoformat(),'end':end.isoformat()})
             job['sessions']=sessions
         job['updatedAt']=now.isoformat()
