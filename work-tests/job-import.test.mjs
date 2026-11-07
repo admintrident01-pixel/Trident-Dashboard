@@ -22,30 +22,31 @@ test('import validates source and expiry, drops unrequested fields and strips re
  for(const bad of [{...raw,createdAt:now-600001},{...raw,createdAt:now+60001},{...raw,transferId:'other'}, {...raw,source:{...raw.source,url:'https://evil.invalid/'}},{...raw,fields:{...raw.fields,client:''}},{...raw,fields:{...raw.fields,client:'x'.repeat(161)}}])assert.throws(()=>validateJobImport(bad,id,now))
  assert.equal(transferId('#job-import?transfer='+id),id);assert.equal(transferId('#job-import?transfer=------------------------------------'),'')
 })
-test('appointment and quote mappings preserve values without importing prices or recipient email',()=>{
+test('appointment and quote mappings follow the requested client, problem, model and job number fields',()=>{
  const raw=payload();raw.fields.email='client@example.invalid';raw.fields.problem='Text <script> is plain text'
  const job=validateJobImport(raw,id,now),notes=jobImportNotes(job)
  assert.equal(jobAddress(job.fields),'12 Example Road, Example Town')
- assert.deepEqual(appointmentImport(job,notes),{client:'Example Client',address:'12 Example Road, Example Town',notes})
- const quote=quoteImport(job,notes);assert.equal(quote.to,'Example payer');assert.equal(quote.recipientEmail,undefined);assert.equal(quote.number,undefined);assert.equal(quote.lines,undefined);assert.equal(quote.clientAddress,'12 Example Road')
+ assert.deepEqual(appointmentImport(job,notes),{client:'Example Client',address:'12 Example Road, Example Town',type:'Unspecified',notes})
+ const quote=quoteImport(job,notes);assert.equal(quote.to,'Example payer');assert.equal(quote.recipientEmail,'client@example.invalid');assert.equal(quote.number,undefined);assert.equal(quote.lines,undefined);assert.equal(quote.clientAddress,'12 Example Road\nPhone number 1: Example phone');assert.equal(quote.equipment,'Example model');assert.equal(quote.job,raw.fields.problem);assert.equal(quote.notes,'Trident Job no : 90001')
  assert.match(notes,/90001.*70001/);assert.match(notes,/Text <script> is plain text/);assert.match(notes,/client@example.invalid/)
 })
 const script=fs.readFileSync(new URL('../public/trident-dbflex.user.js',import.meta.url),'utf8')
 function sourceRuntime(client='Example Client'){
  let menu,opened,writes=0;const values=new Map(),boxes=new Map()
- const dd=value=>({tagName:'DD',innerText:value,getClientRects:()=>[{}]})
- const section=(name,labels)=>({querySelector:()=>({textContent:name}),querySelectorAll:()=>Object.entries(labels).map(([text,value])=>({textContent:text,nextElementSibling:dd(value),closest:()=>null}))})
- const sections=[section('Client',{'Client Name':client,Address:'12 Example Road',Suburb:'Town',City:'Town','ACC Claim Number':'PRIVATE CLAIM','Home Phone':'Example phone'}),section('Job Detail',{'Invoice To:':'Example payer'}),section('Job Notes',{'Job Notes':'Review this job'})]
- const doc={querySelector:()=>({textContent:'Job: 90001'}),querySelectorAll:()=>sections,getElementById:key=>boxes.get(key),createElement:()=>({style:{},setAttribute(){}}),body:{append:b=>boxes.set(b.id,b)}}
- const win={};win.top=win;win.self=win
- const context={window:win,document:doc,location:new URL(source),URL,URLSearchParams,crypto:{randomUUID:()=>id},Date,GM_registerMenuCommand:(name,fn)=>{assert.equal(name,'Send job to Trident');menu=fn},GM_setValue:(key,value)=>{writes++;values.set(key,value)},GM_getValue:key=>values.get(key),GM_deleteValue:key=>values.delete(key),GM_listValues:()=>[],GM_openInTab:url=>{opened=url}}
+ const dd=value=>({tagName:'DD',get innerText(){if(value==='EXCLUDED_SENTINEL')throw Error('Excluded remarks must never be read');return value},getClientRects:()=>[{}],closest:()=>null,querySelectorAll:()=>[]})
+ const section=(name,labels)=>({getClientRects:()=>[{}],closest:()=>null,querySelector:()=>({textContent:name}),querySelectorAll:()=>Object.entries(labels).map(([text,value])=>({textContent:text,innerText:text,nextElementSibling:dd(value),closest:()=>null,getClientRects:()=>[{}]}))})
+ const sections=[section('Client',{'Client Name':client,Address:'12 Example Road',Suburb:'Town',City:'Town','ACC Claim Number':'PRIVATE CLAIM','Home Phone':'Example phone'}),section('Job Detail',{'Invoice To:':'Example payer'}),section('Job Notes',{'Job Notes':'Review this job'}),section('Problem/Solution',{'Problem':'Repair example','Solution/Invoice Remarks':'EXCLUDED_SENTINEL'})]
+ const doc={documentElement:{scrollHeight:100},querySelector:selector=>selector.includes('load-progress')?null:({textContent:'Job: 90001'}),querySelectorAll:selector=>selector==='#td-bodyframe h2'?['Parts','Labour','Charges','Attachments','Hire/Loan'].map(textContent=>({textContent})):selector.includes('section[id')?sections:[],getElementById:key=>boxes.get(key),createElement:()=>({style:{},setAttribute(){}}),body:{append:b=>boxes.set(b.id,b)}}
+ const win={scrollX:0,scrollY:0,scrollTo(){}};win.top=win;win.self=win
+ const context={window:win,document:doc,location:new URL(source),URL,URLSearchParams,getComputedStyle:()=>({visibility:'visible'}),crypto:{randomUUID:()=>id},Date,GM_registerMenuCommand:(name,fn)=>{assert.equal(name,'Send job to Trident');menu=fn},GM_setValue:(key,value)=>{writes++;values.set(key,value)},GM_getValue:key=>values.get(key),GM_deleteValue:key=>values.delete(key),GM_listValues:()=>[],GM_openInTab:url=>{opened=url}}
  vm.runInNewContext(script,context)
  return {send:()=>menu(),values,get opened(){return opened},get writes(){return writes}}
 }
-test('userscript sends only on explicit command and keeps private data out of target URL',async()=>{
+test('userscript captures visible job fields only on explicit command and keeps private data out of target URL',async()=>{
  const run=sourceRuntime();assert.equal(run.writes,0);assert.equal(run.opened,undefined);await run.send()
  assert.equal(run.writes,1);const value=run.values.get('trident-dbflex:'+id)
- assert.equal(value.fields.client,'Example Client');assert.equal(value.fields.accClaimNumber,undefined);assert.equal(JSON.stringify(value).includes('PRIVATE CLAIM'),false)
+ assert.equal(value.fields.client,'Example Client');assert.equal(value.fields.accClaimNumber,undefined);assert.equal(JSON.stringify(value).includes('PRIVATE CLAIM'),true)
+ assert.equal(value.fields.solution,undefined);assert.equal(JSON.stringify(value).includes('EXCLUDED_SENTINEL'),false)
  assert.equal(run.opened,'https://trident-dashboard.admintrident01.workers.dev/#job-import?transfer='+id)
  assert.equal(run.opened.includes('Example'),false);validateJobImport(value,id)
  const missing=sourceRuntime('');await missing.send();assert.equal(missing.writes,0);assert.equal(missing.opened,undefined)
@@ -64,7 +65,7 @@ test('quote handoff is parent-only, duplicate-safe and keeps an existing quote w
  const html=fs.readFileSync(new URL('../public/quote-builder.html',import.meta.url),'utf8'),code=html.slice(html.indexOf('const importedJobTransfers='),html.indexOf("$('deleteDraft').onclick="))
  const values={client:{value:'Existing client'},job:{value:'Existing work'}},replies=[];let receive,starts=0,allow=false
  const origin='https://trident-dashboard.admintrident01.workers.dev',parent={location:{origin},postMessage:data=>replies.push(data)}
- vm.runInNewContext(code,{window:{addEventListener:(_,fn)=>{receive=fn}},parent,location:{origin},quoteStartup:Promise.resolve(),startNewQuote:async()=>{starts++;return allow},$:key=>values[key]||(values[key]={value:''}),render(){},quoteConfirmationStatus(){}})
+ vm.runInNewContext(code,{window:{addEventListener:(_,fn)=>{receive=fn}},parent,location:{origin},quoteStartup:Promise.resolve(),document:{dispatchEvent(){}},Event:class{},startNewQuote:async()=>{starts++;return allow},$:key=>values[key]||(values[key]={value:''}),render(){},drawLines(){},quoteConfirmationStatus(){}})
  const event={source:parent,origin,data:{type:'trident-import-quote',id,fields:{client:'Imported client',job:'Imported work'}}}
  await receive({...event,source:{}});assert.equal(starts,0)
  await receive(event);assert.equal(starts,1);assert.equal(values.client.value,'Existing client');assert.equal(replies.at(-1).accepted,false)

@@ -16,7 +16,7 @@ import ReminderDashboard from './ReminderDashboard'
 import {loadSession,saveSession} from './session'
 import {loadPage,canAccessPage,homePage} from './navigation'
 import {myDayEnabled} from './myDayModel'
-import {appointmentImport,quoteImport,transferId} from './jobImportModel'
+import {appointmentImport,quoteImport,transferId,savedCaptureId} from './jobImportModel'
 
 const StockPage=lazy(()=>import('./StockPage'))
 const MyDay=lazy(()=>import('./MyDay'))
@@ -38,6 +38,7 @@ export default function App(){
  const page=canAccessPage(selectedPage,session)?(selectedPage==='home'?homePage(session):selectedPage):homePage(session)
  const [timesheetOpenRequest,setTimesheetOpenRequest]=useState(null)
  const [incomingJob,setIncomingJob]=useState(null),quoteImportRef=useRef(null)
+ const [savedJobId]=useState(()=>savedCaptureId(location.hash))
  const consumeIncoming=useCallback(()=>setIncomingJob(null),[])
  const [navigationMode,setNavigationMode]=useState(()=>{try{return localStorage.getItem('trident-navigation-mode')||'pinned'}catch{return 'pinned'}})
  const [navigationOpen,setNavigationOpen]=useState(false)
@@ -49,7 +50,7 @@ export default function App(){
  useEffect(()=>saveSession(session),[session])
  useEffect(()=>{const titles={home:'My day',workspace:'Workspace','my-day':'My day',quotes:'Quotes','job-import':'Import job',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
 
- useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}${page==='job-import'&&transferId(location.hash)?'?transfer='+transferId(location.hash):''}`)},[page,session])
+ useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}${page==='job-import'?(savedJobId?'?job='+savedJobId:transferId(location.hash)?'?transfer='+transferId(location.hash):''):''}`)},[page,session,savedJobId])
  useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}visitPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page,visitPage])
 
  const timesheetFrame=useRef(null),quoteFrame=useRef(null),pendingDraft=useRef('')
@@ -60,7 +61,7 @@ export default function App(){
  const isAdmin=session?.role==='admin'
 
  const hasMyDay=myDayEnabled(session)
- const allowed=key=>key==='my-day'?hasMyDay:isAdmin||['home','workspace','timesheet','leave','vehicles','schedule'].includes(key)
+ const allowed=key=>key==='job-import'?canAccessPage(key,session):key==='my-day'?hasMyDay:isAdmin||['home','workspace','timesheet','leave','vehicles','schedule'].includes(key)
 
  const request=useCallback(async(path,init={})=>{
 
@@ -136,10 +137,11 @@ export default function App(){
 
  const navigate=next=>{if(next===page)return;if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Save them before leaving. Leave anyway?'))return;if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?'))return;visitPage(next);window.scrollTo({top:0,behavior:'instant'})}
  useEffect(()=>{const warn=e=>{if(timesheetFrame.current?.contentWindow.tridentTimesheetHasUnsavedChanges?.()){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[])
- function importAppointment(job,notes){if(!canAccessPage('job-import',session))return;setIncomingJob({id:job.transferId,fields:appointmentImport(job,notes)});navigate('schedule')}
- function sendQuoteImport(){if(quoteImportRef.current&&quoteFrame.current)quoteFrame.current.contentWindow.postMessage({type:'trident-import-quote',...quoteImportRef.current},location.origin)}
- function importQuote(job,notes){if(!canAccessPage('job-import',session))return;quoteImportRef.current={id:job.transferId,fields:quoteImport(job,notes)};navigate('quotes');sendQuoteImport()}
- useEffect(()=>{const receive=e=>{if(e.origin!==location.origin||e.source!==quoteFrame.current?.contentWindow)return;if(e.data?.type==='trident-quote-import-ready'&&quoteImportRef.current)quoteFrame.current.contentWindow.postMessage({type:'trident-import-quote',...quoteImportRef.current},location.origin);if(e.data?.type==='trident-quote-imported'&&e.data.id===quoteImportRef.current?.id){if(e.data.accepted)quoteImportRef.current=null;else setError(e.data.error||'The existing quote was kept. Return to Import job to try again.')}};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive)},[])
+ function importAppointment(job,notes,allocation={}){if(!canAccessPage('job-import',session))return;setIncomingJob({id:job.transferId,fields:{...appointmentImport(job,notes),jobImportId:allocation.jobImportId||''}});navigate('schedule')}
+ function reviewImportedJob(id){if(!canAccessPage('job-import',session))return;window.open(location.pathname+'#job-import?job='+encodeURIComponent(id),'_blank','noopener')}
+ function sendQuoteImport(){if(!quoteFrame.current)return;const allowed=canAccessPage('job-import',session);quoteFrame.current.contentWindow.postMessage({type:'trident-job-import-permission',allowed},location.origin);if(allowed&&quoteImportRef.current)quoteFrame.current.contentWindow.postMessage({type:'trident-import-quote',...quoteImportRef.current},location.origin)}
+ function importQuote(job,notes,allocation={}){if(!canAccessPage('job-import',session))return;quoteImportRef.current={id:crypto.randomUUID(),fields:quoteImport(job,notes),allocation:{...allocation,jobNumber:job.source.jobNumber,recordId:job.source.recordId}};navigate('quotes');sendQuoteImport()}
+ useEffect(()=>{const receive=e=>{if(e.origin!==location.origin||e.source!==quoteFrame.current?.contentWindow)return;if(e.data?.type==='trident-quote-import-ready'){const allowed=canAccessPage('job-import',session);quoteFrame.current.contentWindow.postMessage({type:'trident-job-import-permission',allowed},location.origin);if(allowed&&quoteImportRef.current)quoteFrame.current.contentWindow.postMessage({type:'trident-import-quote',...quoteImportRef.current},location.origin);}if(e.data?.type==='trident-quote-imported'&&e.data.id===quoteImportRef.current?.id){if(e.data.accepted)quoteImportRef.current=null;else setError(e.data.error||'The existing quote was kept. Return to Import job to try again.')}};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive)},[session])
  const signOut=async()=>{if(timesheetFrame.current?.contentWindow.tridentTimesheetHasUnsavedChanges?.()&&!window.confirm('Your time sheet has unsaved changes. Save a draft before signing out. Sign out anyway?'))return;if(window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Sign out anyway?'))return;if(quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before signing out. Sign out anyway?'))return;try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
 
  if(!api||api.includes('YOUR-'))return <main className="signin"><h1>Trident Dashboard</h1><p>Online setup is not finished. Configure the API address, then rebuild the website.</p></main>
@@ -152,7 +154,7 @@ export default function App(){
 
    <nav aria-label="Main navigation">{[['my-day','My day'],['quotes','Quotes'],['job-import','Import job'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources'],['workspace','Workspace']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
 
-   <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button className="portal-pin" aria-label={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} aria-pressed={navigationMode==='pinned'} title={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} onClick={()=>navigationPreference(navigationMode==='pinned'?'hidden':'pinned')}><Icon name="custom-pin" size={14}/></button><button className="portal-hide" aria-label="Hide navigation" title="Hide navigation" onClick={()=>navigationPreference('hidden')}><Icon name="chevron-up" size={14}/></button><button onClick={signOut}>Sign out</button></div>
+   <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button className="portal-pin" aria-label={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} aria-pressed={navigationMode==='pinned'} title={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} onClick={()=>navigationPreference(navigationMode==='pinned'?'hidden':'pinned')}><Icon name={navigationMode==='pinned'?'custom-pin-off':'custom-pin'} size={16}/><span>{navigationMode==='pinned'?'Unpin':'Pin'}</span></button><button className="portal-hide" aria-label="Hide navigation" title="Hide navigation" onClick={()=>navigationPreference('hidden')}><Icon name="chevron-up" size={14}/></button><button onClick={signOut}>Sign out</button></div>
 
   </header>
 
@@ -181,7 +183,7 @@ export default function App(){
    {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/></>}
   </main>}
 
-  {canAccessPage('job-import',session)&&(page==='job-import'||visitedPages['job-import'])&&<section hidden={page!=='job-import'}><JobImport onAppointment={importAppointment} onQuote={importQuote}/></section>}
+  {canAccessPage('job-import',session)&&(page==='job-import'||visitedPages['job-import'])&&<section hidden={page!=='job-import'}><JobImport request={request} savedJobId={savedJobId} onAppointment={importAppointment} onQuote={importQuote}/></section>}
   {hasMyDay&&page==='my-day'&&<MyDay request={request} session={session} onNavigate={navigate}>{isAdmin&&<ReminderDashboard request={request}/>}</MyDay>}
   {hasMyDay&&['timesheet','leave','vehicles'].includes(page)&&<div className="mobile-my-day-return"><button type="button" aria-label="Back to My day" onClick={()=>navigate('my-day')}><Icon name="arrow-left" size={16}/>My day</button></div>}
   {page==='quotes'&&!document&&<p className="module-loading" role="status">Loading your quotes…</p>}
@@ -197,7 +199,7 @@ export default function App(){
   {page==='office'&&<Suspense fallback={<p className="module-loading" role="status">Opening shared resources…</p>}><OfficeFiles request={request} isAdmin={isAdmin}/></Suspense>}
   {isAdmin&&page==='stock'&&<StockPage request={request}/>}
   {isAdmin&&page==='reports'&&<WeeklyReport request={request}/>}
-  {(page==='schedule'||visitedPages.schedule)&&<section hidden={page!=='schedule'}><TechSchedule request={request} isAdmin={isAdmin} active={page==='schedule'} draftOwner={session.email} incomingJob={incomingJob} onIncomingConsumed={consumeIncoming}/></section>}
+  {(page==='schedule'||visitedPages.schedule)&&<section hidden={page!=='schedule'}><TechSchedule request={request} isAdmin={isAdmin} active={page==='schedule'} draftOwner={session.email} incomingJob={incomingJob} onIncomingConsumed={consumeIncoming} onReviewImportedJob={canAccessPage('job-import',session)?reviewImportedJob:undefined}/></section>}
 
   {(page==='vehicles'||visitedPages.vehicles)&&<section hidden={page!=='vehicles'}><VehicleChecks onManage={()=>{setManagementSection('fleet');navigate('settings')}} isAdmin={isAdmin} technician={session.technician} request={request} active={page==='vehicles'}/></section>}
 

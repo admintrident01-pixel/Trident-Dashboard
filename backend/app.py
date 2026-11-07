@@ -23,6 +23,7 @@ import office_files
 import schedule_history
 import schedule_live
 import quote_catalog
+import job_imports
 import schedule_search
 import timesheet_period
 import my_day
@@ -193,6 +194,18 @@ class Application:
     return start_response(status,headers)
    return self.handle(environ,respond)
 
+ def job_import_request(self,revision,state,data,token,email):
+  for attempt in range(7):
+   if attempt:revision,state=self.read_state()
+   user=accounts.resolve(state,token,lambda _:email)
+   result,entry,replayed=job_imports.save(state,user,data,self.objects)
+   if replayed:return {'entry':entry}
+   try:committed=self.store.commit(revision,result)
+   except Exception:committed=False;logging.warning('Checking uncertain source-job capture save.')
+   if committed:return {'entry':entry}
+   time.sleep(random.uniform(.025,.1))
+  raise Problem(503,'The source job could not be saved yet. Retry; the same capture will not be duplicated.')
+
  def handle(self,environ,start_response):
 
   status=200;headers=[('Cache-Control','no-store'),('X-Content-Type-Options','nosniff')];mime='application/json';payload=None
@@ -287,7 +300,9 @@ class Application:
 
      if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/weekly-report-excel','/api/report-periods-excel','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
-     if path=='/api/my-day' and method=='GET':payload=my_day.read(state,user,parse_qs(environ.get('QUERY_STRING','')).get('date',[my_day.dt.datetime.now(my_day.ZONE).date().isoformat()])[0])
+     if path=='/api/job-imports' and method=='GET':payload=job_imports.read(state,user,parse_qs(environ.get('QUERY_STRING','')),self.objects)
+     elif path=='/api/job-imports' and method=='POST':payload=self.job_import_request(revision,state,self.body(environ),auth[7:],email)
+     elif path=='/api/my-day' and method=='GET':payload=my_day.read(state,user,parse_qs(environ.get('QUERY_STRING','')).get('date',[my_day.dt.datetime.now(my_day.ZONE).date().isoformat()])[0])
      elif path=='/api/my-day' and method=='POST':payload=self.my_day_request(revision,state,self.body(environ),auth[7:],email)
      elif path=='/api/schedule/live-ticket' and method=='GET':payload=schedule_live.ticket()
      elif path=='/api/office-files' and method=='GET':payload=office_files.listing(state)

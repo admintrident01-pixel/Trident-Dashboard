@@ -2,7 +2,33 @@
 import base64, copy, datetime as dt, io
 from xml.sax.saxutils import escape
 import leave, timesheets
+from zoneinfo import ZoneInfo
 from core import Problem
+
+def my_day_hours(state,week,now=None):
+    """Read-only weekly work-log totals, attributed to the job's saved staff identity."""
+    now=now or dt.datetime.now(dt.timezone.utc)
+    start=week_date(week);dates={(start+dt.timedelta(days=i)).isoformat() for i in range(7)}
+    totals={};zone=ZoneInfo('Pacific/Auckland')
+    for email,log in state.get('myDayLogs',{}).items():
+        fallback=state.get('users',{}).get(email,{}).get('technician','')
+        for date,record in log.get('days',{}).items():
+            if date not in dates:continue
+            day_end=dt.datetime.combine(dt.date.fromisoformat(date)+dt.timedelta(days=1),dt.time(),zone)
+            for job in record.get('jobs',{}).values():
+                name=job.get('technician') or fallback
+                if not name:continue
+                item=totals.setdefault(name.casefold(),{'name':name,'days':{}})
+                day=item['days'].setdefault(date,{'hours':0,'running':False})
+                for session in job.get('sessions',[]):
+                    try:
+                        first=dt.datetime.fromisoformat(session['start'])
+                        last=dt.datetime.fromisoformat(session['end']) if session.get('end') else min(now,day_end)
+                        if first.tzinfo is None or last.tzinfo is None:continue
+                        day['hours']+=max(0,(last-first).total_seconds())/3600
+                        day['running']|=not session.get('end') and first<=now<day_end
+                    except (ValueError,TypeError,KeyError):continue
+    return totals
 
 def week_date(value):
     date=leave.day(value)
@@ -48,7 +74,13 @@ def week_rows(state, week):
 def read(state,week,comparison=None):
     start=week_date(week)
     previous=comparison or (start-dt.timedelta(days=7)).isoformat();week_date(previous)
-    return {'week':week,'rows':week_rows(state,week),'previousWeek':previous,'previous':week_rows(state,previous),'averages':averages(state,week)}
+    rows=week_rows(state,week);recorded=my_day_hours(state,week)
+    for row in rows:
+        values=recorded.get(row['name'].casefold(),{}).get('days',{})
+        for day in row['days']:
+            value=values.get(day['date'],{})
+            day['myDayHours']=value.get('hours',0);day['myDayRunning']=value.get('running',False)
+    return {'week':week,'rows':rows,'previousWeek':previous,'previous':week_rows(state,previous),'averages':averages(state,week)}
 
 
 def averages(state,week):

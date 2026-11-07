@@ -121,7 +121,7 @@ def workshop_travel(state, data, user):
     result = copy.deepcopy(state)
     old = result.setdefault('travelBlocks', {}).get(identifier, {})
     result['travelBlocks'][identifier] = {**old, 'date': date, 'duration': duration,
-        'start': trial['start'], 'workshop': True, 'locked': True, 'linked': True,
+        'start': trial['start'], 'workshop': True, 'locked': True, 'linked': True, 'workshopTravelExplicit': True,
         'version': old.get('version', 0) + 1, 'updatedBy': user['email']}
     result.setdefault('scheduleHiddenTravel', {}).pop(identifier, None)
     before = {b['id']: b for b in s.travel_blocks(state, date)}

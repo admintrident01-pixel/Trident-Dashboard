@@ -16,7 +16,7 @@ function harness(){
  base64Bytes:()=>'',remember:()=>{},updateLastQuote:()=>{},updateDeleteDraftButton:()=>{},render:()=>{},
  fetch:async(url,options)=>{state.posts.push(JSON.parse(options.body));return {ok:!state.fail,json:async()=>state.fail?{error:'Offline'}:{quote:{id:'test-id',revision:state.posts.length,state:'Draft',pdfFilename:''}},headers:{get:()=> 'etag'}}}}
  vm.createContext(context)
- vm.runInContext(`let lines=${JSON.stringify(state.lines)},editorBaseline='',confirmingQuote=false,localHelperMode=true,activeQuote=null,localSaveToken='',localWorkbookRevision='',quoteCatalog=[],sourceDraftName='',excelSourceFile,settings={},confirmedQuoteNumber; ${setup} ${save}; editorBaseline=editorSignature(); window.test={save:saveQuote,dirty:editorChanged,editLines:()=>lines[0].rate=200};`,context)
+ vm.runInContext(`let sourceImports=[],lines=${JSON.stringify(state.lines)},editorBaseline='',confirmingQuote=false,localHelperMode=true,activeQuote=null,localSaveToken='',localWorkbookRevision='',quoteCatalog=[],sourceDraftName='',excelSourceFile,settings={},confirmedQuoteNumber; ${setup} ${save}; editorBaseline=editorSignature(); window.test={save:saveQuote,dirty:editorChanged,editLines:()=>lines[0].rate=200,editSource:()=>sourceImports.push({id:"12345678-1234-4234-8234-123456789012",jobNumber:"90001"})};`,context)
  return {state,context,elements,api:context.window.test}
 }
 test('ten-second timer saves changed drafts once and leaves clean drafts idle',async()=>{
@@ -40,3 +40,5 @@ test('calculator state including markup is persisted in quote snapshots',async()
  const h=harness();h.context.window.tridentCalculator={getState:()=>({gst:15,rows:[{cost:100,markup:10,margin:20,qty:2}]})}
  await h.api.save('Draft',true);assert.equal(h.state.posts[0].data.calculation.rows[0].markup,10)
 })
+
+ test('source capture links autosave and remain clean after the save',async()=>{const h=harness();h.api.editSource();h.state.tick();await new Promise(resolve=>setImmediate(resolve));assert.equal(h.state.posts[0].data.sourceImports[0].jobNumber,'90001');assert.equal(h.api.dirty(),false);h.state.tick();assert.equal(h.state.posts.length,1)})

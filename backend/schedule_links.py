@@ -10,7 +10,7 @@ def active(state):
 def travel_blocks(state,date,cache_only=False):
     import schedule as s
     rows=[]
-    candidates=s.travel_candidates(state,date)
+    candidates=[c for c in s.travel_candidates(state,date) if s.travel_allowed(state,c)]
     pairs={(c.get('origin',''),c.get('destination','')) for c in candidates if (c['automatic'] or state.get('travelBlocks',{}).get(c['id'])) and state.get('travelBlocks',{}).get(c['id'],{}).get('locked',True)}
     with ThreadPoolExecutor(max_workers=4) as executor:
         routes=dict(zip(pairs,executor.map(lambda pair:schedule_routes.estimate(*pair,cache_only=True) if cache_only else schedule_routes.estimate(*pair),pairs)))
@@ -329,7 +329,7 @@ def travel_next(state,data,user):
     if end+duration>1440:raise Problem(409,'This journey would finish outside the selected day.')
     result=copy.deepcopy(state);after_id=s.travel_id(date,name,top['id'],'after');before_id=s.travel_id(date,name,bottom['id'],'before')
     old=result.setdefault('travelBlocks',{}).get(after_id,{})
-    result['travelBlocks'][after_id]={**old,'date':date,'start':s.time_string(end),'duration':duration,'locked':True,'linked':True,'version':old.get('version',0)+1,'updatedBy':user['email']}
+    result['travelBlocks'][after_id]={**old,'date':date,'start':s.time_string(end),'duration':duration,'locked':True,'linked':True,'workshopTravelExplicit':True,'version':old.get('version',0)+1,'updatedBy':user['email']}
     result.setdefault('scheduleHiddenTravel',{}).pop(after_id,None)
     result['scheduleHiddenTravel'][before_id]=True
     result.setdefault('scheduleLinks',{})[edge_id(name,top['id'],bottom['id'])]=False

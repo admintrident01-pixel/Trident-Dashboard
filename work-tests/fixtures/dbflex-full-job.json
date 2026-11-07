@@ -1,0 +1,25 @@
+{
+ "version":2,"transferId":"12345678-1234-4234-8234-123456789012","createdAt":1700000000000,
+ "source":{"recordId":"70001","jobNumber":"90001","url":"https://capitalmobility.dbflex.net/secure/db/96562/preview.aspx?t=736016&id=70001"},
+ "fields":{"client":"Example Client","street":"12 Example Road","suburb":"Example Town","city":"Example Town","contact":"Example Contact","phone":"Example phone","email":"client@example.invalid","invoiceTo":"Example organisation","poNumber":"PO-EXAMPLE","assetNumber":"EXAMPLE-001","make":"Example","model":"Mobility chair","jobType":"Repair","problem":"Replace the castors and inspect the brakes.","solution":"Contact the client before visiting.","jobNotes":"Example data only. Keep all source costings for review."},
+ "capture":{
+  "sections":[
+   {"title":"Client","fields":[{"label":"Client Name","text":"Example Client","links":[]},{"label":"ACC Claim Number","text":"EXAMPLE-CLAIM","links":[]},{"label":"Delivery Addr","text":"","links":[]}]},
+   {"title":"Totals","fields":[{"label":"Parts Total","text":"$80.00","links":[]},{"label":"Margin Total","text":"$20.00","links":[]},{"label":"Labour Total","text":"$135.00","links":[]},{"label":"Mileage Total","text":"$12.00","links":[]},{"label":"Freight Total","text":"$6.00","links":[]},{"label":"Hire Total","text":"$30.00","links":[]},{"label":"Job Total","text":"$283.00","links":[]}]},
+   {"title":"Custom source fields","fields":[{"label":"Reference added later","text":"Retain unknown business fields as plain text <script>never execute</script>","links":[]}]}
+  ],
+  "tables":[
+   {"title":"Parts","columns":["Qty","Stock Item","Part Name","Price","Part total","Margin","Margin$","Subtotal","PO","Parts Status","Supplier"],"rows":[
+    {"kind":"data","cells":[{"text":"2"},{"text":"CASTOR-01"},{"text":"Replacement castor"},{"text":"$40.00"},{"text":"$80.00"},{"text":"25%"},{"text":"$20.00"},{"text":"$100.00"},{"text":"PO-EXAMPLE"},{"text":"Ordered"},{"text":"Example supplier"}]},
+    {"kind":"data","cells":[{"text":"1"},{"text":"CAP-01"},{"text":"Protective cap"},{"text":"$0.00"},{"text":"$0.00"},{"text":"0%"},{"text":"$0.00"},{"text":"$0.00"},{"text":""},{"text":"In stock"},{"text":"Example supplier"}]},
+    {"kind":"summary","cells":[{"text":"Summary"},{"text":""},{"text":""},{"text":""},{"text":"$80.00"},{"text":""},{"text":"$20.00"},{"text":"$100.00"},{"text":""},{"text":""},{"text":""}]}
+   ]},
+   {"title":"Labour","columns":["Name","Labour Rate","Hours","Date"],"rows":[{"kind":"data","cells":[{"text":"Example technician"},{"text":"MOH Labour"},{"text":"1.5"},{"text":"07/11/2026"}]}]},
+   {"title":"Charges","columns":["Mileage","Vehicle","Mileage Rate","Mileage Total","Date","Freight","Freight Margin","Freight Total","PO"],"rows":[{"kind":"data","cells":[{"text":"10"},{"text":"DEMO"},{"text":"$1.20"},{"text":"$12.00"},{"text":"07/11/2026"},{"text":"$5.00"},{"text":"20%"},{"text":"$6.00"},{"text":"PO-EXAMPLE"}]}]},
+   {"title":"Hire/Loan","columns":["Hire Status","Job JOB Name","Type","Name","Start Date","End Date","Comment","Daily Rate","Days Hired","Total Hire"],"rows":[{"kind":"data","cells":[{"text":"Returned"},{"text":"90001"},{"text":"Chair"},{"text":"Example hire chair"},{"text":"05/11/2026"},{"text":"07/11/2026"},{"text":"Keep this hire reference"},{"text":"$15.00"},{"text":"2"},{"text":"$30.00"}]}]},
+   {"title":"Additional related records","columns":["Reference","Detail"],"rows":[{"kind":"data","cells":[{"text":"EXTRA-01"},{"text":"Retained even when this table is not allocatable"}]}]}
+  ],
+  "extras":[{"title":"Attachments","text":"Example job document.pdf","links":[{"label":"Example job document.pdf","url":"https://capitalmobility.dbflex.net/secure/db/96562/documentopen.aspx?d=142156&id=70001"}]}],
+  "warnings":[]
+ }
+}

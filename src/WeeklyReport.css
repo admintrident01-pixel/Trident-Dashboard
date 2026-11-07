@@ -21,3 +21,39 @@
 .report-week-field{display:grid;gap:5px;font-size:12px;font-weight:bold}.report-week-picker{display:flex;align-items:center;gap:6px}.report-week-picker button{white-space:nowrap;font-weight:normal;padding:6px 9px;border:1px solid #cbd6e4;border-radius:5px;background:white;color:#17345f}
 
 .trident-portal .reports .report-table small{font-size:10px;line-height:1.25}
+
+/* Three distinct hour types stay together when sorted and scrolled. */
+.trident-portal .reports{padding:18px 20px;max-width:1600px}
+.trident-portal .reports .page-heading{margin-bottom:12px;gap:14px;flex-wrap:wrap}
+.trident-portal .reports .page-heading h1{margin-bottom:4px}
+.trident-portal .reports .report-instructions{margin:8px 0 14px;max-width:950px}
+.report-key{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:#53677d;margin:8px 0 10px}
+.report-key span{padding-left:8px;border-left:3px solid #17345f}
+.report-key span:nth-child(2){border-color:#919baa}.report-key span:nth-child(3){border-color:#358878}
+.trident-portal .reports .report-hours table{font-size:13px;line-height:1.3;font-variant-numeric:tabular-nums}
+.trident-portal .reports .report-hours :is(th,td){padding:6px 8px;min-width:72px;box-sizing:border-box}
+.trident-portal .reports .report-hours th:first-child{position:sticky;left:0;min-width:180px;max-width:220px;white-space:normal;z-index:1;background:#fff;box-shadow:1px 0 #cbd6e4}
+.trident-portal .reports .report-hours .payable-hours-row>:is(th,td){background:#fff;border-top:2px solid #bac9da}
+.trident-portal .reports .report-hours .payable-hours-row th{font-weight:700}
+.trident-portal .reports .report-hours .my-day-hours-row>:is(th,td){background:#edf6f3;color:#205a50}
+.trident-portal .reports .report-hours thead th{background:#eaf0f8;font-weight:700}
+.trident-portal .reports .report-hours thead .table-sort{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:0 3px}
+.trident-portal .reports .report-hours thead th:first-child .table-sort{justify-content:flex-start}
+.trident-portal .reports .report-hours thead small{font-size:11px;width:100%;order:2}
+.trident-portal .reports .report-hours small{font-size:11px;line-height:1.3}
+.trident-portal .reports .report-hours .charged-hours-row input{font-size:13px;min-width:54px;max-width:72px;height:30px;padding:4px 5px}
+.trident-portal .reports .report-hours .report-running{font-size:10px;color:#205a50;font-weight:700}
+.trident-portal .reports .report-hours tfoot th{background:#eaf0f8}
+.trident-portal .reports .report-hours .table-scroll{border:1px solid #cbd6e4;border-radius:7px}
+.trident-portal .reports .report-section-heading .report-actions button{min-height:36px}
+@media(max-width:700px){
+ .trident-portal .reports{padding:12px}
+ .trident-portal .reports .report-controls{width:100%}
+ .trident-portal .reports .report-week-field{width:100%}
+ .trident-portal .reports .report-week-picker input{flex:1;width:0}
+ .trident-portal .reports .report-hours th:first-child{min-width:128px;max-width:128px}
+ .trident-portal .reports .report-hours :is(th,td){min-width:76px}
+ .trident-portal .reports .report-hours .charged-hours-row input{height:40px;font-size:16px}
+ .trident-portal .reports .report-section-heading .report-actions button{min-height:44px}
+ .report-key{gap:5px 12px}.trident-portal .reports .report-hours thead .table-sort{min-height:44px}
+}

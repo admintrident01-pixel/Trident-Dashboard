@@ -44,7 +44,8 @@ BOOKING_STATUS_LABELS=schedule_booking.LABELS
 
 
 
-DEFAULT_TYPES=['Equipment repair','Equipment assessment','Delivery','Collection','Vehicle service','Client visit','Other','Unspecified','Notes']
+# Verified against Mobility DB's Job Type choices, 7 November 2026.
+DEFAULT_TYPES=['RP - Repair','MD - Modification','RF - Refurbishment','SA - Setup/Adjust','AS - Annual Service','CL - Collect','DL - Deliver','HR - Hire','Unspecified','Notes']
 DEFAULT_CLIENT_SEARCH_URL='https://www.google.com/search?q={client}'
 
 def client_search_template(value):
@@ -146,7 +147,7 @@ def save_settings(state,data):
     workshop=text(data.get('workshopAddress',settings(state)['workshopAddress']),'a workshop address',1000)
     widths=data.get('columnWidths',settings(state)['columnWidths'])
     if not isinstance(widths,dict) or len(widths)>500 or any(not isinstance(name,str) or len(name)>160 or type(value) is not int or not 50<=value<=200 for name,value in widths.items()):raise Problem(400,'Use column widths from 50% to 200%.')
-    result['scheduleSettings']={'workshopAddress':workshop,**state.get('scheduleSettings',{}),'appointmentTypes':cleaned,'lunchStart':lunch_start,'publicHolidays':public_holidays,'columnWidths':{**settings(state)['columnWidths'],**widths},'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
+    result['scheduleSettings']={**state.get('scheduleSettings',{}),'workshopAddress':workshop,'appointmentTypes':cleaned,'lunchStart':lunch_start,'publicHolidays':public_holidays,'columnWidths':{**settings(state)['columnWidths'],**widths},'technicianOrder':order,'quickNotes':quick,'typeDefaults':validated,'clientSearchUrlTemplate':search_template}
 
     return result
 
@@ -308,15 +309,25 @@ def save(state,data,user):
         # Booking status owns the internal timing rule; urgency is independent.
 
         appointment_type=text(data.get('type',(old or {}).get('type','Unspecified')),'an appointment type',120)
-        address=str(data.get('address','')).strip() if appointment_type.casefold()=='notes' else text(data.get('address'),'an address',500)
-        if len(address)>500:raise Problem(400,'Keep the address under 500 characters.')
+        workshop=data.get('workshopLocation',(old or {}).get('workshopLocation',False))
+        workshop_travel=data.get('includeWorkshopTravel',(old or {}).get('includeWorkshopTravel',False))
+        if type(workshop) is not bool or type(workshop_travel) is not bool:raise Problem(400,'Choose Workshop location and Include travel using the checkboxes.')
+        address=settings(state)['workshopAddress'] if workshop else str(data.get('address','')).strip() if appointment_type.casefold()=='notes' else text(data.get('address'),'an address',500)
+        if not workshop and len(address)>500:raise Problem(400,'Keep the address under 500 characters.')
         appointment={'id':identifier or str(uuid.uuid4()),'date':date,'technician':technician,'technicians':technicians,'start':start,'duration':duration,'timing':timing,'timeBasis':time_basis,
 
                      'client':text(data.get('client'),'a client name or note title',160),'address':address,'contactStatus':schedule_contact.saved(data,old),
 
-                     'bookingStatus':booking_status,'urgency':urgency,'bookingControlsVersion':1,'type':appointment_type,'notes':str(data.get('notes','')).strip(),'cancelled':False}
+                     'bookingStatus':booking_status,'urgency':urgency,'bookingControlsVersion':1,'type':appointment_type,'notes':str(data.get('notes','')).strip(),'cancelled':False,
+                     'workshopLocation':workshop,'includeWorkshopTravel':workshop and workshop_travel}
 
         if len(appointment['notes'])>4000: raise Problem(400,'Keep appointment notes under 4,000 characters.')
+        source_id=data.get('jobImportId',(old or {}).get('jobImportId',''))
+        if source_id:
+            import job_imports
+            if not isinstance(source_id,str) or not job_imports.UUID.fullmatch(source_id) or source_id not in state.get('jobImports',{}):raise Problem(400,'Choose a saved source job capture.')
+            if source_id!=(old or {}).get('jobImportId'):job_imports.require(user)
+            appointment['jobImportId']=source_id
 
     relocating=old and action=='save' and (old['date']!=appointment['date'] or old['start']!=appointment['start'] or assigned(old)!=assigned(appointment))
     if relocating:
@@ -439,6 +450,10 @@ def travel_candidates(state,date):
             if next_before:right=min(right,minutes(rows[index+1]['start'])-next_before['duration'])
             result.append({'id':travel_id(date,name,a['id'],'before'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'before','edge':start,'maxDuration':max(0,start-left),'automatic':(bool(config['key']) or index>0) and (not previous_after or previous_after.get('workshop')),'origin':rows[index-1]['address'] if index and not (previous_after or {}).get('workshop') else config['depot'],'destination':a['address'],'client':'Travel to '+a['client'],'address':a['address']})
             result.append({'id':travel_id(date,name,a['id'],'after'),'date':date,'technician':name,'technicians':[name],'anchorId':a['id'],'side':'after','edge':end,'maxDuration':max(0,right-end),'automatic':bool(config['key']) and index==len(rows)-1,'origin':a['address'],'destination':rows[index+1]['address'] if index+1<len(rows) else config['depot'],'client':'Travel from '+a['client'],'address':a['address']})
+            for candidate in result[-2:]:
+                neighbour=index-1 if candidate['side']=='before' else index+1
+                adjacent=[a]+([rows[neighbour]] if 0<=neighbour<len(rows) else [])
+                if any(booking.get('workshopLocation') and not booking.get('includeWorkshopTravel') for booking in adjacent):candidate['workshopTravelSuppressed']=True
     for candidate in result:
         if state.get('travelBlocks',{}).get(candidate['id'],{}).get('workshop'):
             candidate['workshop']=True
@@ -446,10 +461,14 @@ def travel_candidates(state,date):
             else:candidate['destination']=config['depot']
     return result
 
+def travel_allowed(state,candidate):
+    return not candidate.get('workshopTravelSuppressed') or state.get('travelBlocks',{}).get(candidate['id'],{}).get('workshopTravelExplicit',False)
+
 def travel_blocks(state,date,cache_only=False):
     if schedule_links.active(state):return schedule_links.travel_blocks(state,date,cache_only=True) if cache_only else schedule_links.travel_blocks(state,date)
     rows=[]
     for candidate in travel_candidates(state,date):
+        if not travel_allowed(state,candidate):continue
         if state.get('scheduleHiddenTravel',{}).get(candidate['id']):continue
         saved=state.get('travelBlocks',{}).get(candidate['id'])
         if not saved and not candidate['automatic']: continue
@@ -492,7 +511,7 @@ def save_travel(state,data,user):
     if not candidate:raise Problem(409,'The linked appointment changed. Refresh the schedule.')
     if type(duration) is not int or duration<15 or duration%15 or duration>candidate['maxDuration']:raise Problem(400,'Travel must fit between appointments, lunch and approved leave in 15-minute increments.')
     result=copy.deepcopy(state);old=result.get('travelBlocks',{}).get(candidate['id'],{})
-    result.setdefault('travelBlocks',{})[candidate['id']]={'duration':duration,'version':old.get('version',0)+1,'updatedBy':user['email'],**({'locked':False,'linked':True,'date':date} if schedule_routes.configuration()['key'] else {})}
+    result.setdefault('travelBlocks',{})[candidate['id']]={'duration':duration,'version':old.get('version',0)+1,'updatedBy':user['email'],'workshopTravelExplicit':True,**({'locked':False,'linked':True,'date':date} if schedule_routes.configuration()['key'] else {})}
     return result
 
 

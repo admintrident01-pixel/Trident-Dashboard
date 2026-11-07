@@ -1,0 +1,10 @@
+export const quoteMappingTargets=[['','Do not copy'],['client','Client name'],['clientAddress','Client street address'],['clientLocality','Client town / city'],['to','Quote to / organisation'],['recipientEmail','Recipient email — choose deliberately'],['address','Organisation street address'],['orgLocality','Organisation town / city'],['job','Job details'],['ref','Reference / approval'],['equipment','Equipment / model'],['vehicle','Vehicle'],['rego','Registration'],['by','Quoted by'],['message','Introduction / scope'],['notes','Additional notes / exclusions']]
+export const excludedSourceSection=value=>['hireloan','wheelchairservices','hiretotal','loanhireitems','solutioninvoiceremarks'].includes(String(value).toLowerCase().replace(/[^a-z0-9]/g,''))
+export function sourceFieldMappings(payload){
+ const f=payload.fields,rows=[],add=(id,label,value,target='')=>rows.push({id,label,value:String(value||''),target})
+ add('client','Client → Client Name',f.client,'client');add('street','Client → Address and phone numbers',[f.street,f.phone&&'Phone number 1: '+f.phone,f.workPhone&&'Phone number 2: '+f.workPhone].filter(Boolean).join('\n'),'clientAddress');add('locality','Client → Suburb / City',[...new Set([f.suburb,f.city].filter(Boolean))].join(', '),'clientLocality')
+ add('payer','Job Detail → Invoice To',f.invoiceTo,'to');add('reference','Job number + PO',[payload.source.jobNumber,f.poNumber&&'PO '+f.poNumber].filter(Boolean).join(' · '),'ref');add('equipment','Asset → Model',f.model,'equipment')
+ add('problem','Problem / requested work',f.problem,'job');add('job-number','Trident job number','Trident Job no : '+payload.source.jobNumber,'notes');add('job-notes','Internal job notes',f.jobNotes);add('client-email','Client → Email',f.email,'recipientEmail');add('contact','Contact / phone',[f.contact,f.phone,f.workPhone].filter(Boolean).join(' · '))
+ for(const [si,s] of (payload.capture?.sections||[]).entries())if(!excludedSourceSection(s.title))for(const [fi,field] of s.fields.entries())if(!excludedSourceSection(field.label))add(`section:${si}:${fi}`,s.title+' → '+field.label,field.text)
+ return rows
+}

@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "styles": {
+    "numFmts": "<ns0:numFmts xmlns:ns0=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"2\"><ns0:numFmt numFmtId=\"164\" formatCode=\"0.??&quot;&quot;;&quot;-&quot;0.??&quot;&quot;\" /><ns0:numFmt numFmtId=\"165\" formatCode=\"&quot;$&quot;0.00;&quot;$&quot;&quot;-&quot;0.00\" /></ns0:numFmts>",
+    "fonts": "<ns0:fonts xmlns:ns0=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"2\"><ns0:font><ns0:sz val=\"11\" /><ns0:name val=\"Calibri\" /></ns0:font><ns0:font><ns0:b /><ns0:sz val=\"11\" /><ns0:name val=\"Calibri\" /></ns0:font></ns0:fonts>",
+    "fills": "<ns0:fills xmlns:ns0=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"2\"><ns0:fill><ns0:patternFill patternType=\"none\" /></ns0:fill><ns0:fill><ns0:patternFill patternType=\"gray125\" /></ns0:fill></ns0:fills>",
+    "borders": "<ns0:borders xmlns:ns0=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"1\"><ns0:border><ns0:left /><ns0:right /><ns0:top /><ns0:bottom /><ns0:diagonal /></ns0:border></ns0:borders>",
+    "cellXfs": "<ns0:cellXfs xmlns:ns0=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"6\"><ns0:xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" /><ns0:xf numFmtId=\"49\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\" applyFont=\"1\" /><ns0:xf numFmtId=\"49\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\" applyAlignment=\"1\"><ns0:alignment vertical=\"top\" wrapText=\"1\" /></ns0:xf><ns0:xf numFmtId=\"14\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\" applyAlignment=\"1\"><ns0:alignment vertical=\"top\" wrapText=\"1\" /></ns0:xf><ns0:xf numFmtId=\"164\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\" applyAlignment=\"1\"><ns0:alignment vertical=\"top\" wrapText=\"1\" /></ns0:xf><ns0:xf numFmtId=\"165\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\" applyAlignment=\"1\"><ns0:alignment vertical=\"top\" wrapText=\"1\" /></ns0:xf></ns0:cellXfs>"
+  },
+  "sheetFormat": {
+    "defaultRowHeight": "15"
+  },
+  "columns": [
+    {
+      "min": "1",
+      "max": "1",
+      "width": "41",
+      "bestFit": "1"
+    },
+    {
+      "min": "2",
+      "max": "2",
+      "width": "12",
+      "bestFit": "1"
+    },
+    {
+      "min": "3",
+      "max": "4",
+      "width": "13",
+      "bestFit": "1"
+    }
+  ],
+  "pageMargins": {
+    "left": "0.7",
+    "right": "0.7",
+    "top": "0.75",
+    "bottom": "0.75",
+    "header": "0.3",
+    "footer": "0.3"
+  }
+}

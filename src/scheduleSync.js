@@ -20,8 +20,8 @@ export async function scheduleRequest(request,path,options={}){
  finally{clearTimeout(timer)}
 }
 
-export const appointmentFields=['date','technicians','start','duration','timing','client','address','type','notes','bookingStatus','urgency','timeBasis','contactStatus']
-const comparable=(item,key)=>key==='technicians'?[...assignedTechs(item)].sort():bookingControls(item)?.[key]??({bookingStatus:'action-needed',urgency:'low',timeBasis:'start',notes:''}[key]??'')
+export const appointmentFields=['date','technicians','start','duration','timing','client','address','type','notes','bookingStatus','urgency','timeBasis','contactStatus','workshopLocation','includeWorkshopTravel']
+const comparable=(item,key)=>key==='technicians'?[...assignedTechs(item)].sort():bookingControls(item)?.[key]??({bookingStatus:'action-needed',urgency:'low',timeBasis:'start',notes:'',workshopLocation:false,includeWorkshopTravel:false}[key]??'')
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b)
 export const appointmentChanged=(base,mine)=>appointmentFields.some(key=>!equal(comparable(base,key),comparable(mine,key)))
 export function scheduleItem(snapshot,id){return [...(snapshot?.appointments||[]),...(snapshot?.lunchBlocks||[]),...(snapshot?.travelBlocks||[]),...(snapshot?.editingAppointment?[snapshot.editingAppointment]:[])].find(a=>a.id===id)}
@@ -53,9 +53,9 @@ export async function saveSharedAppointment(request,{appointment,action='save',s
   if(merged.deleted||merged.conflicts.length){
    throw Object.assign(Error(merged.deleted?'This appointment was removed by another user. Your unfinished booking is still saved.':'Someone changed the same details. Choose which values to keep below.'),{conflict:{...merged,mine:appointment,latest},snapshot:current})
   }
-  const {_base,_draftKey,endTime,quickEntry,...payload}=merged.value
+  const {_base,_draftKey,_clientAddress,endTime,quickEntry,...payload}=merged.value
   // UI-only planning fields are recomputed from saved start and duration.
-  void _base;void _draftKey;void endTime;void quickEntry
+  void _base;void _draftKey;void _clientAddress;void endTime;void quickEntry
   if(action!=='save'&&base?.id&&latest?.version!==base.version)throw Object.assign(Error('This appointment changed. The latest schedule has loaded; review it before repeating this action.'),{snapshot:current})
   try{return await scheduleRequest(request,'/api/schedule',{method:'POST',headers:{'Content-Type':'application/json','If-Match':token},body:JSON.stringify({...payload,source:appointment.source||payload.source,edge:appointment.edge,originalDate:appointment.originalDate||base?.date||snapshot.date,action,sendEmail})})}
   catch(error){
