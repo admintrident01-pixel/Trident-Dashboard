@@ -5,6 +5,21 @@ from core import Problem
 
 UUID=re.compile(r'^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$')
 LIMITS={'client':160,'street':500,'suburb':160,'city':160,'contact':160,'phone':200,'workPhone':200,'email':254,'invoiceTo':160,'poNumber':200,'assetNumber':200,'make':200,'model':200,'serial':200,'jobType':120,'problem':16000,'jobNotes':16000}
+MAPPING_DEFAULTS={'client':'client','address':'clientAddress','phones':'clientAddress','equipment':'equipment','email':'recipientEmail','invoiceTo':'to','problem':'job','reference':'ref','jobNumber':'notes'}
+MAPPING_TARGETS={'','client','clientAddress','clientLocality','to','recipientEmail','address','orgLocality','job','ref','equipment','vehicle','rego','by','message','notes'}
+
+def mapping(state,user):
+ require(user)
+ return {'mappings':{**MAPPING_DEFAULTS,**state.get('jobImportMappings',{})}}
+
+def save_mapping(state,user,data):
+ require(user);values=data.get('mappings') if isinstance(data,dict) else None
+ if not isinstance(values,dict) or set(values)!=set(MAPPING_DEFAULTS) or any(not isinstance(v,str) or v not in MAPPING_TARGETS for v in values.values()):raise Problem(400,'Choose a supported quote field for each source value.')
+ before=mapping(state,user)['mappings'];result=copy.deepcopy(state)
+ if values!=before:
+  result['jobImportMappings']=copy.deepcopy(values)
+  result.setdefault('jobImportMappingHistory',[]).append({'at':dt.datetime.now(dt.timezone.utc).isoformat(),'actor':user['email'],'before':before,'after':copy.deepcopy(values)})
+ return result
 def excluded(value):return re.sub('[^a-z0-9]','',str(value).casefold()) in ('hireloan','wheelchairservices','hiretotal','loanhireitems','solutioninvoiceremarks')
 
 def require(user):

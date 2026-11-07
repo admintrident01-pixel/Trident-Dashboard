@@ -300,7 +300,12 @@ class Application:
 
      if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/weekly-report-excel','/api/report-periods-excel','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
-     if path=='/api/job-imports' and method=='GET':payload=job_imports.read(state,user,parse_qs(environ.get('QUERY_STRING','')),self.objects)
+     if path=='/api/job-import-mappings' and method=='GET':payload=job_imports.mapping(state,user)
+     elif path=='/api/job-import-mappings' and method=='POST':
+      job_imports.require(user)
+      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Reload field mapping before saving.')
+      state=job_imports.save_mapping(state,user,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True}
+     elif path=='/api/job-imports' and method=='GET':payload=job_imports.read(state,user,parse_qs(environ.get('QUERY_STRING','')),self.objects)
      elif path=='/api/job-imports' and method=='POST':payload=self.job_import_request(revision,state,self.body(environ),auth[7:],email)
      elif path=='/api/my-day' and method=='GET':payload=my_day.read(state,user,parse_qs(environ.get('QUERY_STRING','')).get('date',[my_day.dt.datetime.now(my_day.ZONE).date().isoformat()])[0])
      elif path=='/api/my-day' and method=='POST':payload=self.my_day_request(revision,state,self.body(environ),auth[7:],email)

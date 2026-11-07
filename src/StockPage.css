@@ -29,10 +29,10 @@
 .stock-section-count{display:inline-flex;align-items:center;justify-content:center;min-width:21px;height:20px;border-radius:5px;background:#e7eef5;color:#536c86;padding:0 4px;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums}
 .trident-portal .stock-page .stock-tabs button[aria-current=page]{background:#17365f;color:white;border-color:#17365f;font-weight:650;box-shadow:0 2px 4px #17365f15}
 .stock-tabs button[aria-current=page] .stock-section-count{background:#ffffff25;color:#fff}
-.trident-portal .stock-page .stock-tabs button.stock-all-products{background:#fff3de;color:#754808;border-color:#f0d3a1}
-.trident-portal .stock-page .stock-tabs button.stock-all-products[aria-current=page]{background:#ffe0a3;border-color:#e7b35a;color:#69430b;box-shadow:none}
+.trident-portal .stock-page .stock-tabs button.stock-all-products{background:var(--trident-soft,#eaf0f8);color:var(--stock-navy);border-color:var(--stock-line)}
+.trident-portal .stock-page .stock-tabs button.stock-all-products[aria-current=page]{background:var(--stock-navy);border-color:var(--stock-navy);color:#fff;box-shadow:none}
 .stock-tabs button.stock-all-products .stock-section-count{background:transparent;color:inherit;border-left:1px solid #c591443d;border-radius:0;padding:0 0 0 7px;margin-left:1px;min-width:auto;height:16px}
-.trident-portal .stock-page .stock-tabs button.stock-all-products:hover{background:#ffedc9;border-color:#d9aa5f}
+.trident-portal .stock-page .stock-tabs button.stock-all-products:hover{background:var(--trident-soft,#eaf0f8);border-color:#9bb0ca}
 .stock-stage-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:18px 0 14px}
 .stock-stage-heading h2{margin:0;font-size:19px;letter-spacing:-.25px;white-space:nowrap}
 .stock-section-controls{display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;flex-wrap:wrap;margin-left:auto}

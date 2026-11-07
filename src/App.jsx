@@ -48,7 +48,7 @@ export default function App(){
  const visitPage=useCallback(next=>{if(next!=='timesheet')setTimesheetOpenRequest(null);setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
 
  useEffect(()=>saveSession(session),[session])
- useEffect(()=>{const titles={home:'My day',workspace:'Workspace','my-day':'My day',quotes:'Quotes','job-import':'Import job',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
+ useEffect(()=>{const titles={home:'My day',workspace:'Reminders','my-day':'My day',quotes:'Quotes','job-import':'Import job',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
 
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}${page==='job-import'?(savedJobId?'?job='+savedJobId:transferId(location.hash)?'?transfer='+transferId(location.hash):''):''}`)},[page,session,savedJobId])
  useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}visitPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page,visitPage])
@@ -140,7 +140,7 @@ export default function App(){
  function importAppointment(job,notes,allocation={}){if(!canAccessPage('job-import',session))return;setIncomingJob({id:job.transferId,fields:{...appointmentImport(job,notes),jobImportId:allocation.jobImportId||''}});navigate('schedule')}
  function reviewImportedJob(id){if(!canAccessPage('job-import',session))return;window.open(location.pathname+'#job-import?job='+encodeURIComponent(id),'_blank','noopener')}
  function sendQuoteImport(){if(!quoteFrame.current)return;const allowed=canAccessPage('job-import',session);quoteFrame.current.contentWindow.postMessage({type:'trident-job-import-permission',allowed},location.origin);if(allowed&&quoteImportRef.current)quoteFrame.current.contentWindow.postMessage({type:'trident-import-quote',...quoteImportRef.current},location.origin)}
- function importQuote(job,notes,allocation={}){if(!canAccessPage('job-import',session))return;quoteImportRef.current={id:crypto.randomUUID(),fields:quoteImport(job,notes),allocation:{...allocation,jobNumber:job.source.jobNumber,recordId:job.source.recordId}};navigate('quotes');sendQuoteImport()}
+ function importQuote(job,notes,allocation={}){if(!canAccessPage('job-import',session))return;quoteImportRef.current={id:crypto.randomUUID(),fields:quoteImport(job,notes,allocation.quoteFields,allocation.quoteMappings),allocation:{...allocation,jobNumber:job.source.jobNumber,recordId:job.source.recordId}};navigate('quotes');sendQuoteImport()}
  useEffect(()=>{const receive=e=>{if(e.origin!==location.origin||e.source!==quoteFrame.current?.contentWindow)return;if(e.data?.type==='trident-quote-import-ready'){const allowed=canAccessPage('job-import',session);quoteFrame.current.contentWindow.postMessage({type:'trident-job-import-permission',allowed},location.origin);if(allowed&&quoteImportRef.current)quoteFrame.current.contentWindow.postMessage({type:'trident-import-quote',...quoteImportRef.current},location.origin);}if(e.data?.type==='trident-quote-imported'&&e.data.id===quoteImportRef.current?.id){if(e.data.accepted)quoteImportRef.current=null;else setError(e.data.error||'The existing quote was kept. Return to Import job to try again.')}};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive)},[session])
  const signOut=async()=>{if(timesheetFrame.current?.contentWindow.tridentTimesheetHasUnsavedChanges?.()&&!window.confirm('Your time sheet has unsaved changes. Save a draft before signing out. Sign out anyway?'))return;if(window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Sign out anyway?'))return;if(quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before signing out. Sign out anyway?'))return;try{await request('/api/auth/logout',{method:'POST'})}catch{/* The browser session is still cleared on a failed sign-out. */}setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('')}
 
@@ -152,7 +152,7 @@ export default function App(){
 
    <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate(homePage(session))}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
 
-   <nav aria-label="Main navigation">{[['my-day','My day'],['quotes','Quotes'],['job-import','Import job'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources'],['workspace','Workspace']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
+   <nav aria-label="Main navigation">{[['my-day','My day'],['quotes','Quotes'],['job-import','Import job'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources'],['workspace','Reminders']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
 
    <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button className="portal-pin" aria-label={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} aria-pressed={navigationMode==='pinned'} title={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} onClick={()=>navigationPreference(navigationMode==='pinned'?'hidden':'pinned')}><Icon name={navigationMode==='pinned'?'custom-pin-off':'custom-pin'} size={16}/><span>{navigationMode==='pinned'?'Unpin':'Pin'}</span></button><button className="portal-hide" aria-label="Hide navigation" title="Hide navigation" onClick={()=>navigationPreference('hidden')}><Icon name="chevron-up" size={14}/></button><button onClick={signOut}>Sign out</button></div>
 
@@ -165,22 +165,8 @@ export default function App(){
   <Suspense fallback={<p className="module-loading" role="status">Opening page…</p>}><div id="workspace-content" tabIndex={-1}>
   {page==='workspace'&&<main className="portal-home">
 
-   <div className="home-intro"><span className="home-eyebrow">Trident Community Equipment</span><h1>Welcome to your workspace</h1><p>Choose where you’d like to work.</p></div>
-
-   <div className="module-grid">{[
- ['my-day','My day','Your appointments, recorded hours and due tasks.','calendar'],
- ['quotes','Quotes','Create quotes, manage drafts and view completed quotes.','file-text'],
- ['schedule','Tech schedule','Plan appointments and see the whole team’s day.','calendar'],
- ['timesheet','Time sheet','Enter weekly hours, review leave and submit your time sheet.','clock'],
- ['leave','Leave forms','Request leave and review approvals.','calendar'],
- ['reports','Labour payables','Review payable and charged hours, averages and reports.','bar-chart-2'],
- ['vehicles','Vehicle checks','Review due dates, complete checks and view vehicle history.','truck'],
- ['stock','Stock','Receive equipment, manage assets, allocate to POs and track refurbishment.','package'],
- ['office','Shared resources','Find SOPs, browse process folders and preview documents.','folder'],
- ['settings','Settings','Manage staff, defaults and email reminders.','sliders']
- ].filter(([key])=>allowed(key)).map(([key,name,description,icon])=><button className="module-card" key={key} onClick={()=>navigate(key)}><span className="module-icon" aria-hidden="true"><Icon name={icon} size={29}/></span><span className="module-heading">{name}</span><span className="module-description">{description}</span><span className="module-link">Open {name.toLowerCase()} <Icon name="arrow-right" size={18}/></span></button>)}</div>
-
-   {isAdmin&&<><ReminderDashboard request={request}/><TimesheetHistory request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/></>}
+   <div className="home-intro"><h1>Reminders</h1><p>Upcoming tasks and due dates.</p></div>
+   {isAdmin?<ReminderDashboard request={request}/>:<p>Your due tasks are listed on <button className="reminder-my-day-link" onClick={()=>navigate('my-day')}>My day</button>.</p>}
   </main>}
 
   {canAccessPage('job-import',session)&&(page==='job-import'||visitedPages['job-import'])&&<section hidden={page!=='job-import'}><JobImport request={request} savedJobId={savedJobId} onAppointment={importAppointment} onQuote={importQuote}/></section>}
@@ -203,7 +189,7 @@ export default function App(){
 
   {(page==='vehicles'||visitedPages.vehicles)&&<section hidden={page!=='vehicles'}><VehicleChecks onManage={()=>{setManagementSection('fleet');navigate('settings')}} isAdmin={isAdmin} technician={session.technician} request={request} active={page==='vehicles'}/></section>}
 
-  {isAdmin&&<section hidden={page!=='settings'}>{page==='settings'&&<SettingsPage initialManagementSection={managementSection} request={request} onSaved={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-staff-updated'},location.origin);window.dispatchEvent(new Event('trident-settings-saved'))}}/>}</section>}
+  {isAdmin&&<section hidden={page!=='settings'}>{page==='settings'&&<SettingsPage canImportJobs={canAccessPage('job-import',session)} initialManagementSection={managementSection} request={request} onSaved={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-staff-updated'},location.origin);window.dispatchEvent(new Event('trident-settings-saved'))}}/>}</section>}
 
  </div>
  </Suspense>

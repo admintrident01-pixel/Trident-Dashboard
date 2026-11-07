@@ -32,6 +32,10 @@ export function defaultChoices(items){
  return Object.fromEntries(items.map(i=>[i.id,{selected:i.qty>0&&(i.category!=='Labour'||(useSummary?!!i.summary:!i.summary)),description:i.description,qty:i.qty,rate:i.summary?sourceRate(i,'excl',0)??0:0}]))
 }
 export function itemChoice(items,choices,id,values){const next={...choices,[id]:{...choices[id],...values}},item=items.find(i=>i.id===id);if(values.selected&&item?.category==='Labour')for(const other of items)if(other.id!==id&&other.category==='Labour'&&(item.summary||other.summary))next[other.id]={...next[other.id],selected:false};return next}
+export function categoryChoices(items,choices,category,selected){
+ const defaults=defaultChoices(items)
+ return Object.fromEntries(items.map(item=>[item.id,{...choices[item.id],...(item.category===category?{selected:selected&&(category==='Labour'?defaults[item.id].selected:Number(choices[item.id]?.qty)>0)}:{})}]))
+}
 export function sourceRate(item,basis,gstPercent){
  if(!['excl','incl'].includes(basis)||!(item.qty>0))return null
  const total=sourceNumber(item.sourceTotal),unit=sourceNumber(item.sourceUnit)
