@@ -1,0 +1,6 @@
+*** Begin Patch
+*** Update File: mockup.html
+@@
+-        <span>Reminder email sent Mon 9 Nov. If not accepted by <b>Fri 20 Nov, 5 pm</b>, the week moves to the public pool.</span>
++        <span>Reminder email sent Mon 9 Nov. If not accepted by <b>Sun 15 Nov, 5 pm</b>, the week moves to the public pool.</span>
+*** End Patch

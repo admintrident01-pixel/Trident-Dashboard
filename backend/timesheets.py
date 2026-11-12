@@ -97,9 +97,19 @@ def save(state, data, user=None, exclude_submission=None, exclude_draft=None, ch
             raise Problem(400, 'Unpaid lunch applies only to work hours.')
         entered_hours = hours
         lunch_hours = min(hours, decimal.Decimal('0.5')) if unpaid_lunch else decimal.Decimal(0)
-        hours -= lunch_hours
+        net_direct=day.get('netDirectHours',False)
+        if not isinstance(net_direct,bool):raise Problem(400,'Invalid direct hours format.')
+        if status=='Work' and method=='direct' and net_direct and hours>0:
+            duration=minutes(finish)-minutes(start)
+            if duration<=0:raise Problem(400,'Enter actual start and finish times for Direct hours.')
+            expected=decimal.Decimal(duration)/60-lunch_hours
+            if hours>decimal.Decimal(duration)/60:raise Problem(400,'Paid hours cannot exceed the actual start–finish period.')
+            if expected!=hours and not notes:raise Problem(400,'Direct paid hours do not match start, finish and lunch. Review them or explain separate work periods in daily notes.')
+        elif status=='Work' and method=='direct' and (start or finish):
+            if minutes(finish)<minutes(start):raise Problem(400,'Finish time must not be before start time.')
+        if not (net_direct and method=='direct'):hours -= lunch_hours
         total += hours
-        cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'enteredHours': float(entered_hours), 'unpaidLunch': unpaid_lunch, 'lunchHours': float(lunch_hours), 'start': start if method == 'times' else '', 'finish': finish if method == 'times' else ''})
+        cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'enteredHours': float(entered_hours), 'netDirectHours':net_direct,'unpaidLunch': unpaid_lunch, 'lunchHours': float(lunch_hours), 'start': start if status=='Work' and (method=='times' or (net_direct and hours>0)) else '', 'finish': finish if status=='Work' and (method=='times' or (net_direct and hours>0)) else ''})
     entry = {'id': str(uuid.uuid4()), 'revision': 1, 'technician': technician, 'weekStart': week, 'signature': signature, 'notes': text(data.get('notes', ''), 'weekly notes', 4000), 'days': cleaned, 'total': float(total), 'submittedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
     result = copy.deepcopy(state)
     import leave

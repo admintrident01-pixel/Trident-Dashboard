@@ -1,0 +1,73 @@
+Browser tab: 11, Title: "Cloud Shell", URL: "https://shell.cloud.google.com/?project=trident-dashboard-511203&show=ide%2Cterminal".
+0 AXWebArea Cloud Shell, URL: shell.cloud.google.com/?project=trident-dashboard-511203&show=ide%2Cterminal
+	1 container cloudshell
+		2 heading Cloud Shell, Value: 1
+			3 text Cloud Shell
+		4 toolbar
+			5 button Open Editor
+			6 button Close Terminal
+			7 pop up button (collapsed) Description: Web Preview, Secondary Actions: Expand
+			8 pop up button (collapsed) Description: Session information, Secondary Actions: Expand
+			9 pop up button (collapsed) Description: More Cloud Shell settings, Secondary Actions: Expand
+			10 button (collapsed) Description: Choose Google account, Secondary Actions: Expand
+		11 container
+			12 toolbar
+				13 pop up button (collapsed) Description: Send key combination, Secondary Actions: Expand
+				14 pop up button (collapsed) Description: Terminal settings, Secondary Actions: Expand
+				15 tab group
+					16 tab (selected, settable, boolean) Terminal tab 0 with title (trident-dashboard-511203) Close terminal tab 0, ID: mat-tab-group-0-label-0, Description: Terminal tab 0 with title (trident-dashboard-511203)
+Close terminal tab 0, Value: 1
+(trident-dashboard-511203)
+				17 container Description: Terminal tab 0 with title (trident-dashboard-511203) Close terminal tab 0, ID: mat-tab-group-0-content-0
+				18 container
+					19 button Open a new tab
+					20 button (collapsed) Description: Open a new tab with specific project., Secondary Actions: Expand
+				21 button Close Terminal
+			22 container
+				23 content list
+					31 text Welcome to Cloud Shell! Type "help" to get started.
+					32 text Your Cloud Platform project in this session is set to trident-dashboard-511203.
+					33 text Use `gcloud config set project [PROJECT_ID]` to change to a different project.
+					34 text admintrident01@cloudshell:~ (trident-dashboard-511203)$ python3 w20261104195634.py receipt_after
+					35 text TRIDENT_AFTER={"phase": "after", "project": "trident-dashboard-511203", "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_after_schedule_workf
+					36 text low_20261104T195634Z", "registerRevision": 11176, "stateSha256": "99f91c291f2231ab0a79468561b37ca0c583f33a1283a4617110170adc49f1b6", "liveUploadObjects": 32, "u
+					37 text ploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-workflow_20261104T195634Z/", "apiRevision": "trident-quote-api-00061-jnl"
+					38 text , "traffic": [{"latestRevision": true, "percent": 100, "revisionName": "trident-quote-api-00061-jnl"}], "labels": {"cloud.googleapis.com/location": "australia-s
+					39 text outheast1", "commit-sha": "9757d95dbfdb30875e29603b496f8a658eb3821a", "gcb-build-id": "df1c6bbd-b22f-4438-843b-96059f0fd63b", "gcb-trigger-id": "78b1d7da-d069-4
+					40 text fa0-af9b-87ab6500b6ce", "gcb-trigger-region": "global", "managed-by": "gcp-cloud-build-deploy-cloud-run", "run.googleapis.com/satisfiesPzs": "true"}, "allStateI
+					41 text dentical": false, "businessValuesIdentical": true, "changedSections": ["reminderJob"], "changedCollections": {"reminderJob": {"removed": 0, "added": 0, "modifie
+					42 text d": 1}}, "priorUploadsUnchanged": true, "priorUploadCount": 32, "environmentAndSecretsPreserved": true, "serviceIdentityPreserved": true, "runtimeSettingsPreser
+					43 text ved": true}
+					44 text admintrident01@cloudshell:~ (trident-dashboard-511203)$ python3 w20261104195634.py watch
+					45 text WORKFLOW_BUILD=SUCCESS
+					46 text admintrident01@cloudshell:~ (trident-dashboard-511203)$ gcloud run services describe trident-quote-api --region=australia-southeast1 --format='json(status.lates
+					47 text tReadyRevisionName,status.traffic,metadata.labels)' 
+					48 text {
+					49 text   "metadata": {
+					50 text     "labels": {
+					51 text       "cloud.googleapis.com/location": "australia-southeast1",
+					52 text       "commit-sha": "9757d95dbfdb30875e29603b496f8a658eb3821a",
+					53 text       "gcb-build-id": "8a8ca860-a493-47ed-abf9-b5f07d07b65d",
+					54 text       "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+					55 text       "gcb-trigger-region": "global",
+					56 text       "managed-by": "gcp-cloud-build-deploy-cloud-run",
+					57 text       "run.googleapis.com/satisfiesPzs": "true"
+					58 text     }
+					59 text   },
+					60 text   "status": {
+					61 text     "latestReadyRevisionName": "trident-quote-api-00062-7tb",
+					62 text     "traffic": [
+					63 text       {
+					64 text         "latestRevision": true,
+					65 text         "percent": 100,
+					66 text         "revisionName": "trident-quote-api-00062-7tb"
+					67 text       }
+					68 text     ]
+					69 text   }
+					70 text }
+					71 text admintrident01@cloudshell:~ (trident-dashboard-511203)$ 
+				72 text Too much output to announce, navigate to rows manually to read{ "metadata": { "labels": { "cloud.googleapis.com/location": "australia-southeast1", "commit-sha": "9757d95dbfdb30875e29603b496f8a658eb3821a", "gcb-build-id": "8a8ca860-a493-47ed-abf9-b5f07d07b65d", "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce", "gcb-trigger-region": "global", "managed-by": "gcp-cloud-build-deploy-cloud-run", "run.googleapis.com/satisfiesPzs": "true" } }, "status": { "latestReadyRevisionName": "trident-quote-api-00062-7tb", "traffic": [ { "latestRevision": true, "percent": 100, "revisionName": "trident-quote-api-00062-7tb" }
+				29 text field (settable) Terminal input
+	30 AXWebArea shell.cloud.google.com/blank/gapi?onload=CSH_ISOLATED_GAPI_ONLOAD1793838834818&authuser=0&hostappurl=
+
+The focused UI element is 29 text field (settable) Terminal input

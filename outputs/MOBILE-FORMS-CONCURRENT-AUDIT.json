@@ -1,0 +1,64 @@
+{
+  "changedSections": [
+    "appointments",
+    "recycleBin",
+    "reminderJob",
+    "scheduleHiddenTravel",
+    "scheduleHistory"
+  ],
+  "unrelatedBusinessSectionsUnchanged": true,
+  "allPriorAppointmentsUnchanged": true,
+  "allPriorRecycleItemsUnchanged": true,
+  "allPriorHiddenTravelUnchanged": true,
+  "newAppointments": 2,
+  "newAppointmentChecks": [
+    {
+      "idMatches": true,
+      "version": 2,
+      "activeActor": true,
+      "freshCreated": true,
+      "freshUpdated": true,
+      "matchedHistory": true
+    },
+    {
+      "idMatches": true,
+      "version": 1,
+      "activeActor": true,
+      "freshCreated": true,
+      "freshUpdated": true,
+      "matchedHistory": true
+    }
+  ],
+  "newAppointmentsAttributed": true,
+  "newHiddenTravel": 1,
+  "newHiddenTravelAttributed": true,
+  "newRecycleItems": 1,
+  "newRecycleItemsAttributed": true,
+  "newHistoryEntries": 4,
+  "historyActorsActiveAdmins": true,
+  "productionWrites": 0,
+  "privateValuesRedacted": true,
+  "successfulScheduleWriteRequests": [
+    {
+      "at": "2026-11-05T02:57:00.677872Z",
+      "path": "/api/schedule",
+      "method": "POST"
+    },
+    {
+      "at": "2026-11-05T02:56:27.133792Z",
+      "path": "/api/schedule/travel",
+      "method": "POST"
+    },
+    {
+      "at": "2026-11-05T02:55:26.743057Z",
+      "path": "/api/schedule/travel",
+      "method": "POST"
+    },
+    {
+      "at": "2026-11-05T02:55:16.180554Z",
+      "path": "/api/schedule",
+      "method": "POST"
+    }
+  ],
+  "concurrentEditsVerified": true
+}

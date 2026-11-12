@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>On-call roster · Trident Dashboard</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font:14px Arial,Helvetica,sans-serif;background:#f2f4f8;color:#20334d}
+  button{font:inherit;cursor:pointer}
+  .i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+  /* Header */
+  .portal-header{height:64px;display:flex;align-items:center;gap:22px;padding:0 24px;background:#202020;color:#fff}
+  .brand{display:flex;align-items:center;flex:none}
+  .brand img{width:146px;display:block}
+  .portal-header nav{display:flex;gap:2px;flex:1;min-width:0;overflow:hidden}
+  .portal-header nav button{border:0;padding:8px 10px;font-size:13px;color:#c9d3e1;background:transparent;border-radius:6px;white-space:nowrap}
+  .portal-header nav button[aria-current]{color:#fff;background:#ffffff1c}
+  .portal-header nav button:hover{color:#fff;background:#ffffff10}
+  .account{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:11px;color:#d2d8e2;white-space:nowrap}
+  .account button{background:transparent;color:#fff;border:1px solid #666;border-radius:5px;padding:5px 9px;font-size:12px}
+
+  .page{max-width:1560px;margin:0 auto;padding:26px 30px 38px}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:22px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:1.4px;color:#65758a;text-transform:uppercase;margin-bottom:7px}
+  .page-head h1{margin:0 0 7px;font-size:30px;letter-spacing:-.4px;color:#17345f}
+  .page-head p{margin:0;color:#65758a;font-size:13px;line-height:1.55}
+  .head-tools{display:flex;align-items:center;gap:8px;flex:none;padding-top:5px}
+  .week-switch{display:flex;align-items:center;background:#fff;border:1px solid #d3dde9;border-radius:7px;height:38px;overflow:hidden}
+  .week-switch button{border:0;background:#fff;height:100%;padding:0 9px;color:#526b89;display:flex;align-items:center}
+  .week-switch button:hover{background:#f0f4fa}
+  .week-switch .current{border-left:1px solid #e3eaf3;border-right:1px solid #e3eaf3;padding:0 14px;color:#17345f;font-weight:700;font-size:12px;gap:7px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #ccd7e5;background:#fff;color:#20334d;border-radius:6px;padding:9px 13px;font-size:12px;font-weight:700;white-space:nowrap}
+  .btn:hover{background:#f4f7fb}
+  .btn.primary{background:#17345f;border-color:#17345f;color:#fff}
+  .btn.primary:hover{background:#1d3f70}
+  .btn.danger{color:#9a2b2b;border-color:#e2c9c7}
+  .btn.danger:hover{background:#fdf4f3}
+  .btn.small{padding:6px 10px;font-size:11px}
+  .btn.ghost{border-color:transparent;background:transparent;color:#526b89}
+  .btn.ghost:hover{background:#eef3fa}
+
+  .card{background:#fff;border:1px solid #dfe6f0;border-radius:12px;box-shadow:0 1px 2px #17345f08}
+  .grid-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+
+  /* Now on call */
+  .now{position:relative;padding:18px 20px 16px;overflow:hidden}
+  .now:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#2e8b57}
+  .now-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
+  .live{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:1.3px;color:#2a6b4a;text-transform:uppercase}
+  .dot{width:8px;height:8px;border-radius:50%;background:#2e8b57;box-shadow:0 0 0 3px #2e8b5722}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;line-height:1.6}
+  .chip.green{background:#e5f3ea;color:#226243;border:1px solid #c4e0cf}
+  .chip.amber{background:#fff3dc;color:#825711;border:1px solid #ecd5a6}
+  .chip.grey{background:#eef2f7;color:#526b89;border:1px solid #dde5ef}
+  .chip.red{background:#fbeceb;color:#8a2323;border:1px solid #edcdca}
+  .now-body{display:flex;gap:16px;align-items:center}
+  .avatar{display:grid;place-items:center;border-radius:50%;background:#e8eef8;color:#294e91;font-weight:700;flex:none;letter-spacing:.3px}
+  .a-72{width:66px;height:66px;font-size:22px;background:#17345f;color:#fff}
+  .a-44{width:42px;height:42px;font-size:14px}
+  .a-34{width:32px;height:32px;font-size:11px}
+  .a-28{width:27px;height:27px;font-size:10px}
+  .now-name{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .now-name h2{margin:0;font-size:25px;color:#17345f;letter-spacing:-.3px}
+  .now-role{margin:5px 0 0;font-size:12px;color:#65758a}
+  .now-contact{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:#345375}
+  .now-contact span{display:flex;align-items:center;gap:6px}
+  .now-contact .i{width:13px;height:13px;color:#7d8ea5}
+  .now-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;border-top:1px solid #edf1f7;margin-top:15px;padding-top:12px}
+  .fact small{display:block;font-size:10px;font-weight:700;letter-spacing:.9px;color:#8292a8;text-transform:uppercase;margin-bottom:4px}
+  .fact div{font-size:12px;color:#20334d;line-height:1.45}
+  .fact div strong{font-weight:700}
+  .now-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  /* Next */
+  .next{padding:18px 18px 14px;display:flex;flex-direction:column}
+  .next-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .label{font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8292a8;text-transform:uppercase}
+  .next-person{display:flex;align-items:center;gap:11px}
+  .next-person h3{margin:0;font-size:16px;color:#17345f}
+  .next-person p{margin:2px 0 0;font-size:11px;color:#7a8aa0}
+  .next-meta{margin-top:12px;padding:10px 11px;border:1px solid #eee1c8;background:#fffaef;border-radius:7px;font-size:11px;line-height:1.6;color:#785519;display:flex;gap:8px;align-items:flex-start}
+  .next-meta .i{margin-top:2px;color:#b07c22}
+  .next-foot{margin-top:auto;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #edf1f7}
+  .next-foot .who{font-size:11px;color:#7a8aa0;line-height:1.5}
+  .link{display:inline-flex;align-items:center;gap:5px;color:#294e91;font-size:11px;font-weight:700;background:none;border:0;padding:3px 0}
+  .link .i{width:13px;height:13px}
+
+  /* Week strip */
+  .weekcard{padding:16px 18px 14px;margin-bottom:16px}
+  .week-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .week-head h2{margin:0;font-size:16px;color:#17345f}
+  .week-head .sub{font-size:11px;color:#8292a8}
+  .week-head .legend{margin-left:auto;display:flex;align-items:center;gap:13px;font-size:10px;color:#7a8aa0}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .legend i{width:8px;height:8px;border-radius:2px;background:#eef2f7;border:1px solid #dbe4f0}
+  .legend i.today{background:#fff3e2;border-color:#e78932}
+  .days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid #e6edf5;border-radius:8px;overflow:hidden}
+  .day{padding:9px 10px 10px;border-right:1px solid #edf1f7;background:#fff;min-width:0}
+  .day:last-child{border-right:0}
+  .day.today{background:#fff8ee;box-shadow:inset 0 3px 0 #e78932}
+  .day-top{display:flex;align-items:baseline;justify-content:space-between;gap:4px}
+  .day-name{font-size:10px;font-weight:700;letter-spacing:.8px;color:#8292a8;text-transform:uppercase}
+  .day-date{font-size:17px;font-weight:700;color:#17345f;line-height:1.1}
+  .day.today .day-date,.day.today .day-name{color:#9a5410}
+  .day-person{display:flex;align-items:center;gap:6px;margin-top:8px;min-width:0}
+  .day-person b{font-size:11px;font-weight:700;color:#20334d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .day-extra{margin-top:5px;font-size:9.5px;color:#8a99ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:12px 0 14px;border:1px solid #e6edf5;border-radius:7px;overflow:hidden}
+  .mini-step{padding:8px 9px;border-right:1px solid #edf1f7;background:#fbfcfe}
+  .mini-step:last-child{border-right:0}
+  .mini-step b{display:block;font-size:10px;color:#526b89;font-weight:700}
+  .mini-step small{display:block;font-size:9.5px;color:#8a99ad;margin-top:2px;line-height:1.4}
+  .mini-step .pip{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:#e8eef7;color:#526b89;font-size:8px;font-weight:700;margin-bottom:4px}
+  .mini-step.done .pip{background:#e2f1e8;color:#2a6b4a}
+
+  /* Pool + order */
+  .grid-two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+  .card-head{display:flex;align-items:center;gap:9px;padding:15px 18px 0}
+  .card-head h2{margin:0;font-size:16px;color:#17345f}
+  .card-head .count{margin-left:auto}
+  .card-sub{margin:5px 18px 0;font-size:11px;color:#7a8aa0;line-height:1.55}
+  .pool{padding-bottom:8px;display:flex;flex-direction:column}
+  .pool-row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid #edf1f7;margin-top:10px}
+  .pool-row:first-of-type{margin-top:11px}
+  .pool-week{flex:1;min-width:0}
+  .pool-week b{display:block;font-size:13px;color:#17345f}
+  .pool-week small{display:block;margin-top:3px;font-size:10.5px;color:#8292a8}
+  .pool-reason{font-size:10.5px;color:#8a5a12;background:#fff8ec;border:1px solid #f0e0c4;border-radius:4px;padding:2px 6px;margin-left:5px;white-space:nowrap}
+  .pool .btn{flex:none}
+  .pool-note{margin:12px 18px 6px;margin-top:auto;padding-top:11px;border-top:1px solid #edf1f7;display:flex;gap:8px;flex-wrap:wrap}
+  .pool-note .step{display:flex;align-items:flex-start;gap:6px;flex:1;min-width:150px;font-size:10px;line-height:1.45;color:#7a8aa0}
+  .pool-note .step b{display:block;color:#526b89;font-size:10px}
+  .pool-note .n{width:16px;height:16px;border-radius:50%;background:#eef3fa;color:#4a6c9b;font-size:9px;font-weight:700;display:grid;place-items:center;flex:none;margin-top:1px}
+
+  .order{padding-bottom:10px}
+  .admin-tag{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:.7px;padding:2px 6px;border-radius:4px;background:#eef2f8;color:#526b89;border:1px solid #dbe4ef;text-transform:uppercase}
+  .order-list{margin:10px 0 0;padding:0;list-style:none}
+  .order-row{display:flex;align-items:center;gap:9px;padding:7px 18px;font-size:12px}
+  .order-row+.order-row{border-top:1px solid #f1f4f9}
+  .grip{color:#a8b6c8;display:flex}
+  .grip .i{width:13px;height:13px}
+  .rank{width:17px;flex:none;color:#8292a8;font-size:10px;font-weight:700;text-align:right}
+  .order-row .avatar{flex:none}
+  .order-name{flex:1;min-width:0;color:#20334d;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .order-name small{display:block;font-weight:400;font-size:10px;color:#8a99ad;margin-top:1px}
+  .order-foot{padding:9px 18px 4px;border-top:1px solid #edf1f7;margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:10px;color:#8292a8}
+  .order-foot span{display:flex;align-items:center;gap:5px}
+  .order-foot .i{width:12px;height:12px}
+
+  /* Upcoming table */
+  .upcoming{margin-bottom:16px;overflow:hidden}
+  .upcoming .card-head{padding-bottom:12px}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#8292a8;text-align:left;padding:8px 18px;background:#f7f9fc;border-top:1px solid #edf1f7;border-bottom:1px solid #edf1f7;font-weight:700}
+  td{padding:9px 18px;font-size:12px;border-bottom:1px solid #f0f4f9;color:#20334d;vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  td.week b{color:#17345f}
+  td .person{display:flex;align-items:center;gap:7px;white-space:nowrap}
+  td .person b{font-weight:700}
+  td .person.unassigned{color:#8a5a12}
+  .notified{display:flex;align-items:center;gap:6px;font-size:10.5px;color:#7a8aa0;white-space:nowrap}
+  .notified .i{width:13px;height:13px;color:#8fa1b8}
+
+  /* Activity + email */
+  .grid-three{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+  .activity{padding-bottom:6px}
+  .feed{list-style:none;margin:8px 0 0;padding:0}
+  .feed li{display:flex;gap:10px;padding:9px 18px;border-top:1px solid #f1f4f9;align-items:flex-start}
+  .feed li:first-child{border-top:1px solid #edf1f7}
+  .feed-icon{width:25px;height:25px;border-radius:50%;background:#eef3fa;color:#4a6c9b;display:grid;place-items:center;flex:none;margin-top:1px}
+  .feed-icon .i{width:12px;height:12px}
+  .feed-body{flex:1;min-width:0;font-size:11.5px;line-height:1.5;color:#345375}
+  .feed-body b{color:#17345f}
+  .feed-meta{font-size:10px;color:#8a99ad;margin-top:2px}
+  .feed-mail{font-size:9px;font-weight:700;color:#3b7355;background:#eaf4ee;border:1px solid #cfe4d8;border-radius:3px;padding:1px 5px;white-space:nowrap;display:inline-flex;align-items:center;gap:3px;margin-top:4px}
+  .feed-mail .i{width:9px;height:9px}
+  .rules{padding-bottom:12px}
+  .rule{display:flex;gap:10px;padding:9px 18px;border-top:1px solid #f1f4f9;align-items:flex-start}
+  .rule:first-of-type{margin-top:8px;border-top:1px solid #edf1f7}
+  .rule .i{color:#4a6c9b;margin-top:1px}
+  .rule div{font-size:11.5px;line-height:1.5;color:#345375}
+  .rule b{display:block;color:#17345f;font-size:11.5px;margin-bottom:1px}
+  .rules-note{margin:10px 18px 0;padding:9px 10px;background:#f5f8fc;border:1px solid #e4ebf4;border-radius:6px;font-size:10.5px;color:#5d7290;line-height:1.55;display:flex;gap:7px}
+  .rules-note .i{color:#7d92ad;margin-top:1px}
+
+  .foot{display:flex;justify-content:space-between;gap:12px;margin-top:18px;font-size:10px;color:#93a2b5}
+  .foot span{display:flex;align-items:center;gap:6px}
+
+  @media(max-width:1100px){
+    .portal-header nav button:nth-child(n+8){display:none}
+    .grid-hero,.grid-two,.grid-three{grid-template-columns:1fr}
+    .now-facts{grid-template-columns:1fr 1fr}
+  }
+  @media(max-width:760px){
+    .portal-header{height:110px;flex-wrap:wrap;gap:0 12px;padding:0 14px}
+    .brand{order:1;margin-top:9px}.brand img{width:120px}
+    .account{order:2;margin-top:9px;margin-left:auto}
+    .portal-header nav{order:3;width:100%;overflow-x:auto;flex:none;gap:4px;padding-bottom:8px}
+    .portal-header nav button:nth-child(n+8){display:block}
+    .account>span{display:none}
+    .page{padding:16px 12px 26px}
+    .page-head{flex-direction:column;gap:12px}
+    .page-head h1{font-size:25px}
+    .head-tools{width:100%;padding-top:0}
+    .week-switch{flex:1}.week-switch .current{flex:1;justify-content:center}
+    .days{grid-template-columns:repeat(2,1fr)}
+    .day{border-bottom:1px solid #edf1f7}
+    .day:nth-child(2n){border-right:0}
+    .day .a-28{display:none!important}
+    .day-person{margin-top:5px}
+    .now-body{gap:12px}.a-72{width:54px;height:54px;font-size:18px}
+    .now-name h2{font-size:21px}
+    .now-facts{grid-template-columns:1fr 1fr;gap:10px}
+    .now-actions .btn{flex:1}
+    .pool-row{flex-wrap:wrap}
+    .pool-row .btn{width:100%}
+    .upcoming{overflow-x:auto}
+    .upcoming table{min-width:0}
+    .upcoming th:nth-child(4),.upcoming td:nth-child(4),.upcoming th:nth-child(6),.upcoming td:nth-child(6){display:none}
+    .foot{flex-direction:column;gap:4px}
+  }
+</style>
+</head>
+<body>
+<header class="portal-header">
+  <div class="brand"><img src="trident-logo.png" alt="Trident Community Equipment"></div>
+  <nav aria-label="Main navigation">
+    <button>Home</button>
+    <button>Quotes</button>
+    <button>Tech schedule</button>
+    <button aria-current="page">On call</button>
+    <button>Time sheet</button>
+    <button>Leave forms</button>
+    <button>Labour payables</button>
+    <button>Vehicles</button>
+    <button>Stock</button>
+    <button>Settings</button>
+    <button>Shared resources</button>
+  </nav>
+  <div class="account"><span>adele@trice.nz · Admin</span><button>Sign out</button></div>
+</header>
+
+<main class="page">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">Technicians</div>
+      <h1>On-call roster</h1>
+      <p>Week 46 · Mon 9 – Sun 15 November 2026 · Rotates weekly from Monday. Admins set the order.</p>
+    </div>
+    <div class="head-tools">
+      <div class="week-switch">
+        <button aria-label="Previous week"><svg class="i"><use href="icons/feather-sprite.svg#chevron-left"></use></svg></button>
+        <button class="current"><svg class="i"><use href="icons/feather-sprite.svg#calendar"></use></svg> This week</button>
+        <button aria-label="Next week"><svg class="i"><use href="icons/feather-sprite.svg#chevron-right"></use></svg></button>
+      </div>
+      <button class="btn"><svg class="i"><use href="icons/feather-sprite.svg#edit-2"></use></svg>Edit order</button>
+    </div>
+  </div>
+
+  <section class="grid-hero">
+    <div class="card now">
+      <div class="now-top">
+        <div class="live"><span class="dot"></span>On call now</div>
+        <span class="chip green"><svg class="i" style="width:11px;height:11px"><use href="icons/feather-sprite.svg#check"></use></svg>Accepted · confirmed</span>
+      </div>
+      <div class="now-body">
+        <div class="avatar a-72">DW</div>
+        <div style="min-width:0;flex:1">
+          <div class="now-name"><h2>Daniel Whitiora</h2></div>
+        </div>
+      </div>
+      <div class="now-facts">
+        <div class="fact"><small>Covers</small><div><strong>Week 46</strong> · Mon 9 – Sun 15 Nov</div></div>
+        <div class="fact"><small>Accepted</small><div>Mon 9 Nov, 7:02 am</div></div>
+        <div class="fact"><small>Weekend backup</small><div>Sione Tuilagi</div></div>
+      </div>
+      <div class="now-actions">
+        <button class="btn primary"><svg class="i"><use href="icons/feather-sprite.svg#repeat"></use></svg>Hand over</button>
+        <button class="btn danger"><svg class="i"><use href="icons/feather-sprite.svg#users"></use></svg>Release to public pool</button>
+        <button class="btn ghost"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>Email the team</button>
+      </div>
+    </div>
+
+    <div class="card next">
+      <div class="next-top">
+        <span class="label">Next on call</span>
+        <span class="chip amber">Starts in 3 days</span>
+      </div>
+      <div class="next-person">
+        <div class="avatar a-44">MK</div>
+        <div>
+          <h3>Mereana Kingi</h3>
+          <p>Week 47 · Mon 16 – Sun 22 November</p>
+        </div>
+        <span class="chip grey" style="margin-left:auto">Awaiting accept</span>
+      </div>
+      <div class="next-meta">
+        <svg class="i"><use href="icons/feather-sprite.svg#bell"></use></svg>
+        <span>Reminder email sent Mon 9 Nov. If not accepted by <b>Sun 15 Nov, 5 pm</b>, the week moves to the public pool.</span>
+      </div>
+      <div class="mini-steps">
+        <div class="mini-step done"><span class="pip">✓</span><b>Reminder sent</b><small>Mon 9 Nov, 7:00 am</small></div>
+        <div class="mini-step"><span class="pip">2</span><b>Accept by</b><small>Sun 15 Nov, 5:00 pm</small></div>
+        <div class="mini-step"><span class="pip">3</span><b>Starts</b><small>Mon 16 Nov, 12:00 am</small></div>
+      </div>
+      <div class="next-foot">
+        <div class="who">If Mereana can't cover, the order passes to <b>Sione Tuilagi</b>.</div>
+        <button class="link">View queue <svg class="i"><use href="icons/feather-sprite.svg#arrow-right"></use></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-two">
+    <div class="card pool">
+      <div class="card-head">
+        <h2>Public pool</h2>
+        <span class="chip amber count">3 open weeks</span>
+      </div>
+      <p class="card-sub">Unassigned on-call weeks anyone can claim. First technician to accept gets it — everyone is emailed.</p>
+      <div class="pool-row">
+        <div class="pool-week">
+          <b>Week 48 <span class="pool-reason">Released · annual leave</span></b>
+          <small>Mon 23 – Sun 29 November · released by Ben Carter, 2 hours ago</small>
+        </div>
+        <button class="btn primary">Grab this week</button>
+      </div>
+      <div class="pool-row">
+        <div class="pool-week">
+          <b>Week 50</b>
+          <small>Mon 7 – Sun 13 December · added by Adele (Admin), yesterday</small>
+        </div>
+        <button class="btn primary">Grab this week</button>
+      </div>
+      <div class="pool-row">
+        <div class="pool-week">
+          <b>Week 51</b>
+          <small>Mon 14 – Sun 20 December · added by Adele (Admin), 9 Nov</small>
+        </div>
+        <button class="btn primary">Grab this week</button>
+      </div>
+      <div class="pool-note">
+        <div class="step"><span class="n">1</span><span><b>Everyone is emailed</b>All technicians get the open-week alert.</span></div>
+        <div class="step"><span class="n">2</span><span><b>First to accept wins</b>The slot locks as soon as it is grabbed.</span></div>
+        <div class="step"><span class="n">3</span><span><b>Team is updated</b>Admin and technicians get a confirmation.</span></div>
+      </div>
+    </div>
+
+    <div class="card order">
+      <div class="card-head">
+        <h2>Allocation order</h2>
+        <span class="admin-tag"><svg class="i" style="width:9px;height:9px"><use href="icons/feather-sprite.svg#lock"></use></svg>Admin</span>
+        <button class="btn small count" style="margin-left:auto"><svg class="i" style="width:12px;height:12px"><use href="icons/feather-sprite.svg#edit-2"></use></svg>Edit</button>
+      </div>
+      <p class="card-sub">The order sets who takes each new week. Dragging a technician changes future weeks only.</p>
+      <ol class="order-list">
+        <li class="order-row"><span class="grip"><svg class="i"><use href="icons/feather-sprite.svg#more-vertical"></use></svg></span><span class="rank">1</span><span class="avatar a-34">DW</span><span class="order-name">Daniel Whitiora</span><span class="chip green">On call now</span></li>
+        <li class="order-row"><span class="grip"><svg class="i"><use href="icons/feather-sprite.svg#more-vertical"></use></svg></span><span class="rank">2</span><span class="avatar a-34">MK</span><span class="order-name">Mereana Kingi</span><span class="chip amber">Next</span></li>
+        <li class="order-row"><span class="grip"><svg class="i"><use href="icons/feather-sprite.svg#more-vertical"></use></svg></span><span class="rank">3</span><span class="avatar a-34">ST</span><span class="order-name">Sione Tuilagi</span><span class="chip grey">Week 49</span></li>
+        <li class="order-row"><span class="grip"><svg class="i"><use href="icons/feather-sprite.svg#more-vertical"></use></svg></span><span class="rank">4</span><span class="avatar a-34">AP</span><span class="order-name">Aroha Patel</span><span class="chip grey">Week 51</span></li>
+        <li class="order-row"><span class="grip"><svg class="i"><use href="icons/feather-sprite.svg#more-vertical"></use></svg></span><span class="rank">5</span><span class="avatar a-34">BC</span><span class="order-name">Ben Carter</span><span class="chip grey">Away · W48</span></li>
+      </ol>
+      <div class="order-foot"><span><svg class="i"><use href="icons/feather-sprite.svg#check-circle"></use></svg>Saved 10 Nov by Adele Stockdale</span><span>5 technicians</span></div>
+    </div>
+  </section>
+
+  <section class="card upcoming">
+    <div class="card-head">
+      <h2>Roster by week</h2>
+      <span class="sub" style="font-size:10.5px;color:#8292a8">One technician per week · Monday to Sunday</span>
+      <button class="link count">Full history <svg class="i"><use href="icons/feather-sprite.svg#arrow-right"></use></svg></button>
+    </div>
+    <table>
+      <thead><tr><th>Week</th><th>Dates</th><th>On call</th><th>Backup</th><th>Status</th><th>Notified</th></tr></thead>
+      <tbody>
+        <tr><td class="week"><b>Week 46</b> <span class="chip green" style="font-size:8px;padding:1px 5px">This week</span></td><td>Mon 9 – Sun 15 Nov</td><td><span class="person"><span class="avatar a-28">DW</span><b>Daniel Whitiora</b></span></td><td>Sione Tuilagi</td><td><span class="chip green">Confirmed</span></td><td><span class="notified"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>6 people · 9 Nov</span></td></tr>
+        <tr><td class="week"><b>Week 47</b></td><td>Mon 16 – Sun 22 Nov</td><td><span class="person"><span class="avatar a-28">MK</span><b>Mereana Kingi</b></span></td><td>Sione Tuilagi</td><td><span class="chip amber">Awaiting accept</span></td><td><span class="notified"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>6 people · 9 Nov</span></td></tr>
+        <tr><td class="week"><b>Week 48</b></td><td>Mon 23 – Sun 29 Nov</td><td><span class="person unassigned"><svg class="i" style="width:14px;height:14px"><use href="icons/feather-sprite.svg#users"></use></svg><b>Open to public pool</b></span></td><td>—</td><td><span class="chip amber">Open · anyone</span></td><td><span class="notified"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>6 people · 2h ago</span></td></tr>
+        <tr><td class="week"><b>Week 49</b></td><td>Mon 30 Nov – Sun 6 Dec</td><td><span class="person"><span class="avatar a-28">ST</span><b>Sione Tuilagi</b></span></td><td>Aroha Patel</td><td><span class="chip green">Scheduled</span></td><td><span class="notified"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>6 people · 10 Nov</span></td></tr>
+        <tr><td class="week"><b>Week 50</b></td><td>Mon 7 – Sun 13 Dec</td><td><span class="person unassigned"><svg class="i" style="width:14px;height:14px"><use href="icons/feather-sprite.svg#users"></use></svg><b>Open to public pool</b></span></td><td>—</td><td><span class="chip amber">Open · anyone</span></td><td><span class="notified"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>6 people · yesterday</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="grid-three">
+    <div class="card activity">
+      <div class="card-head"><h2>Recent changes</h2><span class="sub count" style="font-size:10px;color:#8292a8">Emailed automatically</span></div>
+      <ul class="feed">
+        <li><span class="feed-icon"><svg class="i"><use href="icons/feather-sprite.svg#user-check"></use></svg></span><div class="feed-body"><b>Daniel Whitiora accepted Week 46</b><div class="feed-meta">Today, 7:02 am · accepted on-call</div><span class="feed-mail"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>Emailed 6 people</span></div></li>
+        <li><span class="feed-icon"><svg class="i"><use href="icons/feather-sprite.svg#users"></use></svg></span><div class="feed-body"><b>Ben Carter released Week 48 to the public pool</b><div class="feed-meta">Today, 5:18 am · reason: annual leave</div><span class="feed-mail"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>Emailed 6 people</span></div></li>
+        <li><span class="feed-icon"><svg class="i"><use href="icons/feather-sprite.svg#shuffle"></use></svg></span><div class="feed-body"><b>Adele Stockdale changed the allocation order</b><div class="feed-meta">Tue 10 Nov, 3:41 pm · Aroha moved to position 4</div><span class="feed-mail"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>Emailed 6 people</span></div></li>
+        <li><span class="feed-icon"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg></span><div class="feed-body"><b>Week 47 reminder sent to Mereana Kingi</b><div class="feed-meta">Mon 9 Nov, 7:00 am · awaiting acceptance</div><span class="feed-mail"><svg class="i"><use href="icons/feather-sprite.svg#mail"></use></svg>Emailed 2 people</span></div></li>
+      </ul>
+    </div>
+
+    <div class="card rules">
+      <div class="card-head"><h2>Who gets emailed</h2></div>
+      <div class="rule"><svg class="i"><use href="icons/feather-sprite.svg#user-check"></use></svg><div><b>Accepted by the technician</b>The technician and admins, with the week and time accepted.</div></div>
+      <div class="rule"><svg class="i"><use href="icons/feather-sprite.svg#repeat"></use></svg><div><b>Handed over or reassigned</b>Outgoing and incoming technicians, plus all admins.</div></div>
+      <div class="rule"><svg class="i"><use href="icons/feather-sprite.svg#users"></use></svg><div><b>A week enters the public pool</b>Every technician, so anyone can grab it.</div></div>
+      <div class="rule"><svg class="i"><use href="icons/feather-sprite.svg#clock"></use></svg><div><b>Weekly reminder · Mondays 7:00 am</b>The rostered technician and admins, until the week is accepted.</div></div>
+      <div class="rules-note"><svg class="i"><use href="icons/feather-sprite.svg#info"></use></svg><span>Emails are sent immediately after a change is saved. A failed send is retried and shown in <b>Settings → Email reminders</b>.</span></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span><svg class="i" style="width:11px;height:11px"><use href="icons/feather-sprite.svg#clock"></use></svg>All times NZDT (UTC+13)</span>
+    <span>On-call week runs Monday 12:00 am – Sunday 11:59 pm</span>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,17 @@
+PUBLISHED AND VERIFIED - My day pilot, 5 November 2026 (Pacific/Auckland).
+Commit da54270886a355bfe98d83ee0584c35c45048329; API trident-quote-api-00065-cjw,100% traffic.
+Access enabled only for authenticated bala@trice.nz, on UI and API. No broader rollout.
+Personal durable work logs, Start/Stop, manual actual times, custom jobs, Finish day,
+planned/recorded summary, due tasks, mobile time sheet/leave/vehicle forms complete.
+514 backend and63 frontend tests passed; final lint/build and local phone UI checks
+passed, including draft/submitted time sheet, Pending leave and submitted vehicle check.
+Live pilot loaded real assigned appointment and actual due/status values. Exact website
+assets verified. Zero production business test writes; no sample seeding.
+Fresh register snapshots and32 upload backups verified; business data/files preserved.
+Concurrent user account/password/session activity and one new vehicle check retained;
+read-only snapshot and successful request-log audit confirms their provenance.
+Environment/secrets, service identity and runtime settings preserved. Manual-only paid
+Google routing remains; ordinary Google Maps navigation links require no Routes call.
+Recorded hours do not rewrite shared bookings, submitted sheets or payroll.
+Evidence MY-DAY-RELEASE.json; current cumulative source package verified.
+Prior package archived in Release history; original checkout/migration unchanged.

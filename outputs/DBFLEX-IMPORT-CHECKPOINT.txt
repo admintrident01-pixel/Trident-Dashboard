@@ -1,0 +1,17 @@
+PUBLISHED AND VERIFIED - Keyless dbFLEX job import, 6 November 2026.
+Commit cf9eb564f336aa62bf6cb8c0d89a9dd4361a94fa; API trident-quote-api-00070-4sp,100% traffic. Exact frontend/assets/userscript verified.
+Import job is available to admins except scott@trice.nz / Scott Yearbury. Scott's
+other admin tools and permissions are preserved. No source record writes.
+Tampermonkey command transfers visible whitelisted job details to a review page.
+Choose normal appointment or quote; no API key or new cloud service required.
+Claim fields, hidden fields, attachments and source prices excluded. Existing
+Trident prices/autosave retained; recipient email chosen separately.
+72 frontend tests, lint/build passed. Backend source unchanged; prior 522-test
+baseline retained. Synthetic appointment/quote saves and mobile review passed.
+Fresh recoverable live register/upload backups verified; records and all prior
+uploads preserved; environment/secrets, identity and runtime settings unchanged.
+Concurrent edits retained/audited if present. No QA fixtures or production test writes.
+Manual-only Google routing preserved. Native Tampermonkey browser installation
+is a user step; extension context-menu installation has not been tested here.
+Evidence DBFLEX-RELEASE.json. Cumulative package updated; prior package archived.
+Original checkout and bulk migration source preserved.

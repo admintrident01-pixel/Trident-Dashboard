@@ -1,0 +1,90 @@
+PENDING USER REVISIONS - 5 November 2026.
+User requested: fix My day return button wherever shown; remove Labour payables
+weekly Download PDF button; Excel export should match uploaded Timesheets WE07.12.25.xlsx;
+remove My day bottom shortcut buttons; remove actual-period explanatory paragraph.
+Latest steering: open new website tab as iPhone13. COMPLETED: agent tab14 opened
+live #my-day, visible and marked deliverable. Effective DOM viewport verified390x844.
+Host display scaling1.39 requires viewport override542x1173 to get CSS390x844.
+Leave this requested mobile viewport active. Some native screenshots showed user's
+other currently active page, while DOM/AXtab14 confirmed #my-day; do not disrupt user.
+
+LOCAL UNCOMMITTED changes: src/App.jsx shared return button now Feather arrow-left,
+accessible Back to My day and styled consistently via MyDay.css for all three pages;
+src/MyDay.jsx bottom shortcut nav and requested actual-period paragraph removed;
+src/WeeklyReport.jsx weekly Download PDF control removed (existing API preserved).
+Production unchanged. npm run build PASSED. Need lint and local visual verification.
+
+Excel template READ ONLY inspected using ZIP/XML. One sheet Labour Report,A1:J66,
+no merged cells. Repeating per-staff blocks: A name/email, B date, C Hours(sum),
+D Total(sum) monetary-looking values, F start time or leave text, G finish time,
+H calculated payable hours with lunch subtraction; staff subtotal rows.
+User source C:/Users/TECH11/AppData/Local/Temp/Timesheets WE07.12.25.xlsx
+(actual filename has a space after WE: Timesheets WE 07.12.25.xlsx).
+Inspection outputs/EXCEL-TEMPLATE-INSPECTION.json. No authoring/export changes yet.
+Do not reuse historical names/hours/amounts from template as live data. Preserve
+actual stored staff, approved leave, times/lunch and notes. Need clarify meaning/
+source for Total(sum); existing site has charged hours, no monetary total here.
+Spreadsheets skill read in parts (some tool output truncated): reread exact remaining
+requirements before authoring. Skill requires artifact-tool for standalone workbook
+creation; actual server exporter currently Python stdlib OOXML in weekly_export.py.
+Use existing architecture for integration and appropriate artifact preview workflow.
+Read-only inspection did NOT start an artifact authoring operation.
+
+Standing user stop:30% or less remaining in either window. Last primary33% remaining
+(before newest UI edits/build); recheck before any work. No delegation authorized.
+Last deployed verified commitda54270886a355bfe98d83ee0584c35c45048329, API65-cjw.
+Source changes above are not committed or published. Complete Excel, meaningful tests,
+local previews and reviewed release before any publication approval question. For
+new release, AGENTS.md requires explicit approval after concrete preview; previous
+Bala-only pilot approval already used for completed release. Preserve all data and
+manual-only paid Google routing; fresh unique backups/comparisons around approval.
+
+USER MAPPING ANSWER: Leave Total(sum) column BLANK. Do not calculate money.
+Reference copy preserved in ignored.local-runtime/reference-timesheets.xlsx (format only; never deploy historical data).
+
+NEW USER REQUIREMENT: Optimize tech pages for iPhone13 (390x844) and desktop.
+Time-sheet Start and Finish must be side by side (current phone grid puts Start
+beside direct-hours, Finish on next row). Rework daily card ergonomics, touch target
+sizes, AM/PM layout, sensible conditional visibility for entry method and leave,
+week/date navigation and action placement. Optimize vehicle checks and leave forms
+similarly: readable single-column phone fields, grouped steps, accessible controls,
+minimal horizontal scrolling, useful history views, form/draft preservation. Do not
+change calculations, lunch rules, duplicate-week protection, approved-leave syncing,
+signatures, permissions or stored data. Mobile form usability may apply to existing
+tech pages for staff; My day PAGE access remains Bala-only until explicit wider
+rollout approval. User did not authorize exceeding the standing30% usage reserve.
+Current local minor UI changes build passed; lint session34218 may still be running,
+log.local-runtime/report-revisions-lint.log. No new export implementation or publish.
+
+CONTINUATION AUTHORIZATION: User explicitly said keep going and use available resets,
+then "keeping going though until usage is maxed". This overrides30% stop for this run.
+No reset API exists in connected tools. Browser usage page logged out. Computer Use
+skill guidance forbids ChatGPT desktop UI automation. Asked user asynchronously to
+apply one free reset manually; no answer yet. Original2 resets still available.
+
+ADDITIONAL LOCAL IMPLEMENTATION: public/timesheet-form.css mobile cards now use named
+areas; Start/Finish adjacent, horizontal44px AM/PM controls, hide unused fields in
+Direct hours/leave modes. public/timesheet.html adds per-row method/status metadata
+without changing calculation and adds Review&submit anchor. src/TechnicianForms.css
+new global mobile tech-form style; App imports it and uses technician-page class;
+VehicleChecks inspection list collapsible for AllOK, readable radio-card choices;
+LeaveForms groups From/To times side by side. Existing rules/permissions unchanged.
+Phone UI reviewed at actual390x844 via localtab16; Start andFinish align correctly.
+
+EXCEL: Authored clean5-sheet runtime template with bundled artifact-tool from
+.local-runtime/build-labour-template.mjs. Marker successfully run exactly once.
+backend/weekly_hours_template.xlsx contains headers/styles only, zero historic data.
+New weekly_template.py fills primary Labour Report in reference layout: Name/email,
+real Excel date, charged hours, Total(sum) blank, spacer, actual stored Start/Finish
+as decimal hour, canonical payable hours, lunch hours, notes.7day staff blocks and
+SUM subtotalcached totals; preserves old4 supporting worksheets. No new runtime deps.
+weekly_export.weekly calls new filler; period export unchanged. Dockerfile updated.
+New test_weekly_template.py plus sheetname expectation change in test_timesheet_release.
+7 existing timesheet-release tests passed after export integration. Need4 new tests,
+other labour tests/full regressions, lint/build, visual workbook/browser review.
+Artifact-generated backend/weekly_hours_template.xlsx.inspect.ndjson is QA output;
+move it to.local-runtime, never stage it. No commits/push/publication for this update.
+User Total(sum) mapping is explicitly BLANK. Next: tests and preview, then concrete
+approval perAGENTS.md before publishing this distinct update. Baseline remainsda54270.
+
+RESET VERIFIED: usage3% primary/1% weekly used,1 free reset remains. User applied a reset during work. Continue this run; prior30%stop explicitly overridden untilmaxed.

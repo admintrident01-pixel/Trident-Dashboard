@@ -9,7 +9,7 @@ import timesheets, leave, schedule_routes, schedule_links, schedule_notes, sched
 
 
 
-def leave_blocks(state,date):
+def leave_blocks(state,date,include_pending=False):
 
     blocks=[]
 
@@ -19,11 +19,15 @@ def leave_blocks(state,date):
 
     except Problem: default_start=480
 
-    for request in leave.approved(state):
+    requests=[{**row,'leaveStatus':request['status']} for request in state.get('leaveRequests',{}).values() if request['status'] in ('Approved','Pending') for row in leave.expand_days(request)] if include_pending else leave.approved(state)
+    for request in requests:
 
         if date not in request['dates']: continue
 
         duration=(leave.time_minutes(request['endTime'],True)-leave.time_minutes(request['startTime'])) if request.get('startTime') else int(round(request['hoursPerDay']*60))
+        if request.get('duration')=='full':
+            try:duration=max(15,minutes(state.get('timeSettings',{}).get('finish','16:00'))-default_start)
+            except Problem:pass
 
         start_minute=leave.time_minutes(request['startTime']) if request.get('startTime') else min(default_start,1440-duration)
 
@@ -31,7 +35,7 @@ def leave_blocks(state,date):
 
                        'start':f'{start_minute//60:02d}:{start_minute%60:02d}','duration':duration,'hoursPerDay':request['hoursPerDay'],
 
-                       'client':'On leave','address':f"{request['hoursPerDay']:g} hours",'type':'Approved leave','timing':'fixed','cancelled':False})
+                       'leaveStatus':request.get('leaveStatus','Approved'),'client':'Pending approval · Leave' if request.get('leaveStatus')=='Pending' else 'On leave','address':f"{request['hoursPerDay']:g} hours",'type':'Pending leave' if request.get('leaveStatus')=='Pending' else 'Approved leave','timing':'fixed','cancelled':False})
 
     return blocks
 
@@ -220,7 +224,7 @@ def read(state,date,fast=False):
 
     appointments=[schedule_booking.controls(copy.deepcopy(a)) for a in state.get('appointments',{}).values() if a['date']==date and not is_lunch(a)]
 
-    blocks=leave_blocks(state,date)
+    blocks=leave_blocks(state,date,include_pending=True)
 
     for appointment in appointments:
 

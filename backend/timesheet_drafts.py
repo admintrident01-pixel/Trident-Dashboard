@@ -43,9 +43,9 @@ def save(state,data,user):
         if not valid:raise Problem(400,'Enter hours from 0 to 24 in 0.25-hour increments, or leave them blank.')
         unpaid=day.get('unpaidLunch',False)
         if not isinstance(unpaid,bool):raise Problem(400,'Choose a valid lunch option.')
-        row.update(status=day['status'],method=day['method'],hours=str(value),unpaidLunch=unpaid and day['status']=='Work')
+        row.update(netDirectHours=day.get('netDirectHours') is True,status=day['status'],method=day['method'],hours=str(value),unpaidLunch=unpaid and day['status']=='Work')
         gross=hours if row['method']=='direct' else decimal.Decimal(max(0,timesheets.minutes(row['finish'])-timesheets.minutes(row['start'])))/60 if row['start'] and row['finish'] else decimal.Decimal(0)
-        total+=max(decimal.Decimal(0),gross-(decimal.Decimal('0.5') if row['unpaidLunch'] else 0));cleaned.append(row)
+        total+=max(decimal.Decimal(0),gross-(decimal.Decimal('0.5') if row['unpaidLunch'] and not (row['method']=='direct' and row['netDirectHours']) else 0));cleaned.append(row)
     stamp=dt.datetime.now(dt.timezone.utc).isoformat()
     import leave
     timed={leave_date:r for r in leave.approved(state) if r['technician'].casefold()==name.casefold() and r.get('startTime') for leave_date in r['dates']}

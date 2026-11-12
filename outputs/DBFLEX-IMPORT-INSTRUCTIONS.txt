@@ -1,0 +1,42 @@
+dbFLEX job shortcut for Trident - local review, not yet published
+
+No dbFLEX API key or new cloud service is required. Your normal dbFLEX and
+Trident logins are still required. The Trident receiver is for admins except
+Scott (scott@trice.nz / Scott Yearbury). His existing admin tools are unchanged.
+
+After the receiver is published:
+1. Install public/trident-dbflex.user.js using Tampermonkey's dashboard/editor.
+   The script is also downloadable from Trident's Import job page.
+2. Keep dbFLEX and Trident in the same browser profile with this script enabled
+   for both sites. Open a JOBS record in dbFLEX.
+3. Right-click, open Tampermonkey's menu, and choose Send job to Trident.
+   The same command is available from Tampermonkey's toolbar popup.
+4. Review the client, address, equipment and notes in Trident. Choose Use for
+   appointment or Use for quote. Choose technician/date/time and save using
+   the existing booking form, or review the new quote and its normal autosave.
+
+Scope and preservation:
+- Reads visible client/contact, address, asset/equipment, job number, PO,
+  invoice-to, problem, solution/remarks and job notes from the open record.
+- The displayed job number and internal record ID are retained separately.
+- ACC claim fields, hidden fields, attachments and source prices are excluded.
+- Source notes may themselves contain private information; review them before
+  continuing. Notes over 4,000 characters must be shortened before handoff.
+- Source job is read-only. Existing appointments and quotes are not overwritten.
+  Sending the same job again can create a second booking/quote if you save it.
+- Quote prices and defaults come from Trident. Contact email remains in notes;
+  the quote recipient must be chosen separately. No email is sent by this tool.
+- No Maps/Routes calls, polling of dbFLEX, API credentials, new cloud services,
+  remote script dependencies or GM network-request grants are added.
+- The transfer is kept in Tampermonkey storage for up to ten minutes and deleted
+  on acceptance. Expired transfers are removed on the next script use/page load.
+  Private details are never placed in the destination URL; it contains a nonce.
+- Existing Trident save/draft requests still have their normal hosting costs.
+
+Verification:
+Real dbFLEX field structure inspected read-only. Extraction/transport validated
+in a JavaScript test harness; synthetic appointment saved and quote autosaved in
+the local app. Desktop and 390 x 844 layouts reviewed. Native Tampermonkey menu
+installation in the owner's browser remains to be checked after publication.
+If source labels/page structure change, the script may need updating. A missing
+client stops the transfer; missing optional fields remain blank for review.

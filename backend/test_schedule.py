@@ -140,7 +140,8 @@ class ScheduleTests(unittest.TestCase):
     def test_approved_leave_syncs_pending_does_not_and_cancellation_removes_it(self):
         import leave
         state,request=leave.create(self.state,{'technician':'Scott','leaveType':'Sick leave','startDate':'2027-02-01','endDate':'2027-02-02','hoursPerDay':8,'reason':'Private medical note'})
-        self.assertEqual(schedule.read(state,'2027-02-01')['leaveBlocks'],[])
+        self.assertEqual(schedule.read(state,'2027-02-01')['leaveBlocks'][0]['leaveStatus'],'Pending')
+        self.assertEqual(schedule.leave_blocks(state,'2027-02-01'),[])
         state,request=leave.decide(state,{'id':request['id'],'revision':request['revision'],'status':'Approved'},self.user['email'])
         for date in ['2027-02-01','2027-02-02']:
             block=schedule.read(state,date)['leaveBlocks'][0]

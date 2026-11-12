@@ -1,0 +1,67 @@
+{
+  "changedSections": [
+    "loginRates",
+    "mailOutbox",
+    "passwordRates",
+    "passwords",
+    "reminderJob",
+    "sessions",
+    "vehicleChecks"
+  ],
+  "protectedBusinessSectionsUnchanged": true,
+  "allPriorVehicleChecksUnchanged": true,
+  "newVehicleChecks": 1,
+  "newVehicleChecksAttributedToActiveUser": true,
+  "newPasswordSetCount": 1,
+  "authenticatedPasswordFlowCompatible": true,
+  "sessionLifecycleCompatible": true,
+  "addedSessions": 3,
+  "removedSessions": 1,
+  "credentialValuesRedacted": true,
+  "productionWrites": 0,
+  "requestEvidence": [
+    {
+      "at": "2026-11-05T01:07:22.291126Z",
+      "path": "/api/vehicle-checks",
+      "status": 200
+    },
+    {
+      "at": "2026-11-05T01:07:09.507851Z",
+      "path": "/api/vehicle-checks",
+      "status": 409
+    },
+    {
+      "at": "2026-11-05T01:06:33.648137Z",
+      "path": "/api/vehicle-checks",
+      "status": 409
+    },
+    {
+      "at": "2026-11-05T01:06:22.229969Z",
+      "path": "/api/vehicle-checks",
+      "status": 409
+    },
+    {
+      "at": "2026-11-05T01:06:22.178432Z",
+      "path": "/api/vehicle-checks",
+      "status": 200
+    },
+    {
+      "at": "2026-11-05T01:00:39.649684Z",
+      "path": "/api/auth/password",
+      "status": 200
+    },
+    {
+      "at": "2026-11-05T01:00:06.159063Z",
+      "path": "/api/auth/password",
+      "status": 409
+    },
+    {
+      "at": "2026-11-05T01:00:06.037189Z",
+      "path": "/api/auth/password",
+      "status": 200
+    }
+  ],
+  "successfulPasswordRequest": true,
+  "successfulVehicleSubmission": true,
+  "concurrentEditsVerified": true
+}

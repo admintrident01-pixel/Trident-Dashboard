@@ -60,6 +60,24 @@ def row_height(row):
  return min(409.5,15*max([1]+[sum(max(1,len(textwrap.wrap(line,width=max(1,width-2)))) for line in str(value).split('\n'))
                      for value,width in zip(row,widths) if isinstance(value,str)]))
 
+def compact_labour_columns(tree):
+ """Remove the two obsolete sum columns and their spacer, retaining cell styles."""
+ mapping={'A':'A','B':'B','F':'C','G':'D','H':'E','I':'F','J':'G'}
+ for row in tree.find(tag('sheetData')):
+  for cell in list(row):
+   match=re.fullmatch(r'([A-Z]+)(\d+)',cell.get('r',''))
+   if not match or match[1] not in mapping:
+    row.remove(cell);continue
+   cell.set('r',mapping[match[1]]+match[2])
+   formula=cell.find(tag('f'))
+   if formula is not None:
+    formula.text=re.sub(r'([A-Z]+)(\d+)',lambda m:mapping.get(m[1],m[1])+m[2],formula.text or '')
+ columns=tree.find(tag('cols'));columns.clear()
+ for index,width in enumerate((41,12,16,16,16,16,55),1):
+  ET.SubElement(columns,tag('col'),{'min':str(index),'max':str(index),'width':str(width),'customWidth':'1'})
+ dimension=tree.find(tag('dimension'))
+ if dimension is not None:dimension.set('ref','A1:G'+str(len(tree.find(tag('sheetData')))))
+
 def labour_rows(state,week,rows,metric):
  latest={}
  for sheet in sorted(state.get('timesheets',{}).values(),key=lambda s:s.get('updatedAt') or s.get('submittedAt','')):
@@ -75,13 +93,14 @@ def labour_rows(state,week,rows,metric):
    for kind,label in [('sick','Sick'),('annual','Annual'),('other','Other')]:
     if day[kind]:notes.append(label+' '+weekly_report.number(day[kind])+'h')
    if day.get('otherDescription'):notes.append(day['otherDescription'])
-   if day.get('leaveFrom'):notes.append('Leave '+day['leaveFrom']+'–'+day['leaveTo'])
-   if entry.get('method')=='times':
+   if day.get('leaveFrom'):notes.append(('Sick leave' if day['sick'] else 'Annual leave' if day['annual'] else 'Leave')+' '+day['leaveFrom']+'–'+day['leaveTo'])
+   if day.get('leaveFrom') and day.get('leaveLunch') is not None:notes.append('Unpaid lunch excluded: '+weekly_report.number(day['leaveLunch'])+'h')
+   if entry.get('start') and entry.get('finish') and entry.get('status')=='Work':
     def clock(value):
      if not value:return None
-     h,m=value.split(':');return int(h)+int(m)/60
+     return value
     start=clock(entry.get('start'));finish=clock(entry.get('finish'))
-   elif recorded:start=entry.get('status','Approved leave') if entry.get('status','Work')!='Work' else 'Direct hours' if sheet else 'Approved leave'
+   elif entry.get('status')=='Work' and entry.get('hours',0)>0:notes.append('Work start / finish not recorded in this historical entry')
    if day['note']:notes.append(day['note'])
    if not recorded:notes.append('No submission')
    lunch=entry.get('lunchHours')
@@ -130,7 +149,9 @@ def create(state,week,rows,metric,tables,filename):
      if existing is not None:tree.remove(existing)
     ET.SubElement(tree,tag('pageMargins'),{'left':'.25','right':'.25','top':'.4','bottom':'.4','header':'.2','footer':'.2'})
     ET.SubElement(tree,tag('pageSetup'),{'orientation':'landscape','paperSize':'9','fitToWidth':'1','fitToHeight':'0'})
-    if index==0:apply_reference_layout(tree)
+    if index==0:
+     apply_reference_layout(tree)
+     compact_labour_columns(tree)
     content=ET.tostring(tree,encoding='utf-8',xml_declaration=True)
    target.writestr(item,content)
  return {'filename':filename,'mime':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','file':base64.b64encode(output.getvalue()).decode()}

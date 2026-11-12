@@ -1,0 +1,13 @@
+PUBLISHED AND VERIFIED - Mobile technician forms and template Excel, 5 November 2026.
+Commit 6e7d7db4b0cd0979c66f2d489aa8e682a2efe23d; API trident-quote-api-00067-h6k,100% traffic. Exact frontend assets verified.
+iPhone13 CSS390x844 and desktop layouts reviewed; adjacent Start/Finish, touch controls,
+vehicle summary/checklist and leave forms. Back to My day verified on all3 pages.
+Labour payables PDF controls removed; Excel uses clean uploaded-layout template,
+blank monetary Total(sum), actual saved values and formulas with cached totals.
+My day bottom shortcuts and requested explanatory text removed; Bala-only pilot retained.
+518 backend tests,63 frontend tests, lint/build and local save/submit flows passed.
+Fresh recoverable live register/upload backups verified. Business values/uploads,
+environment/secrets, service identity and runtime settings preserved; concurrent edits audited.
+No production test writes, QA seeding, new service/runtime dependency or automatic Google routing.
+Evidence MOBILE-FORMS-RELEASE.json; cumulative package updated and previous package archived.
+Original GitHub checkout and migration source untouched.

@@ -1,0 +1,218 @@
+TRIDENT — PARALLEL SUPABASE MIGRATION
+Prepared 9 November 2026, Pacific/Auckland. Planning only; no production changes.
+
+USER OBJECTIVE
+Keep the existing Cloudflare frontend and live app running. Replicate authoritative
+Google-hosted data to the user's existing Supabase project. Verify the new backend
+before switching production. Retire unneeded Google resources only after acceptance,
+keeping Maps and any specifically required Google integrations. Subsequently replace
+MobilityDB/dbFLEX with an integrated frontend without losing its functions.
+
+PROJECT ACCESS
+User confirmed an existing Supabase project. Dashboard URL is still required.
+Inspect project region, current data, plan, quotas, Auth, Storage and existing consumers
+before proposing changes. Do not initialise over existing data, repurpose an unrelated
+project, expose service keys, or enable paid services by assumption. Prefer Sydney if
+creating a separate project becomes appropriate; existing region must be checked.
+
+DISCOVERED CURRENT ARCHITECTURE
+- React/Vite frontend and authenticated schedule notification Worker/Durable Object
+  on Cloudflare (wrangler.jsonc, worker/schedule-live.js).
+- Python/Gunicorn application on Cloud Run (backend/app.py, backend/Dockerfile).
+- BigQueryStore: one revisioned JSON app_state record, conditional commit/CAS.
+  Important concurrency and stale-client protection depend on revision semantics.
+- CloudObjects: private Google Storage files, create-only uploads; source capture
+  JSON, PDFs and shared files. Preserve exact keys, bytes and references.
+- Existing work-email/password/link authentication and optional Google ID-token
+  validation. Current scrypt password records are not automatically Supabase Auth
+  accounts. Preserve user/staff identities, roles and restrictions. No forced auth
+  redesign in the database move; handle sessions and mail links explicitly.
+- PDF generation via ReportLab; Excel export and embedded quote workbook behavior.
+- SMTP reminder delivery and token-authenticated reminder job endpoint.
+- Google Routes explicit calculation only; stored travel must survive. Google Maps
+  address links remain. Google sign-in / stock Google Sheet reference require review.
+
+RECOMMENDED TARGET AND TRANSITION
+Cloudflare UI + existing notification transport -> compatible API -> Supabase Postgres
+and private Storage. Retain Maps/required Google integration separately.
+Initially preserve the Python API on its current runtime while validating a Supabase
+store/object adapter in a separate test environment. This is a transition dependency,
+not completion of the user's goal to retire general Google hosting.
+Before Google retirement, move the Python API to a stable compatible non-Google
+container runtime OR complete and validate a port of its functions to Cloudflare /
+Supabase functions. Compare costs and package compatibility before selecting runtime.
+Supabase Edge Functions use TypeScript/Deno; the current Python server is not a direct
+drop-in. Supabase Compute supports Docker but is currently Private Alpha/waitlisted;
+do not make production migration depend on unconfirmed access or readiness.
+
+PHASE 0 — ESTABLISH A VERIFIED SOURCE
+Previous reviewed release bf0d420 was pushed and its frontend assets verified.
+Its final deployed-API recheck, after-state comparison and appointment-type choices
+remain pending from the usage stop. Establish the current deployed SHA and finish
+that audit before using any local/exported state as a migration source.
+Inventory actual current Google resources, deployments, scheduled jobs, auth callbacks,
+secrets/bindings, service identities, email delivery and upload manifests. Do not use
+the outdated project ID in setup-cloud.sh as proof of the current deployment target.
+Take fresh uniquely named recoverable source register + file backups. Verify restore.
+
+PHASE 1 — COMPATIBLE SHADOW COPY
+1. Inspect the supplied Supabase project; isolate migration tables/buckets/private
+   backend credentials from any existing application. No public access to raw state.
+2. Implement server-only Postgres state adapter preserving IDs, revision numbers,
+   conditional writes and transaction outcomes. Keep JSONB as the first compatibility
+   checkpoint, not the final performance design. Preserve workbook, embedded values,
+   history/recycle data, account restrictions and all existing module behavior.
+3. Implement private object adapter preserving keys, content types and create-only
+   semantics. Independently back up file bytes; database backups alone omit files.
+4. Copy a consistent live snapshot and every referenced upload. Validate canonical
+   record hashes, counts, relationships, bytes/checksums and current source revision.
+   Record unavailable files explicitly; do not invent missing data.
+5. Keep Google as the only business-write authority. Sync one way to staging using
+   revision-aware checkpoints, idempotent retries and deletion/cancellation handling.
+   No assumed native BigQuery-to-Supabase replication and no naive dual writes.
+6. Serve a separate private staging frontend against the replica, with unmistakable
+   test labeling. Disable real mail, reminders, paid routes and production webhook
+   side effects. Tests write to an isolated test state, not the replicated register.
+7. Compare source and staging reads, responses and generated files. Exercise each
+   admin/technician role and Scott exclusions; verify backend authorization, not just
+   hidden navigation. No raw state or service-role keys in the browser.
+
+ACCEPTANCE MATRIX
+Quotes/drafts/numbers/PDF/Excel/email; all schedule types/team bookings/leave/notes/
+workshop travel/manual Routes/overlap rules/selection/search; stock identities,
+history/allocations/stocktake/PDF; My day sessions/custom work; timesheet uniqueness
+and payroll/leave totals; vehicles; reminders/outbox; shared files; staff/permissions;
+dbFLEX capture, exclusions, mappings and allocations; undo/history/recycle; live
+notifications, drafts, concurrent writes, reconnect and stale-client conflicts.
+Run existing regressions, local builds/lint, desktop and iPhone 13 browser review.
+Compare actual timings/payloads and query cost; do not claim guaranteed speedup.
+
+PHASE 2 — USER VERIFICATION AND CUTOVER
+Open a concrete staging preview and obtain explicit approval of the reviewed cutover.
+Choose a brief controlled write pause, capture a final source revision and file delta,
+wait for replication to catch up and verify manifests. Switch the frontend/API route
+once, invalidate stale clients or require reload, then resume writes on Supabase only.
+The source Google register becomes read-only; do not let old tabs keep writing to it.
+Verify both deployments and compare all protected records/files/configs afterward.
+
+ROLLBACK
+Before any Supabase writes, route back to unchanged source if acceptance fails.
+After Supabase writes, never route back to the old snapshot blindly. Stop writes,
+reconcile/replay all post-cutover changes to the rollback target, verify, then switch.
+Preserve durable migration checkpoints, manifests and recoverable backups throughout.
+
+PHASE 3 — PERFORMANCE AND GOOGLE RETIREMENT
+Gradually split JSONB compatibility state into indexed tables for appointments,
+quote headers/items, assets/movements, staff, work periods, timesheets, leave and audit.
+Use bounded/date-filtered queries, pagination and appropriate notification transport.
+Preserve API contracts and transactional constraints while moving one module at a time.
+Prove PDF/Excel, SMTP/HTTP email, auth, scheduling and backups work off the old runtime.
+Keep Google resources recoverable through an agreed observation/rollback period.
+Present an explicit retain/remove resource inventory for approval; deletion is a
+separate irreversible step. Do not delete the Google project that owns needed Maps
+billing/API credentials or OAuth clients. Disable redundant schedulers only after
+their replacements are verified, preventing duplicate email/reminder delivery.
+
+PHASE 4 — MOBILITYDB REPLACEMENT (SEPARATE MIGRATION)
+The linked job detail page and Tampermonkey captures are not a whole-database export.
+Inventory tables, fields, linked records, calculations, permissions, reports, buttons,
+automation, emails, documents and attachments using available schema/export access.
+Retain original dbFLEX database/table/record IDs and an external-ID mapping. Match
+existing Trident clients/assets/jobs explicitly; never merge by name alone. Preserve
+original financial values, GST basis, margins, rounding and source references.
+Prototype integrated workflows, reconcile records and attachments, and run parallel
+acceptance tests before switching source authority. Previous scraper exclusions remain
+in the current importer; full replacement scope is a separately reviewed mapping.
+One page cannot establish functionality parity. Keep dbFLEX intact until verified.
+
+COST BOUNDARIES (CHECKED 9 NOVEMBER 2026)
+Supabase Free: $0, 500MB database and 1GB files; inactive projects may pause.
+Pro: from US$25/month, first project included under listed allowances; usage, larger
+compute, extra projects and optional add-ons can add cost. Spend cap covers selected
+usage only, not compute and several explicitly provisioned add-ons.
+Add existing Cloudflare charges, chosen API runtime, Maps usage and any email service.
+Parallel operation temporarily incurs both platforms' costs and migration transfer.
+Moving the database does not reduce Google Maps request charges. Keep explicit-only
+route calculation. Measure current non-Maps spend before claiming net savings.
+Do not purchase PITR, larger compute, custom domains or extra paid environments by
+assumption. Obtain the user's cost ceiling before incurring new recurring charges.
+
+REFERENCES
+https://supabase.com/pricing
+https://supabase.com/docs/guides/platform/manage-your-usage/compute
+https://supabase.com/docs/guides/platform/cost-control
+https://supabase.com/docs/guides/functions
+https://supabase.com/compute
+https://supabase.com/docs/guides/platform/regions
+https://supabase.com/docs/guides/platform/backups
+https://developers.cloudflare.com/workers/languages/python/packages/
+
+NEXT: Receive existing Supabase project dashboard URL; read-only inspection, actual
+capacity/dependency inventory and backend runtime decision. No cloud copy, key changes,
+production route changes, source database edits, purchase or deletion performed here.
+INSPECTED ACCOUNT AND HANDOFF — 9 NOVEMBER 2026
+Organisation: Trident Community Equipment, hlwvdxdqqaanhjbxuaeg, Free.
+Existing project xoqmkmhgwehwcxekwvly: healthy Nano, Singapore ap-southeast-1;
+no public tables/views, no storage buckets visible. No migrations/backups indicated.
+Compute explicitly unavailable to this account (Private Alpha / join waitlist).
+User chose a separate Free Sydney project. Prepared new-project form, not submitted:
+name Trident Migration Sydney; Oceania(Sydney) ap-southeast-2; automatically expose
+new tables OFF; automatic RLS ON; Data API enabled. No GitHub integration selected.
+Database password entry/storage and Create new project left to user. Async handoff
+pending user Created. Do not inspect or extract the password or paste secrets in chat.
+Screenshot: outputs/Supabase-Sydney-project-setup.png. Browser2 tab4, supabaseOrg handle,
+markedHandoff. CUA handoff not completed yet; completion_summary waits for observed
+outcome. No records copied, project created, migration code change, push or deployment.
+Latest usage user limit replaces5%: STOP at20%remaining either window. Last primary48%
+remaining,weekly24%remaining. Check again before sustained work. No delegation.
+TARGET CREATED AND VERIFIED — 9 NOVEMBER 2026
+User completed database credential/project creation. Verified dashboard title Trident
+Migration Sydney, Healthy, Free organisation, Nano, Sydney ap-southeast-2.
+Project asxogtpndlsgwdjcxxdv. Target URL https://asxogtpndlsgwdjcxxdv.supabase.co.
+Previous Singapore project unchanged. No repository linked; no migrations/backups yet.
+No password inspected/extracted; no service keys requested. No records copied or routes
+switched. CUA creation handoff ended and completion_summary issued after verification.
+Prepared SUPABASE-MIGRATION-INVENTORY.json:67 discovered API route literals,10 dependency
+file hashes, exact source SHA, preservation acceptance and replication requirements.
+Prepared SUPABASE-COMPATIBILITY-DRAFT.sql for LOCAL REVIEW ONLY. Not executed or validated
+against Postgres yet; no grants, seed data or browser policies. Never deploy this draft
+without adapter/concurrency/permissions tests and explicit reviewed release approval.
+Next implementation must add server-only PostgreSQL+private object adapters and isolated
+replica/test configuration; complete prior source-release audit before taking freshcopy.
+Usage stop20%remaining eitherwindow. Latest weekly22%remaining,primary33%remaining.
+IMPLEMENTATION READINESS / NEXT INPUT
+No psql or Docker executable available on PATH in this session. SQL compatibility
+file remains an unexecuted draft; it has not passed real Postgres concurrency tests.
+Do not call this migration implemented or tested. Source application code unchanged.
+Asked user for final monthly architecture budget (excluding existing Cloudflare/Maps):
+free-only, up toUS$25, or up toUS$50. This is not purchase approval. Cost ceiling and
+stable runtime choice needed before selecting/provisioning recurring API hosting.
+Last usage21%weeklyremaining /29%primaryremaining;stop20%eitherwindow.
+CONFIRMED DIRECTION — 9 NOVEMBER 2026
+User chose FREE SERVICES ONLY and explicitly made FULL SUPABASE STRUCTURE the end-state
+priority for every future change. Budget question resolved; no new paid Python host.
+Python is current implementation, not an end-state requirement: port business behavior
+into Postgres transactions/functions and Supabase Edge Functions, private Storage and
+appropriate Auth, preserving the Cloudflare frontend. Compatibility JSONB/current Python
+runtime are temporary only. Do not declare completion until all required workflows are
+verified on the target and general Google hosting dependencies are retired by approval.
+Recorded as standing instructions in AGENTS.md, including latest stop20%eitherwindow.
+PDF / FILE STORAGE AUTHORIZATION — 9 NOVEMBER 2026
+User explicitly requested saving PDFs in Supabase Storage and any other required files.
+Use private buckets in Sydney project asxogtpndlsgwdjcxxdv; retain exact object keys,
+bytes, content types and register links. Copy and checksum-verify before any cutover;
+retain existing Google objects and recoverable backups. Keep free-only constraint.
+NOT EXECUTED: no bucket or file copy created. Usage check reached weekly80%used/
+20%remaining (primary79%used/21%remaining); STOP per user's20%limit. Resume after reset
+when user returns, checkingusagefirst. Nextstorage step inventory required live objects
+and totalbytes, prepare privatebucket/accesspolicy locally, obtain reviewedrelease
+approval as required, then copy to Supabase with scoped servercredentials and manifests.
+Do not expose PDFs publicly or change live file routing before verification/approval.
+USER PAUSED / CHAT SEPARATION
+User instructed: do not continue Supabase migration yet; keep migration in a different
+chat and use this chat for new features. Migration remains PAUSED. Checkpoint documents
+are retained for a separate migration chat. Do not automatically start/resume migration
+in this chat or message another chat. No matching Supabase automation.toml found on
+inspection; prior one-time automation card was only suggested, not confirmed here.
+Usage at latest check: primary11%remaining,weekly18%remaining. Hold implementation
+under user's20%reserve until reset or explicitlimit change. New feature scope pending.

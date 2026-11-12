@@ -1,0 +1,43 @@
+{
+  "phase": "after",
+  "project": "trident-dashboard-511203",
+  "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_after_schedule_memberhome_20261106T011137Z",
+  "registerRevision": 12016,
+  "stateSha256": "68560a5f4c908e7e9dd4a4fd8941be326aa58323c970db6d151d47aef52d5ba5",
+  "liveUploadObjects": 32,
+  "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-memberhome_20261106T011137Z/",
+  "apiRevision": "trident-quote-api-00069-4sp",
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "trident-quote-api-00069-4sp"
+    }
+  ],
+  "labels": {
+    "cloud.googleapis.com/location": "australia-southeast1",
+    "commit-sha": "81a364ad80e009452bf03d7b7ef12b1dc21a91f9",
+    "gcb-build-id": "799cd693-6807-40a5-b78f-3fae90169644",
+    "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+    "gcb-trigger-region": "global",
+    "managed-by": "gcp-cloud-build-deploy-cloud-run",
+    "run.googleapis.com/satisfiesPzs": "true"
+  },
+  "allStateIdentical": false,
+  "businessValuesIdentical": true,
+  "changedSections": [
+    "reminderJob"
+  ],
+  "changedCollections": {
+    "reminderJob": {
+      "removed": 0,
+      "added": 0,
+      "modified": 1
+    }
+  },
+  "priorUploadsUnchanged": true,
+  "priorUploadCount": 32,
+  "environmentAndSecretsPreserved": true,
+  "serviceIdentityPreserved": true,
+  "runtimeSettingsPreserved": true
+}

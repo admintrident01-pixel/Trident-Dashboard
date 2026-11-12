@@ -1,0 +1,26 @@
+{
+  "phase": "before",
+  "project": "trident-dashboard-511203",
+  "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_before_schedule_workflow_20261104T195634Z",
+  "registerRevision": 11174,
+  "stateSha256": "4a6c489c2d5e067362934239fd2e79a44c4f70eda7411dfb589cc3aa363ab58a",
+  "liveUploadObjects": 32,
+  "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-workflow_20261104T195634Z/",
+  "apiRevision": "trident-quote-api-00060-djn",
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "trident-quote-api-00060-djn"
+    }
+  ],
+  "labels": {
+    "cloud.googleapis.com/location": "australia-southeast1",
+    "commit-sha": "7feac254e4682a1f9d3246be88227ef09f0e663d",
+    "gcb-build-id": "11fb9a93-d409-4172-8688-2bcb39b36622",
+    "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+    "gcb-trigger-region": "global",
+    "managed-by": "gcp-cloud-build-deploy-cloud-run",
+    "run.googleapis.com/satisfiesPzs": "true"
+  }
+}

@@ -1,5 +1,4 @@
 import {myDayEnabled} from './myDayModel.js'
-import {jobImportEnabled} from './jobImportModel.js'
 const pages=['home','workspace','my-day','job-import','quotes','schedule','timesheet','leave','reports','vehicles','stock','settings','office']
 const staffPages=['home','workspace','schedule','timesheet','leave','vehicles']
 export const homePage=session=>myDayEnabled(session)?'my-day':'workspace'
@@ -8,7 +7,7 @@ export function loadPage(){
  return pages.includes(page)&&page!=='home'?page:'my-day'
 }
 export function canAccessPage(page,session){
- if(page==='job-import')return jobImportEnabled(session)
+ if(page==='job-import')return false
  if(page==='my-day')return myDayEnabled(session)
  return pages.includes(page)&&(session?.role==='admin'||staffPages.includes(page))
 }

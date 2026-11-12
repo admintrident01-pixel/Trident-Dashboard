@@ -1,0 +1,25 @@
+{
+  "url": "https://trident-dashboard.admintrident01.workers.dev/",
+  "commit": "6e7d7db4b0cd0979c66f2d489aa8e682a2efe23d",
+  "excelDownloadVerified": true,
+  "excelStaffBlocks": 8,
+  "blankMonetaryColumn": true,
+  "excelFormulasAndCachesVerified": true,
+  "labourPdfButtons": 0,
+  "phoneCssViewport": {
+    "width": 390,
+    "height": 844
+  },
+  "timeFieldsTopEqual": true,
+  "returnButtonsVerified": [
+    "timesheet",
+    "leave",
+    "vehicles"
+  ],
+  "vehicleSummaryVisible": true,
+  "phonePageOverflow": false,
+  "myDayBottomLinks": 0,
+  "pilotOnly": "bala@trice.nz",
+  "productionBusinessTestWrites": 0,
+  "screenshot": "Time-sheet-iPhone13-LIVE.png"
+}

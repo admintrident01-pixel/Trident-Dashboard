@@ -300,7 +300,14 @@ class Application:
 
      if path.startswith('/api/office-files') or path.startswith('/api/stock') or path in admin_paths or path in ('/api/staff-setup','/api/weekly-report','/api/weekly-report-notes','/api/weekly-report-save','/api/weekly-report-pdf','/api/weekly-report-excel','/api/report-periods-excel','/api/report-periods','/api/report-periods-pdf') or (path in ('/api/vehicles','/api/schedule','/api/schedule/travel') and method=='POST'):accounts.admin(user)
 
-     if path=='/api/job-import-mappings' and method=='GET':payload=job_imports.mapping(state,user)
+     if path=='/api/job-import-cleanup':
+      accounts.admin(user)
+      if method=='GET':payload={'ids':sorted(state.get('jobImports',{})),'count':len(state.get('jobImports',{}))}
+      elif method=='POST':
+       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'The register changed. Review imported jobs again before removal.')
+       state=job_imports.remove_all(state,user,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True,'remaining':0}
+      else:raise Problem(405,'Unsupported method.')
+     elif path=='/api/job-import-mappings' and method=='GET':payload=job_imports.mapping(state,user)
      elif path=='/api/job-import-mappings' and method=='POST':
       job_imports.require(user)
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Reload field mapping before saving.')
@@ -515,7 +522,7 @@ class Application:
 
      elif path=='/api/quote-settings' and method=='GET':payload=quote_settings.read(state)
 
-     elif path=='/api/leave' and method=='GET':payload={'requests':[r for r in state.get('leaveRequests',{}).values() if user['role']=='admin' or r['technician']==user['technician']],'technicians':[t for t in timesheets.settings(state)['technicians'] if user['role']=='admin' or t['name']==user['technician']]}
+     elif path=='/api/leave' and method=='GET':payload={'requests':[r for r in state.get('leaveRequests',{}).values() if user['role']=='admin' or r['technician']==user['technician']],'technicians':[t for t in timesheets.settings(state)['technicians'] if user['role']=='admin' or t['name']==user['technician']],'lunchStart':schedule.settings(state)['lunchStart']}
 
      elif path in ('/api/leave','/api/leave-decision') and method=='POST':
       saved_revision,saved_state,entry,replayed=self.leave_request(revision,state,self.body(environ),auth[7:],email,path=='/api/leave')

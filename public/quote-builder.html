@@ -303,7 +303,7 @@ $('settingsStatus').textContent=`${settings.types.length} quote types available.
 
 let lines=[{description:'',qty:1,rate:0}],currentType=$('type').value,sourceImports=[];
 const cleanSourceImports=value=>Array.isArray(value)?value.filter(v=>v&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(v.id||'')).map(v=>({id:v.id,jobNumber:String(v.jobNumber||'').slice(0,20)})):[];
-function renderSourceImports(){let box=$('importSourceLinks');if(!box){box=document.createElement('div');box.id='importSourceLinks';box.className='hint';document.querySelector('.quote-editor-tabs')?.after(box);}box.replaceChildren();for(const source of sourceImports){const link=document.createElement('a');link.href=parent.location.origin+'/#job-import?job='+source.id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Source job '+source.jobNumber+' — full captured details';link.style.cssText='display:block;margin:8px 0';box.append(link);}document.dispatchEvent(new CustomEvent('trident-import-review-sources',{detail:structuredClone(sourceImports)}));if(document.getElementById('importedJobPanel')?.hidden===false)emitImportReviewContext();}
+function renderSourceImports(){document.getElementById('importSourceLinks')?.remove();}
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cents=n=>Math.round((n+Number.EPSILON)*100);
 const money=n=>new Intl.NumberFormat('en-NZ',{style:'currency',currency:'NZD'}).format(n/100);
@@ -655,4 +655,4 @@ document.addEventListener('trident-calculator-transfer',event=>{
  }else lines=[...lines,...structuredClone(calculation.lines)];
  drawLines();render();quoteConfirmationStatus('Calculated costs transferred. Review the quote and save when ready.');document.dispatchEvent(new Event('trident-calculator-transferred'));
 });
-</script><script type="module" src="/labour-calculator.js"></script><script type="module" src="/job-import-review.js"></script><script type="module" src="/quote-preview.js"></script></body></html>
+</script><script type="module" src="/labour-calculator.js"></script><script type="module" src="/quote-preview.js"></script></body></html>

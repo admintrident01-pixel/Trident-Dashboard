@@ -1,0 +1,15 @@
+{
+  "releaseCommit": "81a364ad80e009452bf03d7b7ef12b1dc21a91f9",
+  "userApproval": "Publish My day for everyone except Scott; publish online",
+  "verifiedFromLiveRegister": true,
+  "excludedAccount": "scott@trice.nz",
+  "linkedStaff": "Scott Yearbury",
+  "existingRole": "admin",
+  "uiAndApiExcluded": true,
+  "fallbackHome": "workspace",
+  "existingPermissionsPreserved": true,
+  "exclusionTestsPassed": true,
+  "backendTestsPassed": 522,
+  "frontendTestsPassed": 66,
+  "productionIdentityWrites": 0
+}

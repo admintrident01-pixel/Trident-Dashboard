@@ -1,0 +1,18 @@
+{
+  "url": "https://trident-dashboard.admintrident01.workers.dev/#my-day",
+  "commit": "81a364ad80e009452bf03d7b7ef12b1dc21a91f9",
+  "homeLoaded": true,
+  "defaultRouteVerified": true,
+  "personalRemindersBelowJobs": true,
+  "formerHomeAvailableAsWorkspace": true,
+  "normalScheduleScrollVerified": true,
+  "clientUnbookMenuVerified": true,
+  "futureManualTimesTestedLocally": true,
+  "scottExclusionTestsPassed": true,
+  "excludedMyDayAccount": "scott@trice.nz",
+  "scottIdentityVerifiedFromLiveRegister": true,
+  "scottExistingPermissionsPreserved": true,
+  "liveScottLoginNotImpersonated": true,
+  "productionBusinessTestWrites": 0,
+  "screenshot": "Member-home-LIVE.png"
+}

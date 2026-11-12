@@ -120,3 +120,15 @@ def read(state,user,params,objects):
  entries=[e for e in entries if search in (e['source']['jobNumber']+' '+e['client']+' '+e['street']).casefold()]
  total=len(entries);page=min(page,max(1,math.ceil(total/20)))
  return {'entries':[{'id':e['id'],'jobNumber':e['source']['jobNumber'],'client':e['client'],'importedAt':e['importedAt']} for e in entries[(page-1)*20:page*20]],'page':page,'pages':max(1,math.ceil(total/20)),'total':total}
+
+def remove_all(state,user,data):
+ """Remove reviewed captures recoverably, without touching their allocated records/files."""
+ require(user)
+ if not isinstance(data,dict) or data.get('confirmed') is not True:raise Problem(400,'Confirm removal of imported job records.')
+ expected=data.get('ids');current=state.get('jobImports',{})
+ if not isinstance(expected,list) or any(not isinstance(i,str) for i in expected) or len(set(expected))!=len(expected) or set(expected)!=set(current):raise Problem(409,'Imported jobs changed. Review the current list before removing them.')
+ result=copy.deepcopy(state)
+ import recycle
+ for key,entry in current.items():recycle.put(result,'importedJob',key,entry,entry.get('client') or key,user['email'])
+ result['jobImports']={}
+ return result

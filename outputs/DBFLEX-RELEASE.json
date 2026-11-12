@@ -1,0 +1,151 @@
+{
+  "commit": "cf9eb564f336aa62bf6cb8c0d89a9dd4361a94fa",
+  "published": true,
+  "verifiedAt": "2026-11-06T02:27:53.508843+00:00",
+  "backupTag": "dbflex_20261106T021154Z",
+  "before": {
+    "phase": "before",
+    "project": "trident-dashboard-511203",
+    "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_before_schedule_dbflex_20261106T021154Z",
+    "registerRevision": 12043,
+    "stateSha256": "2eb2479a218df2e0ec6c065d721bd3d4a552a89db77fd0e3aed3fa35c18130d7",
+    "liveUploadObjects": 32,
+    "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-dbflex_20261106T021154Z/",
+    "apiRevision": "trident-quote-api-00069-4sp",
+    "traffic": [
+      {
+        "latestRevision": true,
+        "percent": 100,
+        "revisionName": "trident-quote-api-00069-4sp"
+      }
+    ],
+    "labels": {
+      "cloud.googleapis.com/location": "australia-southeast1",
+      "commit-sha": "81a364ad80e009452bf03d7b7ef12b1dc21a91f9",
+      "gcb-build-id": "799cd693-6807-40a5-b78f-3fae90169644",
+      "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+      "gcb-trigger-region": "global",
+      "managed-by": "gcp-cloud-build-deploy-cloud-run",
+      "run.googleapis.com/satisfiesPzs": "true"
+    }
+  },
+  "after": {
+    "phase": "after",
+    "project": "trident-dashboard-511203",
+    "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_after_schedule_dbflex_20261106T021154Z",
+    "registerRevision": 12045,
+    "stateSha256": "f61c4dc81467cf4897c5f59a2f5b845164ddff23f1960d777a23e8430a01ebd7",
+    "liveUploadObjects": 32,
+    "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-dbflex_20261106T021154Z/",
+    "apiRevision": "trident-quote-api-00070-4sp",
+    "traffic": [
+      {
+        "latestRevision": true,
+        "percent": 100,
+        "revisionName": "trident-quote-api-00070-4sp"
+      }
+    ],
+    "labels": {
+      "cloud.googleapis.com/location": "australia-southeast1",
+      "commit-sha": "cf9eb564f336aa62bf6cb8c0d89a9dd4361a94fa",
+      "gcb-build-id": "839bb76c-c716-4814-8729-3786cd129d00",
+      "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+      "gcb-trigger-region": "global",
+      "managed-by": "gcp-cloud-build-deploy-cloud-run",
+      "run.googleapis.com/satisfiesPzs": "true"
+    },
+    "allStateIdentical": false,
+    "businessValuesIdentical": true,
+    "changedSections": [
+      "reminderJob"
+    ],
+    "changedCollections": {
+      "reminderJob": {
+        "removed": 0,
+        "added": 0,
+        "modified": 1
+      }
+    },
+    "priorUploadsUnchanged": true,
+    "priorUploadCount": 32,
+    "environmentAndSecretsPreserved": true,
+    "serviceIdentityPreserved": true,
+    "runtimeSettingsPreserved": true
+  },
+  "frontend": {
+    "url": "https://trident-dashboard.admintrident01.workers.dev/",
+    "commit": "cf9eb564f336aa62bf6cb8c0d89a9dd4361a94fa",
+    "allComparedAssetsMatch": true,
+    "files": {
+      "index.html": "9de1352ba94c09a61e28ddfce185c017ee6aa77233bb3f428d64a99dd5eca102",
+      "quote-builder.html": "154d76692793f2f51f2bae9bf4ed3db5b5cb042ff6a581711b6db5a2d7047924",
+      "pdf-lib.min.js": "0f9a5cad07941f0826586c94e089d89b918c46e5c17cf2d5a3c6f666e3bc694f",
+      "history-pagination.js": "9f6aac713b82554b357f771827c7ee5a1cab04da8f282935113d5024da95f343",
+      "timesheet.html": "a45664d74ba04a5c46600fb4e0e2df70985d65f6e3144623c62371d459a097cd",
+      "timesheet-form.css": "db60d803dd0597ea5bcf4e2ba1908b17640688e48b9f562a064c6f9583a98624",
+      "trident-dbflex.user.js": "cd33bb41714bc8d11fce56dda2a18d0107f0f909a4fe3f376c1dd7346bd92239",
+      "assets/docx-preview-DRFIAawr.js": "c23f834e1f8c3cb732fa46fca2b15870dcc6b2f04030d7790a4ef9ad2d9ff863",
+      "assets/index-BY6TF1qE.js": "399495f985e77c19da4133d51a49fe3dbddf7369c028299e913a4fdec523525c",
+      "assets/index-D7y3NyA_.css": "09c5f7b92c0833915c56b0e7daeaac72c2eea119dcb9e368f051626926085b64",
+      "assets/JobImport-CbLPQPm_.js": "fa0bdc99fd3b8aca8f1af0b95f3c61c8f5095c98437afee90ad10f62fe11c041",
+      "assets/JobImport-CT8k4OK_.css": "ba08761530f39e5750ad23ef82d91b6a8d561a832dc1025a6538f1600522932f",
+      "assets/jsx-runtime-DLyUyuBb.js": "e282e53fb206925a4c42717a08aee015cb10477007d87cd23eef75ec427fdb95",
+      "assets/LeaveForms-fHyLP0Wh.css": "429a6451723327c353cb5b8eccffbafeb8db8c37a660c6a6347c1646ddadf2a2",
+      "assets/LeaveForms-MQoJcjic.js": "c063b7715a2cd037016c63f7c9f75cc4def41c4f7db55eff99c20674166dc60d",
+      "assets/MyDay-CbAsoqd3.js": "2cea371a2a9c65e6596afc7bce9daf0e73cf853a36e50b80bb043e6905c8063e",
+      "assets/OfficeFiles-CAhd_hXM.css": "565233c125f09e26e89498d263f6ae952203131db8ff0f597fd6949acb16ea60",
+      "assets/OfficeFiles-TyfDO7vS.js": "5b90980ce69ebfd7105020abc43c49a3afcdb0957a412c2251243beafac734e5",
+      "assets/rolldown-runtime-W7wSyTde.js": "ba03c472dc22425d3172a1d58a7f5ffe871faaf8f2c94eb503882fa17fc78d48",
+      "assets/scheduleResize-DaivU1M2.js": "18c8dbc859e86fa58819cda02407545d9f2d830e26af678eee3c52acb63a0f92",
+      "assets/SettingsPage-CZ-oIY7F.js": "ba5f3ec02aacb569edcaa307779c53e0d77cbff47017f3fdd090541f4c8564f0",
+      "assets/SettingsPage-DVsZoH9A.css": "707053c0056fc35931dec24ec88086510a9a42f31b52aead191aa5a1a0851411",
+      "assets/StockPage-Bs7r0MsK.js": "90232b7a9a43f9ad1a827d3ca8f0d1664e447b2493dcade20e6b244b423d45f4",
+      "assets/StockPage-CTkpoDBy.css": "38aa4900525f24853991b5d295946ae676083c65a8c2bf9b64c9da1bdfcdee13",
+      "assets/TechSchedule-DL7ZxcF6.css": "68229b1220ff0b1a26cedf1079d9c7e1c7039c702e92f2c84862437ee3b59b1c",
+      "assets/TechSchedule-tRTK7w8b.js": "d280c6fc5ba1931b94d91096ad02954487ec24f8c560880461ea3bf516018d0b",
+      "assets/VehicleChecks-6MPu4atA.js": "bbcdbc2fd76a64585d3b4eef48cab2ca4e03ae5b44a1d40eba1e6b4bc13dd65a",
+      "assets/VehicleColours-CLUVXM9-.css": "082c49ab5d4d086245c16eb85257582e0274dcf0680daa2a7e2ad9eeb91088b4",
+      "assets/VehicleColours-gvo13WNZ.js": "f8341580568854bef3d8d8ae713316c6ea6d69f298d2e57fb6acb4de42521642",
+      "assets/weekDates-B_tmiLHj.js": "739241ad2c68be76f1f538707378d2f54606c5a2237cd4844e711405c902b6f2",
+      "assets/WeeklyReport-L5pBPD_m.css": "623aa3165466767d42877cb6f97dfe7638c4c9574d8b7dcb15c1724627c0d1ac",
+      "assets/WeeklyReport-MMMpjGDP.js": "eb08220e0f46a19e20383715b3dcd87af076bc1c5c06452ae1c485d6556fec69"
+    },
+    "staticFileSource": {
+      "quote-builder.html": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+      "pdf-lib.min.js": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+      "history-pagination.js": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+      "timesheet.html": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+      "timesheet-form.css": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+      "trident-dbflex.user.js": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable."
+    }
+  },
+  "liveUI": {
+    "url": "https://trident-dashboard.admintrident01.workers.dev/#job-import",
+    "commit": "cf9eb564f336aa62bf6cb8c0d89a9dd4361a94fa",
+    "importPageLoaded": true,
+    "userscriptDownloadVisible": true,
+    "sourceDetailsNotTransferredInProductionQA": true,
+    "scottExclusionTestsPassed": true,
+    "excludedAccount": "scott@trice.nz",
+    "scottExistingPermissionsPreserved": true,
+    "nativeExtensionInstallationTested": false,
+    "productionBusinessTestWrites": 0,
+    "screenshot": "DBFLEX-import-LIVE.png",
+    "apiHealth": {
+      "url": "https://trident-quote-api-383423323438.australia-southeast1.run.app/api/health",
+      "ok": true,
+      "version": "C"
+    }
+  },
+  "concurrentAudit": null,
+  "tests": {
+    "frontend": 72,
+    "lint": "passed",
+    "build": "passed",
+    "backendChanges": false,
+    "backendBaselineTests": 522
+  },
+  "scope": "Admins except Scott",
+  "excludedImportAccount": "scott@trice.nz",
+  "productionBusinessTestWrites": 0
+}

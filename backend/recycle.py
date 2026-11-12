@@ -4,7 +4,7 @@ from xml.etree import ElementTree as ET
 from core import Problem, decode
 import timesheets, vehicles, schedule, leave, labour, quote_settings, accounts
 
-LABELS={'account':'Sign-in accounts','quote':'Quotes','appointment':'Appointments','lunch':'Lunch breaks','leave':'Leave requests','staff':'Staff','vehicle':'Vehicles','timesheet':'Time sheets','check':'Vehicle checks','appointmentType':'Appointment types','calculator':'Calculator items','quoteType':'Quote types','defaultItem':'Quote default items'}
+LABELS={'account':'Sign-in accounts','quote':'Quotes','appointment':'Appointments','lunch':'Lunch breaks','leave':'Leave requests','staff':'Staff','vehicle':'Vehicles','timesheet':'Time sheets','check':'Vehicle checks','appointmentType':'Appointment types','calculator':'Calculator items','quoteType':'Quote types','defaultItem':'Quote default items','importedJob':'Imported jobs'}
 
 def stamp():return dt.datetime.now(dt.timezone.utc).isoformat()
 def identifier(kind,key):return kind+':'+str(key)
@@ -100,7 +100,10 @@ def register(state,number,record,purge=False):
 
 def restore(state,row,actor):
     kind=row['type'];key=row['key'];value=copy.deepcopy(row['value'])
-    if kind in ('appointment','lunch'):
+    if kind=='importedJob':
+        if key in state.get('jobImports',{}):raise Problem(409,'This imported job already exists.')
+        state.setdefault('jobImports',{})[key]=value
+    elif kind in ('appointment','lunch'):
         old=state.get('appointments',{}).get(key)
         if not old:
             old={**value,'cancelled':True}

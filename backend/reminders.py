@@ -302,6 +302,11 @@ def queue_leave_notifications(state, entry, submitted=False):
     dates=f"{entry['startDate']} to {entry['endDate']}"
     summary=f"Technician: {entry['technician']}\nDates: {dates}\nHours per day: {entry['hoursPerDay']:g}\nTotal hours: {entry['totalHours']:g}"
     if entry.get('startTime'):summary+=f"\nTime each day: {entry['startTime']} to {entry['endTime']}"
+    if entry.get('dailyBreakdown'):
+        summary=f"Technician: {entry['technician']}\nDates: {dates}\nTotal hours: {entry['totalHours']:g}\nDaily breakdown:"
+        for row in entry['dailyBreakdown']:
+            summary+=f"\n{row['date']}: {row.get('startTime','Full day')}"+(f"–{row['endTime']}" if row.get('endTime') else '')+f" · {row['hoursPerDay']:g}h"
+            if row.get('startTime'):summary+=f" · unpaid lunch excluded {row['lunchHours']:g}h"
     event='submitted' if submitted else entry['status'].lower()
     key=f"leave:{entry['id']}:{entry['revision']}:{event}"
     if submitted:

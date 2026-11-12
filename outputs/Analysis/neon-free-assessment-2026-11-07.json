@@ -1,0 +1,76 @@
+{
+  "created_utc": "2026-11-06T19:50:00.622785+00:00",
+  "assessment_only": true,
+  "production_changed": false,
+  "migration_resumed": false,
+  "observed_live": {
+    "project": "trident-dashboard-511203",
+    "table": "trident_quotes.app_state",
+    "region": "australia-southeast1",
+    "logical_size_display": "1.06 MB",
+    "current_physical_size_display": "166.21 KB",
+    "time_travel_physical_size_display": "622.21 MB",
+    "rows": 1,
+    "table_modified_display": "Nov 7, 2026, 8:45:08 AM UTC+13",
+    "scheduler_job": "trident-automatic-reminders",
+    "scheduler_enabled": true,
+    "scheduler_frequency": "*/5 * * * *",
+    "last_execution_success": true,
+    "last_run_display": "Nov 7, 2026, 8:45:01 AM"
+  },
+  "source_observations": {
+    "normal_schedule_poll_seconds": 60,
+    "fallback_schedule_poll_seconds": 10,
+    "reminder_run_reads_entire_register": true,
+    "reminder_delivery_and_run_status_read_again": true,
+    "source_files": [
+      "src/scheduleSync.js",
+      "src/TechSchedule.jsx",
+      "backend/storage.py",
+      "backend/app.py",
+      "backend/reminders.py"
+    ]
+  },
+  "neon_free_limits_checked": {
+    "database_GB": 1,
+    "compute_CU_hours_month": 100,
+    "network_transfer_GB_month": 5,
+    "idle_suspend_minutes": 5,
+    "pricing_url": "https://neon.com/pricing",
+    "idle_url": "https://neon.com/docs/introduction/scale-to-zero"
+  },
+  "model": {
+    "days": 30,
+    "scheduled_checks": 8640,
+    "minimum_active_hours_to_exhaust_compute_at_quarter_CU": 400.0,
+    "near_always_on_days_to_exhaust_at_quarter_CU": 16.666666666666668,
+    "scenarios": [
+      {
+        "case": "Current five-minute job keeps compute near-continuously active",
+        "assumed_active_hours": 720,
+        "assumed_average_CU": 0.25,
+        "estimated_CU_hours": 180.0
+      },
+      {
+        "case": "Illustrative redesigned working-hours workload, not measured",
+        "assumed_active_hours": 176,
+        "assumed_average_CU": 0.25,
+        "estimated_CU_hours": 44.0
+      }
+    ],
+    "illustrative_single_1MB_register_read_per_check_transfer_GB": 8.64,
+    "network_measurement_is_not_actual_neon_egress": true,
+    "paid_compute_only_baseline_USD": 19.08,
+    "fx_reference_USD_NZD": 1.7873,
+    "paid_compute_only_baseline_NZD": 34.101684,
+    "paid_estimate_excludes_storage_history_tax_and_other_charges": true
+  },
+  "unverified": [
+    "actual PostgreSQL storage after import and indexes",
+    "actual Neon CPU/autoscale hours under replay",
+    "actual Neon network transfer",
+    "real monthly staff active hours",
+    "uploaded object bytes; files should remain outside relational DB"
+  ],
+  "conclusion": "Current size is small, but unchanged scheduled activity is a poor fit for Neon Free. A redesigned event-driven/minimal-read workload could fit, pending isolated measurement."
+}

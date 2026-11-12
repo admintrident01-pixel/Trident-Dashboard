@@ -113,8 +113,8 @@
  .trident-timesheet.timesheet-form td:nth-child(5){grid-area:hours}.trident-timesheet.timesheet-form td:nth-child(6){grid-area:start}.trident-timesheet.timesheet-form td:nth-child(7){grid-area:finish}
  .trident-timesheet.timesheet-form td:nth-child(8){grid-area:lunch}.trident-timesheet.timesheet-form td:nth-child(9){grid-area:total;display:flex;align-items:center;justify-content:space-between;padding:10px;background:#edf3fa;border-radius:6px;font-size:18px}
  .trident-timesheet.timesheet-form td:nth-child(9)::before{margin:0;font-size:13px}.trident-timesheet.timesheet-form td:last-child{grid-area:notes}
- .trident-timesheet.timesheet-form tr[data-method="direct"]{grid-template-areas:"day date" "status method" "hours lunch" "total total" "notes notes"}
- .trident-timesheet.timesheet-form tr[data-method="direct"] td:nth-child(6),.trident-timesheet.timesheet-form tr[data-method="direct"] td:nth-child(7){display:none}
+ .trident-timesheet.timesheet-form tr[data-method="direct"]{grid-template-areas:"day date" "status method" "hours lunch" "start finish" "total total" "notes notes"}
+
  .trident-timesheet.timesheet-form tr[data-method="times"]{grid-template-areas:"day date" "status method" "start finish" "lunch total" "notes notes"}
  .trident-timesheet.timesheet-form tr[data-method="times"] td:nth-child(5){display:none}
  .trident-timesheet.timesheet-form tr[data-status="leave"]{grid-template-areas:"day date" "status status" "hours total" "notes notes"}
@@ -134,3 +134,4 @@
  #period-conflict{padding:18px;max-height:85dvh;overflow:auto}#period-conflict button{min-height:44px}
 }
 @media(min-width:601px){.timesheet-review-link{display:none}}
+.direct-check{display:block;max-width:170px;white-space:normal;font-size:11px;color:#4e647b;margin-top:5px;line-height:1.3}

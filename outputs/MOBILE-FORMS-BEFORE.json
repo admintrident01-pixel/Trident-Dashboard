@@ -1,0 +1,26 @@
+{
+  "phase": "before",
+  "project": "trident-dashboard-511203",
+  "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_before_schedule_mobileforms_20261105T024834Z",
+  "registerRevision": 11384,
+  "stateSha256": "2b30d109dfa149029f855c93a3d6de825b712797f62c4e536a0a4bc70d676322",
+  "liveUploadObjects": 32,
+  "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-mobileforms_20261105T024834Z/",
+  "apiRevision": "trident-quote-api-00065-cjw",
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "trident-quote-api-00065-cjw"
+    }
+  ],
+  "labels": {
+    "cloud.googleapis.com/location": "australia-southeast1",
+    "commit-sha": "da54270886a355bfe98d83ee0584c35c45048329",
+    "gcb-build-id": "bb16c4d3-c605-4f52-9221-d86e3f3fcf97",
+    "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+    "gcb-trigger-region": "global",
+    "managed-by": "gcp-cloud-build-deploy-cloud-run",
+    "run.googleapis.com/satisfiesPzs": "true"
+  }
+}

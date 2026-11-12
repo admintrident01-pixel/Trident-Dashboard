@@ -67,7 +67,7 @@ def week_rows(state, week):
             annual=hours if status=='Annual leave' else 0
             other=hours if status=='Other' else 0
             other_description=(request if request else entry).get('other','') if status=='Other' else ''
-            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'otherDescription':other_description,'leaveFrom':request.get('startTime','') if request else '','leaveTo':request.get('endTime','') if request else '','paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
+            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'otherDescription':other_description,'workFrom':entry.get('start','') if entry['status']=='Work' else '','workTo':entry.get('finish','') if entry['status']=='Work' else '','workLunch':entry.get('lunchHours',0) if entry['status']=='Work' else 0,'leaveLunch':request.get('lunchHours') if request else None,'leaveFrom':request.get('startTime','') if request else '','leaveTo':request.get('endTime','') if request else '','paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
         rows.append({'name':name,'submitted':bool(sheet),'days':days,'chargedHours':[charged.get(key,{}).get('days',{}).get(date) for date in dates]})
     return rows
 

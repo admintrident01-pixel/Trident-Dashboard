@@ -8,8 +8,8 @@ const id='12345678-1234-4234-8234-123456789012',now=Date.now(),source='https://c
 const payload=()=>({version:1,transferId:id,createdAt:now,source:{recordId:'70001',jobNumber:'90001',url:source},fields:{client:'Example Client',street:'12 Example Road',suburb:'Example Town',city:'Example Town',phone:'Example phone',invoiceTo:'Example payer',make:'Example make',model:'Example model',problem:'Repair notes',jobNotes:'Plain job notes'}})
 
 test('job import permits admins except Scott without changing their other page permissions',()=>{
- assert.equal(canAccessPage('job-import',{role:'admin',email:'bala@trice.nz'}),true)
- assert.equal(canAccessPage('job-import',{role:'admin',email:'another-admin@example.invalid'}),true)
+ assert.equal(canAccessPage('job-import',{role:'admin',email:'bala@trice.nz'}),false)
+ assert.equal(canAccessPage('job-import',{role:'admin',email:'another-admin@example.invalid'}),false)
  for(const session of [null,{role:'tech',email:'tech@example.invalid'},{role:'admin',email:' Scott@trice.nz '},{role:'admin',email:'other@example.invalid',technician:' Scott Yearbury '}])assert.equal(canAccessPage('job-import',session),false)
  assert.equal(canAccessPage('schedule',{role:'admin',email:'scott@trice.nz'}),true)
  assert.equal(canAccessPage('quotes',{role:'admin',email:'scott@trice.nz'}),true)

@@ -1,0 +1,26 @@
+{
+  "phase": "before",
+  "project": "trident-dashboard-511203",
+  "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_before_schedule_leave_20261112T201408Z",
+  "registerRevision": 16603,
+  "stateSha256": "0592ac288c1328c06a74dece1d84f73b33afa8416f240fce4624dacd3e31883d",
+  "liveUploadObjects": 35,
+  "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-leave_20261112T201408Z/",
+  "apiRevision": "trident-quote-api-00072-vsz",
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "trident-quote-api-00072-vsz"
+    }
+  ],
+  "labels": {
+    "cloud.googleapis.com/location": "australia-southeast1",
+    "commit-sha": "bf0d4206180ab80e48f04f8b0b51d41eab72c4b6",
+    "gcb-build-id": "309d5453-50e7-4a8f-b95e-84e53652b28e",
+    "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+    "gcb-trigger-region": "global",
+    "managed-by": "gcp-cloud-build-deploy-cloud-run",
+    "run.googleapis.com/satisfiesPzs": "true"
+  }
+}

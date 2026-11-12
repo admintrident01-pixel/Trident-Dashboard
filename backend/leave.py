@@ -53,6 +53,39 @@ def time_range(data):
  start=time_minutes(data.get('startTime'));end=time_minutes(data.get('endTime'),True)
  if end<=start:raise Problem(400,'Leave To time must be after From time on the same day.')
  return start,end
+
+def daily_breakdown(data,dates):
+ rows=data.get('dailyBreakdown')
+ if rows is None:return None
+ if not isinstance(rows,list) or len(rows)!=len(dates):raise Problem(400,'Review the leave breakdown for every selected date.')
+ cleaned=[]
+ for date,row in zip(dates,rows):
+  if not isinstance(row,dict) or row.get('date')!=date:raise Problem(400,'Leave breakdown dates must match the selected working dates.')
+  duration=row.get('duration')
+  if duration=='full':cleaned.append({'date':date,'duration':'full','hoursPerDay':8.0,'lunchHours':0});continue
+  if duration!='part':raise Problem(400,'Choose full day or part day for each date.')
+  period=time_range(row)
+  if not period:raise Problem(400,'Enter From and To times for hourly leave.')
+  if row.get('lunchConfirmed') is not True:raise Problem(400,f'{date}: confirm the unpaid lunch arrangement.')
+  choice=row.get('lunchChoice')
+  if choice not in ('usual','different','none'):raise Problem(400,'Choose the applicable unpaid lunch arrangement.')
+  reason=value(row,'lunchReason','lunch correction reason',1000,choice!='usual')
+  lunch_start=lunch_end='';overlap=0
+  if choice!='none':
+   lunch_start=row.get('lunchStart');lunch_end=row.get('lunchEnd')
+   first=time_minutes(lunch_start);last=time_minutes(lunch_end,True)
+   if last<=first:raise Problem(400,'Lunch must end after it starts.')
+   overlap=max(0,min(period[1],last)-max(period[0],first))
+  hours=(period[1]-period[0]-overlap)/60
+  if hours<=0:raise Problem(400,f'{date}: the request must contain paid leave outside unpaid lunch.')
+  cleaned.append({'date':date,'duration':'part','startTime':row['startTime'],'endTime':row['endTime'],'hoursPerDay':hours,'lunchChoice':choice,'lunchStart':lunch_start,'lunchEnd':lunch_end,'lunchReason':reason,'lunchConfirmed':True,'lunchHours':overlap/60})
+ return cleaned
+
+def expand_days(request):
+ """Expose per-date values to existing consumers while retaining request identity."""
+ if request.get('dailyBreakdown'):
+  return [{**{k:v for k,v in request.items() if k not in ('dailyBreakdown','startTime','endTime')},**row,'dates':[row['date']]} for row in request['dailyBreakdown']]
+ return [request]
 def create(state,data):
  if not isinstance(data,dict):raise Problem(400,'Invalid leave request.')
  tech=value(data,'technician','technician',160,True)
@@ -77,11 +110,14 @@ def create(state,data):
  if not isinstance(weekends,bool):raise Problem(400,'Choose whether to include weekends.')
  dates=[(start+datetime.timedelta(days=i)).isoformat() for i in range((end-start).days+1) if weekends or (start+datetime.timedelta(days=i)).weekday()<5]
  if not dates:raise Problem(400,'The request has no working days. Include weekends if needed.')
+ breakdown=daily_breakdown(data,dates)
  for r in state.get('leaveRequests',{}).values():
   if r['technician'].casefold()==tech.casefold() and r['status'] in ('Pending','Approved') and set(dates)&set(r['dates']):raise Problem(409,'A pending or approved request already covers one of these dates.')
  now=datetime.datetime.now(datetime.timezone.utc).isoformat()
  r={'id':str(uuid.uuid4()),'revision':1,'technician':tech,'leaveType':kind,'other':other,'startDate':start.isoformat(),'endDate':end.isoformat(),'dates':dates,'hoursPerDay':float(hours),'includeWeekends':weekends,'totalHours':float(hours*len(dates)),'reason':value(data,'reason','reason / notes',4000,True),'status':'Pending','submittedAt':now,'updatedAt':now,'decisionNotes':'','decidedBy':'','decidedAt':''}
  if period:r.update(startTime=data['startTime'],endTime=data['endTime'])
+ if breakdown:
+  r['dailyBreakdown']=breakdown;r['totalHours']=sum(row['hoursPerDay'] for row in breakdown)
  result=copy.deepcopy(state);result.setdefault('leaveRequests',{})[r['id']]=r
  return result,r
 def decide(state,data,email):
@@ -97,7 +133,7 @@ def decide(state,data,email):
  entry.update(status=action,revision=r['revision']+1,decisionNotes=notes,decidedBy=email,decidedAt=now,updatedAt=now)
  return result,entry
 def approved(state):
- return [{k:r[k] for k in ('id','technician','leaveType','other','dates','hoursPerDay','startTime','endTime') if k in r} for r in state.get('leaveRequests',{}).values() if r['status']=='Approved']
+ return [{k:r[k] for k in ('id','technician','leaveType','other','dates','hoursPerDay','startTime','endTime','lunchHours','lunchChoice','lunchStart','lunchEnd','lunchReason') if k in r} for request in state.get('leaveRequests',{}).values() if request['status']=='Approved' for r in expand_days(request)]
 def enforce_timesheet(state,entry):
  approved_days={date:r for r in approved(state) if r['technician'].casefold()==entry['technician'].casefold() for date in r['dates']}
  start=day(entry['weekStart'])
@@ -106,7 +142,7 @@ def enforce_timesheet(state,entry):
   if r and r.get('startTime') and row['status']=='Work':
    if row['method']=='times' and time_minutes(row['start'])<time_minutes(r['endTime'],True) and time_minutes(row['finish'])>time_minutes(r['startTime']):raise Problem(400,f'{date}: work times overlap approved leave. Use Direct hours for separate work periods, excluding leave.')
    if row['hours']+r['hoursPerDay']>24:raise Problem(400,f'{date}: work plus approved leave cannot exceed 24 hours.')
-   row['leave']={k:r[k] for k in ('id','leaveType','other','hoursPerDay','startTime','endTime')}
+   row['leave']={k:r[k] for k in ('id','leaveType','other','hoursPerDay','startTime','endTime','lunchHours') if k in r}
    entry['total']=float(decimal.Decimal(str(entry['total']))+decimal.Decimal(str(r['hoursPerDay'])))
    continue
   if r and (row['status']!=r['leaveType'] or row['hours']!=r['hoursPerDay'] or (row['status']=='Other' and row['other']!=r['other'])):raise Problem(400,f'{date}: use the approved leave type and hours. Refresh the time sheet.')

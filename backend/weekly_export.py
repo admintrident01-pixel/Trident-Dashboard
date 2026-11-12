@@ -36,6 +36,8 @@ def day_annotations(day):
   if day[kind]:labels.append(label+' '+weekly_report.number(day[kind])+'h')
  if day.get('otherDescription'):labels.append(day['otherDescription'])
  if day.get('leaveFrom'):labels.append('Leave '+day['leaveFrom']+'–'+day['leaveTo'])
+ if day.get('workFrom'):labels.append('Work '+day['workFrom']+'–'+day['workTo'])
+ if day.get('leaveFrom') and day.get('leaveLunch') is not None:labels.append('Unpaid lunch excluded: '+weekly_report.number(day['leaveLunch'])+'h')
  if day['note']:labels.append(day['note'])
  return '\n'.join(labels)
 

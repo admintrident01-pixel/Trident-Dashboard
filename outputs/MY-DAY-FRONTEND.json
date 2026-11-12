@@ -1,0 +1,43 @@
+{
+  "url": "https://trident-dashboard.admintrident01.workers.dev/",
+  "commit": "da54270886a355bfe98d83ee0584c35c45048329",
+  "allComparedAssetsMatch": true,
+  "files": {
+    "index.html": "c4201292ac0d77fc96d08052210cc1b6ab419ef57e3044bd6de5d70c32efca2b",
+    "quote-builder.html": "d13e5645e0879a172bc43020bf565f71721ab89be0b8c834f73b485268ffe435",
+    "pdf-lib.min.js": "0f9a5cad07941f0826586c94e089d89b918c46e5c17cf2d5a3c6f666e3bc694f",
+    "history-pagination.js": "9f6aac713b82554b357f771827c7ee5a1cab04da8f282935113d5024da95f343",
+    "timesheet.html": "4c1b9989d98ac1eeca1ac941c654d5c9cedccdab7aadc634c9bf53511ba4fb24",
+    "timesheet-form.css": "17904454f0f578ae8edde67324225031140a4fbc773d616857296f5fd383e0c5",
+    "assets/docx-preview-DRFIAawr.js": "c23f834e1f8c3cb732fa46fca2b15870dcc6b2f04030d7790a4ef9ad2d9ff863",
+    "assets/index-BQ39T7C8.js": "c38407ecd542f3b36ca8f059ebf41c371251875f195917951cfe138ac4f2f24d",
+    "assets/index-CRxXMB_t.css": "96fe9c18558477ebac10614d25d410030b0268914bbd00e6dc58a589c47e93cd",
+    "assets/jsx-runtime-DLyUyuBb.js": "e282e53fb206925a4c42717a08aee015cb10477007d87cd23eef75ec427fdb95",
+    "assets/LeaveForms-CUnraYm7.js": "91e02ff8764193e1bea4d72eb194568ac7a02ade52385768398b6545f66104d1",
+    "assets/LeaveForms-fHyLP0Wh.css": "429a6451723327c353cb5b8eccffbafeb8db8c37a660c6a6347c1646ddadf2a2",
+    "assets/MyDay-WKFSlIbY.js": "e8a7b03eef184f7c9e82bb085f80b896919e0f6294b598565f30a5f79b771945",
+    "assets/OfficeFiles-CAhd_hXM.css": "565233c125f09e26e89498d263f6ae952203131db8ff0f597fd6949acb16ea60",
+    "assets/OfficeFiles-D1GcN6Xp.js": "9621b5ba133e5c05300ffd08e1f239308f575573b6bc8d936099de2fac60ae9a",
+    "assets/rolldown-runtime-W7wSyTde.js": "ba03c472dc22425d3172a1d58a7f5ffe871faaf8f2c94eb503882fa17fc78d48",
+    "assets/scheduleResize-BJ3mYp-F.js": "17e95081ea53cb63c21c3e000977e4fdebac1d860394689a35df52af9732f399",
+    "assets/SettingsPage-B7ERrgng.js": "91a971d61c4349f0488a8224f70ec89b5d48bd3b65976dccf5989267161fa39b",
+    "assets/SettingsPage-DVsZoH9A.css": "707053c0056fc35931dec24ec88086510a9a42f31b52aead191aa5a1a0851411",
+    "assets/StockPage-BGZcHWRT.js": "7dae6009cd974452d264822a8594d8d7f0f88192d6fbc0f9e15e3e9349fa35be",
+    "assets/StockPage-CTkpoDBy.css": "38aa4900525f24853991b5d295946ae676083c65a8c2bf9b64c9da1bdfcdee13",
+    "assets/TechSchedule-1kmPkM1t.js": "f6beac5cc547eacf53f3c012a523d2039932c037ead17db941e624efcbbea5fd",
+    "assets/TechSchedule-CyEZQBxl.css": "57890bd3381006ba6250712b1114d96886e20aec4b48d8562f32c4983dcc5109",
+    "assets/VehicleChecks-VInRv1Zb.js": "5fc9652bf1a3caef152f0fe494dc8141f6abfbaf45f73700925865311fec7b64",
+    "assets/VehicleColours-CLUVXM9-.css": "082c49ab5d4d086245c16eb85257582e0274dcf0680daa2a7e2ad9eeb91088b4",
+    "assets/VehicleColours-gvo13WNZ.js": "f8341580568854bef3d8d8ae713316c6ea6d69f298d2e57fb6acb4de42521642",
+    "assets/weekDates-B_tmiLHj.js": "739241ad2c68be76f1f538707378d2f54606c5a2237cd4844e711405c902b6f2",
+    "assets/WeeklyReport-DHVd6CN3.js": "e6365c14797778b692eefa88e0206110c7478171be654fb79b138dac40823a0f",
+    "assets/WeeklyReport-L5pBPD_m.css": "623aa3165466767d42877cb6f97dfe7638c4c9574d8b7dcb15c1724627c0d1ac"
+  },
+  "staticFileSource": {
+    "quote-builder.html": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+    "pdf-lib.min.js": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+    "history-pagination.js": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+    "timesheet.html": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable.",
+    "timesheet-form.css": "Exact reviewed Git blob; local Windows build differs only in line endings if applicable."
+  }
+}

@@ -1,0 +1,16 @@
+PUBLISHED AND VERIFIED - Member My day home and schedule corrections, 6 November 2026.
+Commit 81a364ad80e009452bf03d7b7ef12b1dc21a91f9; API trident-quote-api-00069-4sp,100% traffic. Exact frontend assets verified.
+My day is default home for members except Scott. scott@trice.nz and linked Scott Yearbury
+are excluded in UI/API; his existing home, admin permissions and tools remain available.
+Own work logs/appointments remain private. Unlinked members receive setup guidance.
+Personal reminders below jobs; admin reminder tools remain admin-only. Old home modules
+and history remain available under Workspace.
+Manual future work times/dates accepted; valid ordering/overlap/DST/history rules preserved.
+Normal schedule scrolls through full day at unchanged workday scale; Fit remains available.
+Unbook appointment restored on client appointment menus only.
+522 backend tests,66 frontend tests, lint/build and local save/scroll/unbook/mobile review passed.
+Fresh recoverable register/upload backups verified; authoritative records, files,
+environment/secrets, service identity and runtime settings preserved. Concurrent edits audited.
+No production business test writes or QA seeding. Google routing remains manual-only.
+Evidence MEMBER-HOME-RELEASE.json; cumulative package updated; previous package archived.
+Original checkout and bulk migration source preserved.

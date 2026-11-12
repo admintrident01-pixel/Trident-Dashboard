@@ -1,0 +1,12 @@
+{
+  "commit": "cf9eb564f336aa62bf6cb8c0d89a9dd4361a94fa",
+  "baseline": "81a364ad80e009452bf03d7b7ef12b1dc21a91f9",
+  "tag": "dbflex_20261106T021154Z",
+  "script": "d20261106021154.py",
+  "scriptSha256": "926ff102220c7a2211d7e182d0a1e784810d7a77b6d5be1418aee46a4c8bb427",
+  "approved": true,
+  "scope": "Admins except Scott",
+  "frontendTests": 72,
+  "lint": "passed",
+  "build": "passed"
+}

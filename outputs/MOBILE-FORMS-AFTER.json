@@ -1,0 +1,67 @@
+{
+  "phase": "after",
+  "project": "trident-dashboard-511203",
+  "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_after_schedule_mobileforms_20261105T024834Z",
+  "registerRevision": 11391,
+  "stateSha256": "763488b34690eac4559aa92cec43d916edcfb7d4df66e40f0a28daac4f979f56",
+  "liveUploadObjects": 32,
+  "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-mobileforms_20261105T024834Z/",
+  "apiRevision": "trident-quote-api-00067-h6k",
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "trident-quote-api-00067-h6k"
+    }
+  ],
+  "labels": {
+    "cloud.googleapis.com/location": "australia-southeast1",
+    "commit-sha": "6e7d7db4b0cd0979c66f2d489aa8e682a2efe23d",
+    "gcb-build-id": "a731f19a-b649-4355-a8bb-fa119a592805",
+    "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+    "gcb-trigger-region": "global",
+    "managed-by": "gcp-cloud-build-deploy-cloud-run",
+    "run.googleapis.com/satisfiesPzs": "true"
+  },
+  "allStateIdentical": false,
+  "businessValuesIdentical": false,
+  "changedSections": [
+    "appointments",
+    "recycleBin",
+    "reminderJob",
+    "scheduleHiddenTravel",
+    "scheduleHistory"
+  ],
+  "changedCollections": {
+    "appointments": {
+      "removed": 0,
+      "added": 2,
+      "modified": 0
+    },
+    "recycleBin": {
+      "removed": 0,
+      "added": 1,
+      "modified": 0
+    },
+    "reminderJob": {
+      "removed": 0,
+      "added": 0,
+      "modified": 1
+    },
+    "scheduleHiddenTravel": {
+      "removed": 0,
+      "added": 1,
+      "modified": 0
+    },
+    "scheduleHistory": {
+      "removed": 0,
+      "added": 0,
+      "modified": 1
+    }
+  },
+  "priorUploadsUnchanged": true,
+  "priorUploadCount": 32,
+  "environmentAndSecretsPreserved": true,
+  "serviceIdentityPreserved": true,
+  "runtimeSettingsPreserved": true
+}

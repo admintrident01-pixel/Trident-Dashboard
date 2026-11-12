@@ -1,0 +1,79 @@
+{
+  "phase": "after",
+  "project": "trident-dashboard-511203",
+  "tableSnapshot": "trident-dashboard-511203.trident_quotes.app_state_after_schedule_myday_20261105T005542Z",
+  "registerRevision": 11340,
+  "stateSha256": "ffe39fbf2e2fefb6f49e0f4d1f496db42d1792a9674e646eed98495f73622be2",
+  "liveUploadObjects": 32,
+  "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-myday_20261105T005542Z/",
+  "apiRevision": "trident-quote-api-00065-cjw",
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "trident-quote-api-00065-cjw"
+    }
+  ],
+  "labels": {
+    "cloud.googleapis.com/location": "australia-southeast1",
+    "commit-sha": "da54270886a355bfe98d83ee0584c35c45048329",
+    "gcb-build-id": "bb16c4d3-c605-4f52-9221-d86e3f3fcf97",
+    "gcb-trigger-id": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce",
+    "gcb-trigger-region": "global",
+    "managed-by": "gcp-cloud-build-deploy-cloud-run",
+    "run.googleapis.com/satisfiesPzs": "true"
+  },
+  "allStateIdentical": false,
+  "businessValuesIdentical": false,
+  "changedSections": [
+    "loginRates",
+    "mailOutbox",
+    "passwordRates",
+    "passwords",
+    "reminderJob",
+    "sessions",
+    "vehicleChecks"
+  ],
+  "changedCollections": {
+    "loginRates": {
+      "removed": 0,
+      "added": 2,
+      "modified": 0
+    },
+    "mailOutbox": {
+      "removed": 0,
+      "added": 1,
+      "modified": 0
+    },
+    "passwordRates": {
+      "removed": 0,
+      "added": 0,
+      "modified": 1
+    },
+    "passwords": {
+      "removed": 0,
+      "added": 0,
+      "modified": 1
+    },
+    "reminderJob": {
+      "removed": 0,
+      "added": 0,
+      "modified": 1
+    },
+    "sessions": {
+      "removed": 1,
+      "added": 3,
+      "modified": 0
+    },
+    "vehicleChecks": {
+      "removed": 0,
+      "added": 1,
+      "modified": 0
+    }
+  },
+  "priorUploadsUnchanged": true,
+  "priorUploadCount": 32,
+  "environmentAndSecretsPreserved": true,
+  "serviceIdentityPreserved": true,
+  "runtimeSettingsPreserved": true
+}

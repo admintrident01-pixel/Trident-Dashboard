@@ -1,0 +1,10 @@
+PUBLISHED AND VERIFIED - Schedule workflow update, 5 November 2026 (Pacific/Auckland).
+Commit 9757d95dbfdb30875e29603b496f8a658eb3821a; API trident-quote-api-00061-jnl, 100% traffic.
+505 backend and60 frontend tests passed; lint/build and local browser checks passed.
+Live site controls and exact frontend files verified. Fresh register/upload backups
+verified; business records and prior files preserved. Environment/secrets, service
+identity and runtime settings preserved. Concurrent edits retained where applicable.
+Manual-only Google routing preserved; zero production business test writes.
+Evidence SCHEDULE-WORKFLOW-RELEASE.json. One current cumulative source package ready.
+Original prior checkout, migration source and historical package remain untouched.
+No release work remains. User approval was explicit; no new approval required.

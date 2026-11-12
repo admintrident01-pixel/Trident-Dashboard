@@ -1,0 +1,19 @@
+{
+  "productionControlsVerified": true,
+  "contactIconsVerified": true,
+  "observedAt": "2026-11-05T00:36:02.511Z",
+  "controls": [
+    "Book selected",
+    "Unbook selected",
+    "Optional selected",
+    "hours toggle",
+    "Hide/Pin navigation",
+    "Schedule messages"
+  ],
+  "contactIcons": [
+    "No voicemail left",
+    "No text sent",
+    "No email sent"
+  ],
+  "onlineBusinessTestWrites": 0
+}

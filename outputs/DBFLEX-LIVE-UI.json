@@ -1,0 +1,18 @@
+{
+  "url": "https://trident-dashboard.admintrident01.workers.dev/#job-import",
+  "commit": "cf9eb564f336aa62bf6cb8c0d89a9dd4361a94fa",
+  "importPageLoaded": true,
+  "userscriptDownloadVisible": true,
+  "sourceDetailsNotTransferredInProductionQA": true,
+  "scottExclusionTestsPassed": true,
+  "excludedAccount": "scott@trice.nz",
+  "scottExistingPermissionsPreserved": true,
+  "nativeExtensionInstallationTested": false,
+  "productionBusinessTestWrites": 0,
+  "screenshot": "DBFLEX-import-LIVE.png",
+  "apiHealth": {
+    "url": "https://trident-quote-api-383423323438.australia-southeast1.run.app/api/health",
+    "ok": true,
+    "version": "C"
+  }
+}

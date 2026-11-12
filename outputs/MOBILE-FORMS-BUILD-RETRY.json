@@ -1,0 +1,9 @@
+{
+  "failedBuild": "7f95be22-38b6-4083-ab26-54667fdd309d",
+  "failedCommit": "d036c73fcc2ef685c56c9de3a795bed27d5b8802",
+  "cause": "backend/.dockerignore excluded weekly_hours_template.xlsx from the container COPY context",
+  "fixCommit": "6e7d7db4b0cd0979c66f2d489aa8e682a2efe23d",
+  "fix": "Allowlisted the clean runtime template and extended the existing deployment packaging test",
+  "targetedTestsPassed": 13,
+  "frontendHeldUntilApiReady": true
+}
