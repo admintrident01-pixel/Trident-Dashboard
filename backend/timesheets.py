@@ -4,6 +4,12 @@ from core import Problem
 
 DEFAULT_NAMES = ['Scott Yearbury', 'Daryll Anderson', 'Bala Ganesh Venkatesan', 'Andrew Thomas', 'Rick Leef', 'Allan Burney', 'Joby Shearing', 'Jackie Gough']
 
+ON_CALL_NOTE = 'On-call allowance needed'
+
+def on_call_note(sheet):
+    """Weekly note derived from the sign-off on-call choice; never stored twice."""
+    return ON_CALL_NOTE if isinstance(sheet, dict) and sheet.get('onCall') is True else ''
+
 def settings(state):
     rows=state.get('staffSettings', {'technicians': [{'name': name, 'rego': ''} for name in DEFAULT_NAMES]})['technicians']
     return {'technicians':[{**row,'staffType':row.get('staffType','technician'),'hasVehicle':row.get('hasVehicle',True)} for row in rows]}
@@ -47,11 +53,16 @@ def minutes(value):
     hour, minute = map(int, value.split(':'))
     return hour * 60 + minute
 
-def save(state, data, user=None, exclude_submission=None, exclude_draft=None, check_period=True):
+def save(state, data, user=None, exclude_submission=None, exclude_draft=None, check_period=True, require_on_call=False):
     if not isinstance(data, dict):
         raise Problem(400, 'Invalid time sheet.')
     technician = text(data.get('technician'), 'technician name', 160, True)
     signature = text(data.get('signature'), 'signature', 160, True)
+    on_call = data.get('onCall')
+    if on_call is not None and not isinstance(on_call, bool):
+        raise Problem(400, 'Choose Yes or No for the on-call allowance.')
+    if require_on_call and on_call is None:
+        raise Problem(400, 'Choose Yes or No for the on-call allowance.')
     week = text(data.get('weekStart'), 'week starting date', 10, True)
     try:
         date = datetime.date.fromisoformat(week)
@@ -111,6 +122,8 @@ def save(state, data, user=None, exclude_submission=None, exclude_draft=None, ch
         total += hours
         cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'enteredHours': float(entered_hours), 'netDirectHours':net_direct,'unpaidLunch': unpaid_lunch, 'lunchHours': float(lunch_hours), 'start': start if status=='Work' and (method=='times' or (net_direct and hours>0)) else '', 'finish': finish if status=='Work' and (method=='times' or (net_direct and hours>0)) else ''})
     entry = {'id': str(uuid.uuid4()), 'revision': 1, 'technician': technician, 'weekStart': week, 'signature': signature, 'notes': text(data.get('notes', ''), 'weekly notes', 4000), 'days': cleaned, 'total': float(total), 'submittedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
+    if isinstance(on_call, bool):
+        entry['onCall'] = on_call
     result = copy.deepcopy(state)
     import leave
     entry['approvedLeaveIds'] = leave.enforce_timesheet(state, entry)
@@ -128,7 +141,9 @@ def edit_submission(state, data, actor):
         raise Problem(400, 'Keep the original technician for a correction.')
     reason=text(data.get('editReason'), 'correction reason', 1000, True)
     payload={**data, 'signature':old['signature']}
-    _, entry=save(state,payload,user={'role':'admin','email':actor},exclude_submission=old['id'],check_period=payload.get('weekStart')!=old['weekStart'])
+    if not isinstance(payload.get('onCall'), bool) and isinstance(old.get('onCall'), bool):
+        payload['onCall'] = old['onCall']
+    _, entry=save(state,payload,user={'role':'admin','email':actor},exclude_submission=old['id'],check_period=payload.get('weekStart')!=old['weekStart'],require_on_call=False)
     previous={k:copy.deepcopy(v) for k,v in old.items() if k!='editHistory'}
     history=copy.deepcopy(old.get('editHistory',[]))
     stamp=datetime.datetime.now(datetime.timezone.utc).isoformat()

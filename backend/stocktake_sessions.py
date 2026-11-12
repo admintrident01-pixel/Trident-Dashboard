@@ -59,7 +59,9 @@ def review(session,entries,strict=False):
 
 def action(state,p,actor):
     if not isinstance(p,dict):raise Problem(400,'Invalid stocktake request.')
-    result=copy.deepcopy(state);sessions=result.setdefault('stockTakes',{});kind=p.get('action')
+    result={**state,'stockTakes':copy.deepcopy(state.get('stockTakes',{}))}
+    if 'stock' in state:result['stock']=copy.deepcopy(state['stock'])
+    sessions=result['stockTakes'];kind=p.get('action')
     if kind=='start':
         if not any(s['status']=='draft' and s['createdBy']==actor for s in sessions.values()):
             key=str(uuid.uuid4());sessions[key]={'id':key,'status':'draft','createdBy':actor,'date':today().isoformat(),'version':1,'fingerprint':fingerprint(state),'rows':snapshot(state),'entries':{}}

@@ -1,0 +1,65 @@
+HELD LOCALLY - AWAITING EXPLICIT APPROVAL - NOT COMMITTED, PUSHED OR DEPLOYED
+On-call allowance sign-off, 13 November 2026 (Pacific/Auckland)
+Branch: codex/Readwrite (HEAD 8ddfbcd, level with origin/main)
+
+SCOPE FOR THIS RELEASE
+1. On-call Yes/No at time sheet sign-off (browser comment on "Signed by").
+2. Leave form no longer offers "Different lunch time".
+3. The earlier reviewed read/write conflict + theme polish work already in the
+   working tree is still uncommitted and is part of the same pending release.
+
+CHANGED FILES FOR THE ON-CALL WORK
+backend/timesheets.py            ON_CALL_NOTE, on_call_note(), onCall validation and
+                                 storage, corrections keep or inherit the answer.
+backend/timesheet_drafts.py      Drafts store onCall (null allowed); final submit
+                                 requires Yes or No.
+backend/weekly_report.py         Each week row exposes onCall and weeklyNote.
+backend/weekly_template.py       Excel "Weekly total" Notes cell carries the note.
+public/timesheet.html            Compulsory segmented Yes/No, collectSheet validation,
+                                 draft restore/clear, PDF line and weekly note.
+public/timesheet-form.css        Amber on-call panel, radio buttons, hint.
+src/WeeklyReport.jsx             Amber note under the payable weekly Total.
+src/WeeklyReport.css             .report-on-call badge.
+src/TimesheetHistory.jsx         Yes/No field in the correction dialog, history badge.
+src/SortableTable.css            Dialog on-call styles and history badge.
+tests/timesheetOnCall.test.mjs   New JS tests (5).
+backend/test_on_call.py          New backend tests (5).
+backend/test_api.py              Existing sheet fixtures now send onCall.
+backend/test_schedule_refinements.py, backend/test_timesheet_drafts.py  Same fixture update.
+src/LeaveRequestEditor.jsx, src/leaveRequestModel.js, work-tests/leave-lunch-options.test.mjs
+                                 Lunch-choice removal (already completed earlier today).
+ON-CALL-ALLOWANCE-UPDATE.txt     Release note.
+
+VALIDATION
+- Backend: 566 tests pass (TEST_WORKBOOK=performance-fixture.xlsx, same fixture as
+  the last release). 5 new on-call tests cover: missing/non-boolean answers rejected,
+  False/True stored, correction inheritance, draft round-trip, weekly note, Excel cell.
+- Frontend: 93 tests in tests/, 92 tests in work-tests/, ESLint clean, vite build clean.
+- Local UI: on-call panel visible and distinct on desktop and 390px; submit with no
+  answer shows the required message; Yes submission produced 40.00h.
+- Labour payables: Bala Ganesh Venkatesan row shows the amber note under Total 40.
+- Excel: outputs/On-call-review/Weekly-export-with-on-call-note.xlsx, A29 Weekly total,
+  G29 = "On-call allowance needed".
+- Leave form part-day lunch offers only Usual lunch and No unpaid lunch applies.
+
+LOCAL PREVIEW
+http://127.0.0.1:18780/  Vite PID 7868 (unchanged), local API PID 11068 restarted
+13 Nov 10:48 on port 18782 with the new backend. In-app browser left on #timesheet.
+
+LOCAL TEST RECORD
+One review submission exists in .local-data only: Bala Ganesh Venkatesan,
+week 2026-11-09, signed "On-call review", marked Yes. Delete it from Time sheet
+history if a clean register is preferred. Pre-change database copy:
+.local-runtime/oncall-review-backup.db
+
+UNRELATED WORKING-TREE CHANGES - DO NOT SHIP BLINDLY
+- src/TechSchedule.jsx changed at 10:48 today (adds booking notes on schedule
+  blocks). It was not part of this task and appeared during the session; review who
+  made it before staging.
+- outputs/On-call-roster-mockup/ edits, public/trident-theme.css, and the root
+  theme/release text files were already modified before this task started.
+
+NEXT STEP - APPROVAL REQUIRED
+No commit, push or deploy has happened. A push to main publishes both frontend and
+API. On approval: back up and compare the live register/uploads first, then commit
+only the intended files, push, and verify the live time sheet and payables.

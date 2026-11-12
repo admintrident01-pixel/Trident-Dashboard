@@ -39,7 +39,7 @@ def preview(raw,name='Stock workbook.xlsx'):
     return {'fingerprint':hashlib.sha256(raw).hexdigest(),'name':stock.text(name,'file name',250,True),'sheet':sheet.get('name'),'products':products,'unassignedRows':unassigned,'quantityMeaning':'Column E: opening stock-on-hand quantity','listedUnits':sum(r['sourceQuantity'] or 0 for r in products)}
 def apply(state,candidate,actor,raw=None):
     if any(i['fingerprint']==candidate['fingerprint'] for i in state.get('stock',stock.empty())['imports']):raise Problem(409,'This workbook has already been imported. Its records remain available in Import review.')
-    result=copy.deepcopy(state);data=result.setdefault('stock',stock.empty());key=str(uuid.uuid4())
+    result={**state,'stock':copy.deepcopy(state.get('stock',stock.empty()))};data=result['stock'];key=str(uuid.uuid4())
     if raw is not None:data['workbookTemplate']=base64.b64encode(raw).decode()
     for row in candidate['products']:
         product=copy.deepcopy(row);product.update(id=str(uuid.uuid4()),importId=key)
@@ -56,7 +56,9 @@ def confirm_quantities(state,actor):
     Keep missing quantities missing and original rows separate. Labelling opening
     units consumes this receipt's pending units, never adds another balance.
     """
-    result=copy.deepcopy(state);data=result.get('stock')
+    result=copy.copy(state)
+    if 'stock' in state:result['stock']=copy.deepcopy(state['stock'])
+    data=result.get('stock')
     if not data or data.get('sourceFormat')=='handoff_asset_register':return result
     stamp=dt.datetime.now(dt.timezone.utc).isoformat()
     for row in data['products'].values():
@@ -79,6 +81,11 @@ def export(state,template=None):
     database; asset notes and movement history are retained in their original columns.
     """
     data=state.get('stock',stock.empty())
+    number_movements={}
+    for movement in data.get('movements',[]):
+        if movement.get('kind') in ('Asset registered','Asset number changed'):
+            number_movements.setdefault(movement.get('assetId'),[]).append(movement)
+    product_balances=stock.balance_index(data)
     if data.get('sourceFormat')=='handoff_asset_register':
         import stock_handoff
         raw=base64.b64decode(data['workbookTemplate'])
@@ -122,7 +129,7 @@ def export(state,template=None):
                 soh='Confirmed stock on hand: '+str(len(counts['Available']))+' available; '+str(len(counts['Allocated']))+' allocated.'
                 for status in ('Incoming','Available','Allocated','Refurbishing','Awaiting new asset number','Repair','Retired'):
                     if counts[status]:soh+='\n'+status+': '+', '.join(a['number']+' ('+a['pool']+')' for a in counts[status])
-                labels='\n'.join(a['number']+' (current): '+ '; '.join(h['number']+' ['+(h.get('validFrom') or 'start not recorded')+' to '+(h.get('validTo') or 'current')+'] Added: '+(h.get('addedAt') or 'not recorded')+'; '+(h.get('referenceType') or 'Reference')+': '+(h.get('reference') or 'not recorded') for h in stock.number_history(data,a)) for a in assets)
+                labels='\n'.join(a['number']+' (current): '+ '; '.join(h['number']+' ['+(h.get('validFrom') or 'start not recorded')+' to '+(h.get('validTo') or 'current')+'] Added: '+(h.get('addedAt') or 'not recorded')+'; '+(h.get('referenceType') or 'Reference')+': '+(h.get('reference') or 'not recorded') for h in stock.number_history(data,a,number_movements.get(a['id'],()))) for a in assets)
                 cell(row,'C',join(source.get('currentStock'),soh,'Asset number validity (end date exclusive):\n'+labels),styles.get('C'))
                 delivered='\n'.join(a['number']+' · '+a['client']+' · '+a.get('referenceType','PO')+' '+a['reference']+' · Job '+a.get('jobId','')+' · Delivered '+a.get('dispatchedAt','') for a in counts['With client'])
                 cell(row,'D',join(source.get('sentToClients'),'Current delivered assets:\n'+(delivered or 'None')),styles.get('D'))
@@ -130,7 +137,7 @@ def export(state,template=None):
             if movements:
                 lines=[' · '.join(str(v) for v in [m['date'],m['kind'],m.get('number'),m.get('client'),m.get('reference'),m.get('jobId'),m.get('technician'),m.get('notes')] if v) for m in movements]
                 cell(row,'G',join(source.get('movements'),'App movements:\n'+'\n'.join(lines),'Client allocations:\n'+'\n'.join(g['client']+' · '+g.get('referenceType','PO')+' '+g['reference']+' · Job '+g['jobId']+' · '+entry.get('allocatedAt','')+' to '+(entry.get('returnedAt') or entry.get('cancelledAt') or 'current') for g in data['allocations'].values() for asset_id,entry in g['assetStates'].items() if data['assets'].get(asset_id,{}).get('productId')==prod['id'])),styles.get('G'))
-            balance=stock.balances(data,prod['id'])
+            balance=stock.balances(data,prod['id'],product_balances)
             if prod.get('openingQuantityConfirmed') or not prod.get('sourceRow') or assets:
                 cell(row,'E',str(balance['onHandQuantity']),styles.get('E'))
                 e=next(c for c in row if c.get('r')==f'E{index}');e.set('t','n')

@@ -40,12 +40,12 @@ def quantity_known(data,product):
 def ready_refurb(asset):
     return asset['pool']=='Trident refurb stock' and (bool(asset.get('refurbCompletedAt')) or asset.get('sourceCondition')=='REFURB' and asset.get('sourceStockReady')) and asset['status'] in ('Available','Allocated','Awaiting new asset number')
 
-def number_history(data,asset):
+def number_history(data,asset,movements=None):
     """Reconstruct only known effective dates; never fabricate dates for old labels."""
     if asset.get('numberHistory'):return copy.deepcopy(asset['numberHistory'])
     labels=[*asset.get('previousNumbers',[]),asset['number']]
     history=[{'number':n,'validFrom':None,'validTo':None} for n in labels]
-    for movement in data['movements']:
+    for movement in (data['movements'] if movements is None else movements):
         if movement.get('assetId')!=asset['id']:continue
         if movement['kind'] not in ('Asset registered','Asset number changed'):continue
         index=next((i for i,h in enumerate(history) if h['number']==movement.get('number')),None)
@@ -96,32 +96,65 @@ def chronological(data,asset,date):
 def opening_pending(data,product_id=None):
     return sum(max(0,r['quantity']-len(r['assetIds'])) for r in data['receipts'].values() if r.get('openingBalance') and (product_id is None or r['productId']==product_id))
 
-def balances(data,product_id):
-    assets=[a for a in data['assets'].values() if a['productId']==product_id]
-    pending=opening_pending(data,product_id)
-    available=pending+sum(a['status']=='Available' for a in assets)
-    allocated=sum(a['status']=='Allocated' for a in assets)
-    incoming=sum(a['status']=='Incoming' for a in assets)+sum(max(0,r['quantity']-len(r['assetIds'])) for r in data['receipts'].values() if r['productId']==product_id and r['pool']!='Trident refurb stock' and not r.get('openingBalance'))
-    refurbing=sum(a['status']=='Refurbishing' for a in assets)+sum(max(0,r['quantity']-len(r['assetIds'])) for r in data['receipts'].values() if r['productId']==product_id and r['pool']=='Trident refurb stock' and not r.get('refurbComplete'))
-    refurbed=sum(ready_refurb(a) for a in assets)
-    return {'incomingQuantity':incoming,'refurbingQuantity':refurbing,'refurbedQuantity':refurbed,'availableQuantity':available,'onHandQuantity':available+allocated,'awaitingOpeningNumbers':pending,'allocatedQuantity':allocated,'deliveredQuantity':sum(a['status']=='With client' for a in assets)}
+def balance_fields():
+    return {'incomingQuantity':0,'refurbingQuantity':0,'refurbedQuantity':0,'availableQuantity':0,'onHandQuantity':0,'awaitingOpeningNumbers':0,'allocatedQuantity':0,'deliveredQuantity':0}
+
+def balance_index(data):
+    """Aggregate every product balance in one pass over assets and receipts."""
+    rows={key:balance_fields() for key in data.get('products',{})}
+    for receipt in data.get('receipts',{}).values():
+        row=rows.get(receipt.get('productId'))
+        if row is None:continue
+        unnumbered=max(0,receipt['quantity']-len(receipt['assetIds']))
+        if receipt.get('openingBalance'):
+            row['awaitingOpeningNumbers']+=unnumbered
+            row['availableQuantity']+=unnumbered
+        elif receipt.get('pool')=='Trident refurb stock':
+            if not receipt.get('refurbComplete'):row['refurbingQuantity']+=unnumbered
+        else:row['incomingQuantity']+=unnumbered
+    for asset in data.get('assets',{}).values():
+        row=rows.get(asset.get('productId'))
+        if row is None:continue
+        status=asset.get('status')
+        if status=='Available':row['availableQuantity']+=1
+        elif status=='Allocated':row['allocatedQuantity']+=1
+        elif status=='Incoming':row['incomingQuantity']+=1
+        elif status=='Refurbishing':row['refurbingQuantity']+=1
+        elif status=='With client':row['deliveredQuantity']+=1
+        if ready_refurb(asset):row['refurbedQuantity']+=1
+    for row in rows.values():row['onHandQuantity']=row['availableQuantity']+row['allocatedQuantity']
+    return rows
+
+def balances(data,product_id,index=None):
+    return (balance_index(data) if index is None else index).get(product_id,balance_fields())
 
 def read(state):
     data=copy.deepcopy(state.get('stock',empty()))
     data.setdefault('allocations',{})
     data.pop('workbookTemplate',None);data.pop('sourceSnapshot',None)
+    # Index each asset's allocations once instead of scanning every allocation for
+    # every asset, which made large registers slow to open and save.
+    by_asset={}
+    for group in data['allocations'].values():
+        for asset_id in group['assetStates']:
+            by_asset.setdefault(asset_id,[]).append(group)
+    number_movements={}
+    for movement in data['movements']:
+        if movement.get('kind') in ('Asset registered','Asset number changed'):
+            number_movements.setdefault(movement.get('assetId'),[]).append(movement)
     for asset in data['assets'].values():
-        asset['numberHistory']=number_history(data,asset)
+        asset['numberHistory']=number_history(data,asset,number_movements.get(asset['id'],()))
         current_group=data['allocations'].get(asset.get('allocationId'))
         if current_group:
             asset.setdefault('allocatedAt',current_group['assetStates'][asset['id']].get('allocatedAt'))
             asset.setdefault('referenceType',current_group.get('referenceType','PO'))
-        asset['clientHistory']=[{'allocationId':g['id'],'client':g['client'],'jobId':g['jobId'],'reference':g['reference'],'referenceType':g.get('referenceType','PO'),**g['assetStates'][asset['id']]} for g in data['allocations'].values() if asset['id'] in g['assetStates']]
+        asset['clientHistory']=[{'allocationId':g['id'],'client':g['client'],'jobId':g['jobId'],'reference':g['reference'],'referenceType':g.get('referenceType','PO'),**g['assetStates'][asset['id']]} for g in by_asset.get(asset['id'],())]
     from timesheets import settings
     data['technicians']=[r['name'] for r in settings(state)['technicians'] if r.get('staffType','technician')=='technician']
     data['summary']={status:sum(a['status']==status for a in data['assets'].values()) for status in STATES}
     data['summary']['Available stock']=data['summary']['Available']+opening_pending(data)
-    for row in data['products'].values():row.update(balances(data,row['id']))
+    product_balances=balance_index(data)
+    for row in data['products'].values():row.update(product_balances.get(row['id'],balance_fields()))
     data['summary']['Awaiting asset numbers']=sum(r['quantity']-len(r['assetIds']) for r in data['receipts'].values())
     import stocktake_sessions
     data['stockTakeStatus']=stocktake_sessions.status(state)
@@ -204,7 +237,9 @@ def action(state,p,actor):
     if not isinstance(p,dict):raise Problem(400,'Invalid stock request.')
     if p.get('action')=='custom_move':return custom_move(state,p,actor)
     if p.get('action')=='receive_stock':return receive_numbered_stock(state,p,actor)
-    result=copy.deepcopy(state);data=result.setdefault('stock',empty());data.setdefault('allocations',{});kind=p.get('action');date=day(p.get('date',dt.datetime.now(ZoneInfo('Pacific/Auckland')).date().isoformat()))
+    # The stock collections are the only nested values this workflow edits. A
+    # shallow top-level copy avoids duplicating the quote workbook and schedules.
+    result={**state,'stock':copy.deepcopy(state.get('stock',empty()))};data=result['stock'];data.setdefault('allocations',{});kind=p.get('action');date=day(p.get('date',dt.datetime.now(ZoneInfo('Pacific/Auckland')).date().isoformat()))
     notes=text(p.get('notes',''),'notes',4000)
     if kind=='stock_settings':
         minimums=p.get('minimums')

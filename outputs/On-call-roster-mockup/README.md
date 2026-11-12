@@ -4,35 +4,24 @@ Status: **mockup only**. No app code or live data was changed.
 
 ## Images
 
-- `oncall-desktop.png` — main roster page (admin view, desktop).
-- `oncall-handover.png` — "Hand over on-call" dialog with technician selection, public-pool option and email notice. No reason or free-text note fields.
+- `oncall-desktop.png` — main page, simplified layout.
+- `oncall-handover.png` — hand-over dialog (technician list + open-to-everyone option).
 - `oncall-mobile.png` — responsive phone layout.
 
-## What the page covers
+## Page structure
 
-- New compact **On call** item in the main navigation.
-- **On call now** card: current technician, contact details, week covered, acceptance timestamp and weekend backup.
-- **Next on call** card: next technician, acceptance deadline, fallback in the order, reminder timeline.
-- **Roster by week**: one technician per week (Monday–Sunday), including the current week, with status and email confirmation.
-- **Public pool**: unassigned weeks anyone can grab; shows who released it, when and why.
-- **Allocation order**: admin-only ordering, visible to everyone; position 1 is on call now, position 2 is next.
-- **Upcoming weeks**: assignment, backup, status and who was emailed.
-- **Recent changes**: audit feed with "Emailed N people" markers.
-- **Who gets emailed**: the notification rules for accept, handover, public pool and weekly reminder.
+1. **This week / Next week** — one two-part card. Current technician, acceptance state, hand-over and release to pool on the left; next technician, acceptance deadline and resend-email on the right.
+2. **Roster** — one row per week (Week 46 onwards). Current week is highlighted. Assigned, awaiting-accept and open weeks all live in the same list, so there is no separate pool section. Open rows have a **Grab** action.
+3. **Rotation order** — a single line showing the admin-defined order (Daniel → Mereana → Sione → Aroha → Ben) with **Edit order**.
+4. **Email line** — one quiet footer inside the roster confirming every change is emailed, with a **Recent activity** link.
 
-## Behaviour the mockup assumes (please confirm)
+The hand-over dialog contains only the technician choice, the open-to-everyone option, the email notice and Cancel/Confirm.
 
-1. The on-call week runs **Monday 12:00 am to Sunday 11:59 pm** (NZDT).
-2. Admins set the order; technicians can see it but not reorder it.
-3. Position 1 covers the current week, position 2 the next week, and so on. The order rolls forward each week.
-4. A technician accepts their own week from the page or an email link. Until accepted it shows **Awaiting accept**.
-5. Handover is immediate after confirmation: the outgoing technician, incoming technician and admins are emailed. No second approval step.
-6. A released week enters the **public pool**; every technician is emailed and the first to grab it wins.
-7. Emails go to all technicians plus admins by default. Failed sends are retried and surfaced in Settings → Email reminders.
-8. The existing Google backend remains authoritative; this adds on-call records, it does not replace current data.
+## Behaviour assumed (please confirm)
 
-## Design notes
-
-- Reuses the dashboard palette, type, spacing, Feather icons and compact control sizing.
-- Admin-only actions are labelled; destructive release uses a quieter red outline.
-- Mobile keeps the same priority order: current on call, next, this week, pool, order, upcoming weeks.
+1. On-call week runs **Monday 12:00 am to Sunday 11:59 pm** (NZDT).
+2. Admins set the rotation order; technicians see it but cannot reorder it.
+3. A technician accepts their own week from the page or email link. Until then it shows **Awaiting accept**.
+4. Hand-over is immediate: outgoing and incoming technicians plus admins are emailed. No reason or note is captured.
+5. Releasing a week puts it in the open pool; every technician is emailed and the first to grab it wins.
+6. All technicians and admins are emailed on every change. Failed sends are retried and shown under Settings → Email reminders.

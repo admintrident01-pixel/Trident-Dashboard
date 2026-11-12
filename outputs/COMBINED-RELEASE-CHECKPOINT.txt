@@ -1,0 +1,58 @@
+COMBINED RELEASE - LOCALLY VERIFIED, BACKED UP, AWAITING FINAL PUSH
+13 November 2026 (Pacific/Auckland)
+Branch: codex/Readwrite (HEAD 8ddfbcd, level with origin/main before this commit)
+
+STREAMS IN THIS RELEASE
+1. Read/write conflict and efficiency fix (this chat).
+2. On-call allowance sign-off and leave lunch-option change.
+3. Theme polish, including square schedule tiles and drag-feedback containment.
+4. On-call roster design mockups (outputs only; no app code or live data).
+
+LOCAL VALIDATION
+- Backend: 566 tests passed with the production performance fixture.
+- Frontend: 185 tests passed (93 in tests/, 92 in work-tests/).
+- ESLint clean; production Vite build clean.
+- Browser review: Time sheet on-call field is compulsory and blocks submission
+  until Yes or No is chosen; Yes guidance appears; Leave part-day offers only
+  Usual lunch or No unpaid lunch; Stock, Schedule, Payables and theme render.
+- The local test submission "On-call review" was removed from the local register
+  and moved to the local Recycle bin. Local history now shows 0 submissions.
+- The existing local "mn mn" booking was moved by another active session at
+  11:20; it was left untouched and is not part of this release.
+
+PRE-RELEASE LIVE BACKUP - VERIFIED
+- Cloud Shell tag: readwrite_20261112T223707Z
+- Register clone: trident-dashboard-511203.trident_quotes.app_state_before_schedule_readwrite_20261112T223707Z
+- Register revision: 16695
+- Register state SHA256: 4e17e95928a372cd8f3164c4b468cea091194ae481c9b4e9bdd7d48f78730dc5
+- Live uploads: 35, each copied to gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-readwrite_20261112T223707Z/ and checksum-verified
+- Deployed API: trident-quote-api-00073-fx7 at 100% traffic; commit-sha 8ddfbcd; baseline assertion passed
+- Production records were not modified by the backup.
+
+CHANGED APP FILES
+Read/write: backend/app.py, core.py, recycle.py, schedule.py, schedule_history.py,
+schedule_links.py, schedule_notes.py, stock.py, stock_import.py,
+stocktake_sessions.py; src/StockPage.jsx, VehicleChecks.jsx, VehicleSettings.jsx,
+WeeklyReport.jsx, RecycleBin.jsx; backend/test_write_scopes.py.
+On-call/leave: backend/timesheets.py, timesheet_drafts.py, weekly_report.py,
+weekly_template.py, test_on_call.py, test_api.py, test_schedule_refinements.py,
+test_timesheet_drafts.py; public/timesheet.html, timesheet-form.css;
+src/TimesheetHistory.jsx, WeeklyReport.jsx, WeeklyReport.css, SortableTable.css,
+LeaveRequestEditor.jsx, leaveRequestModel.js; tests/timesheetOnCall.test.mjs,
+work-tests/leave-lunch-options.test.mjs.
+Theme: public/trident-theme.css, src/TechSchedule.jsx, src/TechSchedule.css.
+Records: ON-CALL-ALLOWANCE-UPDATE.txt, THEME-POLISH-UPDATE.txt,
+outputs/READ-WRITE-CHECKPOINT.txt, outputs/ON-CALL-UPDATE-CHECKPOINT.txt,
+outputs/COMBINED-RELEASE-CHECKPOINT.txt.
+Mockups/outputs: outputs/On-call-roster-mockup/* and outputs/Leave-update-review/*.
+
+EXCLUSIONS
+- crop-order.png at the repository root is a leftover working image and is not
+  staged. No business records, credentials, local runtime data or user files are
+  included in the commit.
+
+APPROVAL
+The user approved preparing the combined release and updating the site on
+13 November 2026. A push to main publishes both the frontend and API. After the
+push, verify the live frontend assets, API revision, and compare the register and
+all prior uploads against the verified pre-release snapshot.

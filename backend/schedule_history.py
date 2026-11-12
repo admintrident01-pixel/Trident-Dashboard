@@ -23,7 +23,7 @@ def record(before,state,email,date,label):
   for key in a.keys()|b.keys():
    if a.get(key)!=b.get(key):changes.append({'collection':collection,'key':key,'before':a.get(key),'after':b.get(key)})
  if not changes:return state
- result=copy.deepcopy(state);old=stacks(before,email,date);undo=old['undo']
+ result={**state,'scheduleHistory':copy.deepcopy(state.get('scheduleHistory',{}))};old=stacks(before,email,date);undo=old['undo']
  if undo and undo[-1]['afterHash']!=signature(before):undo=[]
  entry={'changes':changes,'beforeHash':signature(before),'afterHash':signature(state),'label':label}
  result.setdefault('scheduleHistory',{}).setdefault(email,{})[date]={'undo':undo[-29:]+[entry],'redo':[]}
@@ -34,7 +34,9 @@ def apply(state,email,date,action):
  if not items:raise Problem(409,'There is nothing to '+action+' for this day.')
  entry=items[-1];expected=entry['afterHash' if action=='undo' else 'beforeHash']
  if signature(state)!=expected:raise Problem(409,'The schedule changed since this action. Undo/Redo cannot overwrite newer changes.')
- result=copy.deepcopy(state);target='before' if action=='undo' else 'after'
+ result=copy.copy(state)
+ for key in COLLECTIONS+('scheduleHistory',):result[key]=copy.deepcopy(state.get(key,{}))
+ target='before' if action=='undo' else 'after'
  for change in entry['changes']:
   rows=result.setdefault(change['collection'],{});value=copy.deepcopy(change[target]);old=rows.get(change['key'])
   if value is None:rows.pop(change['key'],None)

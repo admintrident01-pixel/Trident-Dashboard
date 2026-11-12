@@ -1,0 +1,81 @@
+Theme polish update
+
+A visual-only pass over the shared stylesheet. No business logic, records, routing or
+permissions were changed, and no backend code is involved.
+
+Shared foundation
+- Typography now uses Segoe UI Variable Text with tighter heading tracking.
+- Navy, accent (amber), muted text, border, radius and shadow values are defined once
+  as CSS variables so every page matches.
+- Buttons, inputs and selects share one radius, height, hover, pressed and focus style.
+  Focus rings are amber and keyboard-only.
+- Thin custom scrollbars, a soft selection colour and prefers-reduced-motion support.
+
+Header navigation
+- Flat charcoal bar with page links instead of folder tabs; the current page is bold
+  white with a 2px amber underline. Account controls stay quiet on the right.
+- All eleven page links fit on one row from 1280px wide without scrolling.
+
+Pages
+- My day: recorded work, planned appointments and Finish day share one row on wide
+  screens; dashed empty state; pill status badges; lighter Google Maps bar.
+- Settings: wider section rail so "Time sheet defaults" no longer wraps; light rail with
+  a navy inset marker; sub-tabs are segmented pills; on phones the two levels are
+  visually distinct instead of two identical navy rows.
+- Vehicle checks: calmer row tints, uppercase column headings, tabular figures, lighter
+  rules and a hover highlight across the matrix.
+- Leave forms: even status pills, aligned figures and a dashed empty state.
+- Shared resources: proper page heading, rounded card panels, dashed empty panels and
+  controls that match the rest of the app.
+- Time sheet: uppercase column headings, compact day rows and a wider Entry method
+  column so "Direct hours" is no longer clipped.
+- Quote builder: gradient header and a shadowed paper sheet.
+- Sign in: gradient accent bar, 540px card and 42px fields.
+
+Verification
+- Lint clean, production build clean, all 25 work-tests pass.
+- Checked at 1280x900 and 390x844 for every page in the screenshot harness.
+
+Deployment
+- Change is public/trident-theme.css only, so no new backend deployment is required.
+  A push to main publishes the frontend through the existing Cloudflare build.
+- Business data, credentials and uploaded files are untouched by this release.
+Second pass
+- Schedule blocks are square: appointment tiles, lunch shading, technician and time column
+  headings, the board container and the day chips all have straight corners, so the board
+  reads as one grid. Toolbar buttons keep their normal control styling.
+- Stock and assets: "Last stocktake" is a quiet meta line under the title instead of running
+  inline at heading size, so the page follows the same title / meta / description order as
+  the rest of the app.
+- Labour payables: charged-hours cells are calm tinted fields that only show a border on
+  hover or focus, instead of seven outlined boxes per technician row.
+- Reminders, leave and vehicle history share one row rhythm: 10px cell padding, uppercase
+  column labels, lighter dividers and a row hover.
+- Empty states share one dashed panel treatment across My day, stock, shared resources and
+  leave forms.
+- The pinned-navigation button is a quiet outline with an amber pin icon, so amber in the
+  header now only marks the current page and warnings.
+- Live drag feedback now appears as a bottom toast instead of entering the toolbar row, so moving a schedule block cannot stretch the page.
+Schedule tile notes
+- Booking tiles no longer print the appointment type. The line that used to show the type
+  now shows the appointment's Notes field in italics. Short notes stay on one line; longer notes
+  wrap to a maximum of two lines and then end with an ellipsis. Hovering the tile still
+  shows the full note in its tooltip.
+- The type is still available in the tile's accessible label, the hover tooltip and the
+  editor, so nothing is lost for screen readers or for staff who need it.
+- Leave, travel and recurring-note blocks are unchanged: they keep showing their own labels.
+- A booking with no notes now shows no third line, and a leave conflict still appears there.
+- This is the only change outside public/trident-theme.css: one line in src/TechSchedule.jsx.
+Drag alignment fix
+- Moving or resizing a schedule block no longer reflows or zooms the page. The live drag
+  message used to be placed beside the selection buttons inside a non-wrapping flex row;
+  the selection row claims the full width, so the message was squeezed to a 9px-wide
+  column, stretched the toolbar from 104px to 627px and forced a scrollbar that narrowed
+  the page by 15px.
+- The status row now wraps safely, so long messages get a full line instead of a crushed
+  column. During an active drag the same message is shown as a fixed bottom toast, matching
+  the existing .schedule-drag-status styling, so the board does not move at all.
+- Verified with headless Chrome at 754x667, 1280x900 and 390x844 for both move and resize:
+  inner width, document scroll width, toolbar, scroller and board geometry are identical
+  before and during the gesture, and the drop still saves normally.
+- Files: src/TechSchedule.css only for this fix (appended block at the end of the file).

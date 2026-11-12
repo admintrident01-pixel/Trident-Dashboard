@@ -3,7 +3,7 @@ import base64,copy,datetime as dt,io,zipfile,re,json,textwrap
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from functools import lru_cache
-import weekly_report
+import timesheets, weekly_report
 
 NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main'
 tag=lambda name:'{'+NS+'}'+name
@@ -109,7 +109,7 @@ def labour_rows(state,week,rows,metric):
    result.append([display,serial,person['chargedHours'][i],None,None,start,finish,day[metric] if recorded else None,lunch,'\n'.join(notes)])
   first=len(result)+2-7;last=len(result)+1
   # The two totals have a single transparent SUM, with cached source totals.
-  result.append(['Weekly total',None,('SUM(C'+str(first)+':C'+str(last)+')',sum(v or 0 for v in person['chargedHours'])),None,None,None,None,('SUM(H'+str(first)+':H'+str(last)+')',sum(d[metric] for d in person['days'])),None,None])
+  result.append(['Weekly total',None,('SUM(C'+str(first)+':C'+str(last)+')',sum(v or 0 for v in person['chargedHours'])),None,None,None,None,('SUM(H'+str(first)+':H'+str(last)+')',sum(d[metric] for d in person['days'])),None,timesheets.on_call_note(sheet) or None])
   result.extend([[None]*10,[None]*10])
  return result
 

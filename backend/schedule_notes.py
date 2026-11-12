@@ -79,5 +79,5 @@ def save(state,data,user):
         if action=='restore':validate_conflicts(state,rule)
     else:raise Problem(400,'Choose Create, Delete or Restore.')
     rule['history'].append({'action':action,'at':now,'by':user['email']})
-    result=copy.deepcopy(state);result.setdefault('scheduleNoteSeries',{})[rule['id']]=rule
+    result={**state,'scheduleNoteSeries':copy.deepcopy(state.get('scheduleNoteSeries',{}))};result['scheduleNoteSeries'][rule['id']]=rule
     return result

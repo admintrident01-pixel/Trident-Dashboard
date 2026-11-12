@@ -109,7 +109,7 @@ def save_settings(state,data):
 
     if len({value.casefold() for value in cleaned})!=len(cleaned): raise Problem(400,'Use a different name for each appointment type.')
 
-    result=copy.deepcopy(state)
+    result={**state}
 
     lunch_start=data.get('lunchStart',settings(state)['lunchStart'])
 
@@ -368,7 +368,7 @@ def save(state,data,user):
 
     appointment.update(version=(old['version'] if old else 0)+1,createdAt=old['createdAt'] if old else now,updatedAt=now,updatedBy=user['email'])
 
-    result=copy.deepcopy(state)
+    result={**state,'appointments':copy.deepcopy(state.get('appointments',{})),'travelBlocks':copy.deepcopy(state.get('travelBlocks',{}))}
 
     result.setdefault('appointments',{})[appointment['id']]=appointment
 
@@ -401,7 +401,7 @@ def queue_appointment_email(state,appointment):
 
     if missing: raise Problem(400,'Add an active, confirmed sign-in email in Staff setup for: '+', '.join(missing))
 
-    result=copy.deepcopy(state)
+    result={**state,'mailOutbox':copy.deepcopy(state.get('mailOutbox',{}))}
 
     ids=[]
 
@@ -514,7 +514,7 @@ def save_travel(state,data,user):
     else:raise Problem(400,'Choose insert or resize travel.')
     if not candidate:raise Problem(409,'The linked appointment changed. Refresh the schedule.')
     if type(duration) is not int or duration<15 or duration%15 or duration>candidate['maxDuration']:raise Problem(400,'Travel must fit between appointments, lunch and approved leave in 15-minute increments.')
-    result=copy.deepcopy(state);old=result.get('travelBlocks',{}).get(candidate['id'],{})
+    result={**state,'travelBlocks':copy.deepcopy(state.get('travelBlocks',{}))};old=result['travelBlocks'].get(candidate['id'],{})
     result.setdefault('travelBlocks',{})[candidate['id']]={'duration':duration,'version':old.get('version',0)+1,'updatedBy':user['email'],'workshopTravelExplicit':True,**({'locked':False,'linked':True,'date':date} if schedule_routes.configuration()['key'] else {})}
     return result
 
@@ -562,7 +562,7 @@ def resize_booking(state,data,user,old):
                 new_start=minutes(b['start'])+delta
                 if new_start<0 or new_start+b['duration']>1440:raise Problem(409,'The booking or its travel would leave this day.')
                 rows[b['id']]={**b,'start':time_string(new_start)};changed.add(b['id']);pending.append(b['id'])
-    result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
+    result={**state,'appointments':copy.deepcopy(state.get('appointments',{}))};now=dt.datetime.now(dt.timezone.utc).isoformat()
     for identifier in changed:
         block=rows[identifier]
         if block['start']==originals[identifier]['start'] and block['duration']==originals[identifier]['duration']:continue

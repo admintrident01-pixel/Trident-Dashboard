@@ -96,7 +96,7 @@ class TestAPI(unittest.TestCase):
   for t in threads:t.join()
   self.assertEqual(sorted(results),[False,True])
  def test_timesheet_validation_and_conflicts(self):
-  p={'technician':'Test technician','signature':'Signed name','weekStart':'2026-10-05','notes':'Weekly note','days':[{'status':'Work','method':'direct','hours':8 if i<5 else 0,'notes':''} for i in range(7)]}
+  p={'technician':'Test technician','signature':'Signed name','weekStart':'2026-10-05','onCall':False,'notes':'Weekly note','days':[{'status':'Work','method':'direct','hours':8 if i<5 else 0,'notes':''} for i in range(7)]}
   p['days'][0]={'status':'Work','method':'times','start':'08:00','finish':'15:30'}
   p['days'][1]={'status':'Work','method':'direct','hours':4}
   self.assertEqual(self.call('/api/timesheets/config',token='')[0],401)
@@ -121,7 +121,7 @@ class TestAPI(unittest.TestCase):
   code,headers,body=self.call('/api/leave','POST',p,1);self.assertEqual(code,200);r=json.loads(body)['request'];self.assertEqual(r['status'],'Pending');self.assertEqual(r['totalHours'],16)
   self.assertEqual(json.loads(self.call('/api/timesheets/config')[2])['approvedLeave'],[])
   self.assertEqual(self.call('/api/leave','POST',p,2)[0],409)
-  sheet={'technician':'Scott Yearbury','signature':'Scott','weekStart':'2026-10-05','notes':'','days':[{'status':'Annual leave' if i<2 else 'Work','method':'direct','hours':8 if i<5 else 0} for i in range(7)]}
+  sheet={'technician':'Scott Yearbury','signature':'Scott','weekStart':'2026-10-05','onCall':False,'notes':'','days':[{'status':'Annual leave' if i<2 else 'Work','method':'direct','hours':8 if i<5 else 0} for i in range(7)]}
   self.assertEqual(self.call('/api/timesheets','POST',sheet,2)[0],400)
   decision={'id':r['id'],'revision':1,'status':'Approved','decisionNotes':'Approved holiday'}
   self.assertEqual(self.call('/api/leave-decision','POST',decision,2,token='wrong')[0],403)

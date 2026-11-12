@@ -1,7 +1,15 @@
-import base64, copy, datetime, io, json, re, uuid, zipfile
+import base64, copy, datetime, hashlib, io, json, re, uuid, zipfile
 from xml.etree import ElementTree as ET
 class Problem(Exception):
  def __init__(self,status,message):self.status=status;super().__init__(message)
+def scope_digest(state,keys):
+ """Fingerprint only the data a page edits so unrelated saves are not treated as conflicts."""
+ payload=json.dumps({key:state.get(key) for key in keys},sort_keys=True,separators=(',',':'),default=str)
+ return hashlib.sha256(payload.encode()).hexdigest()
+def state_tag(state,name,keys):
+ return '"'+name+'-'+scope_digest(state,keys)+'"'
+def tag_matches(value,state,name,keys,revision):
+ return value in ('"'+str(revision)+'"',state_tag(state,name,keys))
 def decode(value,limit):
  try:data=base64.b64decode(value,validate=True)
  except Exception:raise Problem(400,'Invalid uploaded file.')

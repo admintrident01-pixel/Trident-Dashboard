@@ -1,0 +1,49 @@
+On-call allowance update
+
+The time sheet sign-off now asks a compulsory On-call allowance question next to
+"Signed by", and the answer follows the week through to the payables reports.
+
+Time sheet form
+- New amber Yes / No control directly under "Signed by", marked Required so it is
+  visually separate from the plain fields around it.
+- Signing, submitting or generating the PDF is blocked until Yes or No is chosen.
+  The message reads "Choose Yes or No for the on-call allowance."
+- Choosing Yes shows "Weekly notes, labour payables and the weekly Excel export
+  will show On-call allowance needed."
+- Saving a draft keeps whatever was chosen, and a draft may still be saved with
+  the question unanswered. Reopening a draft restores the answer.
+- The downloaded time sheet PDF prints "On-call allowance: Yes" (or No) and adds
+  "On-call allowance needed" as the first weekly note when Yes is chosen.
+
+Labour payables
+- Each person row carries the answer for their week. When Yes, the weekly Total
+  column shows an amber "On-call allowance needed" badge under the hours.
+- Admin corrections show the same Yes / No field in the time sheet editor, and the
+  original answer is kept when an older sheet is corrected.
+
+Weekly Excel export
+- The Notes column on each person's "Weekly total" row reads
+  "On-call allowance needed" when that week was marked Yes.
+
+Records
+- The choice is stored as onCall (true / false) on the submitted sheet and on the
+  draft. It is never copied into the typed weekly or daily notes, so the text is
+  not duplicated if the week is edited or re-exported.
+- Existing sheets without onCall stay readable. They are treated as "no on-call
+  allowance recorded", and an admin may set the answer the next time a correction
+  is saved.
+
+Also in this working tree
+- Leave form: the "Different lunch time" option is removed. Part-day leave now
+  offers only "Usual lunch" or "No unpaid lunch applies" (with a reason when there
+  is no unpaid lunch).
+
+Verification
+- Backend: 566 tests pass, including 5 new on-call tests.
+- Frontend: 93 node tests and 92 work tests pass; lint and production build clean.
+- Local end-to-end: submitted a Yes week, saw the badge in Labour payables and
+  "On-call allowance needed" on the Weekly total row in the downloaded Excel.
+  The compulsory message was confirmed by submitting with no answer.
+
+Deployment
+- Held for approval. No commit, push or deployment has been made.

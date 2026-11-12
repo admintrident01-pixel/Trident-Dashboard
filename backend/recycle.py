@@ -33,7 +33,14 @@ def read(state):
 
 def capture(before,after,actor):
     # Never change a caller's snapshot, and do not capture overwritten field values.
-    result=copy.deepcopy(after)
+    # Only copy when something is actually archived: most saves capture nothing, and the
+    # register is large enough that a full copy on every write is avoidable work.
+    holder={}
+    def target():
+        if 'state' not in holder:
+            result=copy.copy(after);result['recycleBin']=copy.copy(after.get('recycleBin',{}))
+            holder['state']=result
+        return holder['state']
     mappings=[('quotes','quote','state','Deleted'),('appointments','appointment','cancelled',True),('leaveRequests','leave','status','Cancelled'),('timesheets','timesheet',None,None),('vehicleChecks','check',None,None)]
     for collection,kind,flag,deleted in mappings:
         for key,old in before.get(collection,{}).items():
@@ -45,10 +52,10 @@ def capture(before,after,actor):
             if now_deleted and not was_deleted:
                 title=('Quote '+key) if kind=='quote' else (old.get('client') or old.get('technician') or old.get('registration') or key)+' · '+(old.get('date') or old.get('weekStart') or old.get('startDate') or old.get('checkDate') or '')
                 extra={'pdfKey':before.get('pdfs',{}).get(old.get('pdfFilename'))} if kind=='quote' else None
-                put(result,actual_kind,key,old,title,actor,extra)
-            elif was_deleted and new is not None and not now_deleted:result.get('recycleBin',{}).pop(bin_id,None)
+                put(target(),actual_kind,key,old,title,actor,extra)
+            elif was_deleted and new is not None and not now_deleted:target().get('recycleBin',{}).pop(bin_id,None)
     for address,user in accounts.users(before).items():
-        if address not in accounts.users(after):put(result,'account',address,accounts.public(user),user.get('name') or address,actor)
+        if address not in accounts.users(after):put(target(),'account',address,accounts.public(user),user.get('name') or address,actor)
     def removed(oldrows,newrows,kind,keyfn,titlefn,extra=None):
         counts={}
         for row in newrows:counts[keyfn(row)]=counts.get(keyfn(row),0)+1
@@ -56,7 +63,7 @@ def capture(before,after,actor):
             key=keyfn(row)
             if counts.get(key,0):counts[key]-=1;continue
             uid=key if kind in ('staff','vehicle','calculator','appointmentType','quoteType') else hashlib.sha256((str(extra or '')+key+str(index)).encode()).hexdigest()
-            put(result,kind,uid,row,titlefn(row),actor,extra)
+            put(target(),kind,uid,row,titlefn(row),actor,extra)
     if before.get('staffSettings')!=after.get('staffSettings'):removed(timesheets.settings(before)['technicians'],timesheets.settings(after)['technicians'],'staff',lambda r:r['name'],lambda r:r['name'])
     if before.get('vehicles')!=after.get('vehicles'):removed(vehicles.fleet(before),vehicles.fleet(after),'vehicle',lambda r:r['id'],lambda r:r.get('registration') or r['id'])
     if before.get('scheduleSettings')!=after.get('scheduleSettings'):removed(schedule.settings(before)['appointmentTypes'],schedule.settings(after)['appointmentTypes'],'appointmentType',str,str)
@@ -67,7 +74,7 @@ def capture(before,after,actor):
         for previous in old['types']:
             current=next((r for r in new['types'] if r['name']==previous['name']),None)
             if current:removed(previous['items'],current['items'],'defaultItem',lambda r:r['description'],lambda r:r['description'],{'quoteType':previous['name']})
-    return result
+    return holder.get('state',after)
 
 def register(state,number,record,purge=False):
     # Patch only this quote's register cells; keep all reserved numbers and other rows.

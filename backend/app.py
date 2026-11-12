@@ -2,7 +2,7 @@ import base64,io,json,logging,os,random,time,uuid
 
 from urllib.parse import parse_qs
 
-from core import Problem,decode,save_quote,workbook_info
+from core import Problem,decode,save_quote,workbook_info,scope_digest,state_tag,tag_matches
 
 from storage import BigQueryStore,CloudObjects
 
@@ -39,6 +39,20 @@ import recycle
 import accounts,reminders,secrets
 
 MAX_BODY=40*1024*1024
+
+STOCK_SCOPE=('stock',)
+STOCKTAKE_SCOPE=('stock','stockTakes','stockTakeSettings')
+SCHEDULE_SCOPE=('appointments','travelBlocks','scheduleLinks','scheduleHiddenTravel','deletedLunchIds','leaveRequests','staffSettings','scheduleSettings','timeSettings','scheduleNoteSeries')
+VEHICLE_SCOPE=('vehicles','removedVehicles','vehicleChecks','vehicleColumnOrder','vehicleColourSettings','staffSettings')
+POST_SCOPES={
+ '/api/time-settings':('time-settings',('timeSettings',)),
+ '/api/quote-settings':('quote-settings',('workbook',)),
+ '/api/workbook':('workbook',('workbook','quotes','pdfs')),
+ '/api/staff-settings':('staff-settings',('staffSettings',)),
+ '/api/vehicles':('vehicles',VEHICLE_SCOPE),
+ '/api/vehicle-order':('vehicles',VEHICLE_SCOPE),
+ '/api/vehicle-checks':('vehicles',VEHICLE_SCOPE),
+}
 
 OWNER='nikita.trident2024@gmail.com'
 
@@ -102,6 +116,36 @@ class Application:
   if not self.store.commit(revision,state):raise Problem(409,'Another change was saved. Refresh and try again.')
 
   if live_enabled and live_before is not None and schedule_history.etag(live_before)!=schedule_history.etag(state):schedule_live.notify()
+
+ def write(self,revision,state,apply,actor='',capture=True,before=None,keys=None,error='Another change was saved. Refresh and try again.',attempts=4,retry_uncertain=True):
+  """Save a change, retrying when only data outside this edit moved.
+
+  keys limits the retry check to the collections the page is editing, so a
+  timesheet draft, stock move or reminder job cannot make a schedule or stock
+  save look like a conflict. Genuine edits still fail through the endpoint's
+  token check or the mutation's own version/revision validation."""
+  scope=scope_digest(state,keys) if keys else None
+  for attempt in range(attempts):
+   if attempt:
+    try:revision,state=self.read_state()
+    except Problem:raise
+    except Exception:
+     logging.warning('Save could not read the current register; retrying.')
+     time.sleep(random.uniform(.02,.05*attempt));continue
+    if scope is not None and scope_digest(state,keys)!=scope:raise Problem(409,error)
+   original=before if attempt==0 and before is not None else state
+   result=apply(state)
+   if capture:result=recycle.capture(original,result,actor)
+   try:committed=self.store.commit(revision,result)
+   except Problem:raise
+   except Exception:
+    if not retry_uncertain:raise
+    committed=False;logging.warning('Save outcome uncertain; checking the current register before retrying.')
+   if committed:
+    if schedule_live.configuration()[0] and schedule_history.etag(original)!=schedule_history.etag(result):schedule_live.notify()
+    return revision+1,result
+   time.sleep(random.uniform(.02,.05*(attempt+1)))
+  raise Problem(409,error)
 
  def account_request(self,environ):
 
@@ -270,6 +314,8 @@ class Application:
 
     revision,state=self.read_state()
 
+    baseline=state
+
     user=accounts.resolve(state,auth[7:],self.verify);email=user['email']
 
     if method=='POST' and origin!=self.origin:raise Problem(403,'Save requests must come from the approved website.')
@@ -322,11 +368,19 @@ class Application:
      elif path=='/api/office-files' and method=='POST':
       accounts.admin(user)
       payload=office_files.action(state,self.body(environ),user,self.objects,lambda result:self.commit(revision,result,actor=email))
-     elif path=='/api/stock' and method=='GET':payload=stock.read(state)
-     elif path=='/api/stocktake' and method=='GET':payload=stocktake_sessions.read(state,email)
+     elif path=='/api/stock' and method=='GET':
+      payload=stock.read(state)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'stock',STOCK_SCOPE)))
+     elif path=='/api/stocktake' and method=='GET':
+      payload=stocktake_sessions.read(state,email)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'stocktake',STOCKTAKE_SCOPE)))
      elif path=='/api/stocktake' and method=='POST':
-      state=stocktake_sessions.action(state,self.body(environ),email);self.commit(revision,state,actor=email);payload=stocktake_sessions.read(state,email)
-      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      token=environ.get('HTTP_IF_MATCH') or ''
+      if token and not tag_matches(token,state,'stocktake',STOCKTAKE_SCOPE,revision):raise Problem(409,'This stocktake changed. Refresh before continuing.')
+      p=self.body(environ)
+      revision,state=self.write(revision,state,lambda current:stocktake_sessions.action(current,p,email),actor=email,keys=STOCKTAKE_SCOPE,error='This stocktake changed. Refresh before continuing.')
+      payload=stocktake_sessions.read(state,email)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'stocktake',STOCKTAKE_SCOPE)))
      elif path=='/api/stock-report' and method=='POST':payload=stock_reports.create(state,self.body(environ),self.stock_source if self.local else None)
      elif path=='/api/stock-export' and method=='GET':
       raw=stock_import.export(state,self.stock_source if self.local else None);payload={'name':'Trident Community Equipment SOH '+stock.dt.datetime.now(stock.ZoneInfo('Pacific/Auckland')).strftime('%d.%m.%Y')+'.xlsx','workbook':base64.b64encode(raw).decode()}
@@ -345,13 +399,18 @@ class Application:
       if path=='/api/stock-import-preview':payload=candidate
       else:
        if p.get('confirmed') is not True:raise Problem(400,'Confirm importing product rows for review.')
-       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Stock changed. Refresh before importing.')
-       state=stock_import.apply(state,candidate,email,raw);self.commit(revision,state,actor=email);payload={'saved':True,'message':'Opening product quantities loaded. Assign their existing asset numbers before allocation.'};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+       if not tag_matches(environ.get('HTTP_IF_MATCH',''),state,'stock',STOCK_SCOPE,revision):raise Problem(409,'Stock changed. Refresh before importing.')
+       revision,state=self.write(revision,state,lambda current:stock_import.apply(current,candidate,email,raw),actor=email,keys=STOCK_SCOPE,error='Stock changed. Refresh before importing.')
+       payload={'saved':True,'message':'Opening product quantities loaded. Assign their existing asset numbers before allocation.','stock':stock.read(state)};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'stock',STOCK_SCOPE)))
      elif path=='/api/stock' and method=='POST':
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Stock changed. Refresh and try again.')
-      state=stock.action(state,self.body(environ),email)
-      if self.local and self.stock_source and not state['stock'].get('workbookTemplate'):state['stock']['workbookTemplate']=base64.b64encode(self.stock_source).decode()
-      self.commit(revision,state,actor=email);payload={'saved':True,'message':'Stock record saved.'};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      if not tag_matches(environ.get('HTTP_IF_MATCH',''),state,'stock',STOCK_SCOPE,revision):raise Problem(409,'Stock changed. Refresh and try again.')
+      p=self.body(environ)
+      def apply_stock(current):
+       result=stock.action(current,p,email)
+       if self.local and self.stock_source and not result['stock'].get('workbookTemplate'):result['stock']['workbookTemplate']=base64.b64encode(self.stock_source).decode()
+       return result
+      revision,state=self.write(revision,state,apply_stock,actor=email,keys=STOCK_SCOPE,error='Stock changed. Refresh and try again.')
+      payload={'saved':True,'message':'Stock record saved.','stock':stock.read(state)};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'stock',STOCK_SCOPE)))
      elif path=='/api/recycle-bin' and method=='GET':payload=recycle.read(state)
 
      elif path=='/api/recycle-bin' and method=='POST':
@@ -382,13 +441,15 @@ class Application:
 
       if environ.get('HTTP_IF_MATCH') not in (f'"{revision}"',schedule_history.etag(state)):raise Problem(409,'The schedule changed while you were editing. Your edit has been kept; refresh to review the latest schedule.')
 
-      p=self.body(environ);before=state;state,appointment=schedule.save(state,p,user);mail_ids=[]
-
-      if p.get('sendEmail') is True:
-
-       reminders.require_mail(self.local);state,mail_ids=schedule.queue_appointment_email(state,appointment)
-
-      state=schedule_history.record(before,state,email,appointment['date'],'Appointment '+p.get('action','save'));self.commit(revision,state,actor=email,before=before);saved_revision=revision+1;payload={'saved':True,'appointment':appointment,'schedule':schedule_history.read(state,appointment['date'],user)}
+      p=self.body(environ);mail_ids=[];appointment={}
+      def apply_schedule(current):
+       nonlocal appointment,mail_ids
+       result,appointment=schedule.save(current,p,user);mail_ids=[]
+       if p.get('sendEmail') is True:
+        reminders.require_mail(self.local);result,mail_ids=schedule.queue_appointment_email(result,appointment)
+       return schedule_history.record(current,result,email,appointment['date'],'Appointment '+p.get('action','save'))
+      saved_revision,state=self.write(revision,state,apply_schedule,actor=email,keys=SCHEDULE_SCOPE,error='The schedule changed while you were editing. Your edit has been kept; review the latest schedule.',retry_uncertain=p.get('sendEmail') is not True)
+      payload={'saved':True,'appointment':appointment,'schedule':schedule_history.read(state,appointment['date'],user)}
 
       if mail_ids:
 
@@ -407,56 +468,80 @@ class Application:
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(state)))
      elif path=='/api/schedule/travel' and method=='POST':
       if environ.get('HTTP_IF_MATCH') not in (f'"{revision}"',schedule_history.etag(state)):raise Problem(409,'The schedule changed. Refresh and try again.')
-      p=self.body(environ);before=state
-      if p.get('action') in ('undo','redo'):state=schedule_history.apply(state,email,schedule.day(p.get('date')),p['action'])
-      else:
-       state=schedule.save_travel(state,p,user);state=schedule_history.record(before,state,email,p['date'],{'swap_headers':'Reassign technician headers','workshop_travel':'Workshop travel','move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','booking_selection':'Change selected booking status','pack_gap':'Close schedule gap','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
-      self.commit(revision,state,actor=email,before=before);payload=schedule_history.read(state,p['date'],user);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(state)))
-     elif path=='/api/schedule-notes' and method=='GET':payload=schedule.schedule_notes.read(state)
+      p=self.body(environ)
+      def apply_travel(current):
+       if p.get('action') in ('undo','redo'):return schedule_history.apply(current,email,schedule.day(p.get('date')),p['action'])
+       result=schedule.save_travel(current,p,user)
+       return schedule_history.record(current,result,email,p['date'],{'swap_headers':'Reassign technician headers','workshop_travel':'Workshop travel','move_selection':'Move selected blocks','move_to_date':'Move selected to another date','delete_selection':'Delete selected blocks','booking_selection':'Change selected booking status','pack_gap':'Close schedule gap','snap_gap':'Snap and link blocks','travel_next':'Travel to next appointment','link':'Change block link','recalculate':'Calculate travel'}.get(p.get('action'),'Change schedule blocks'))
+      revision,state=self.write(revision,state,apply_travel,actor=email,keys=SCHEDULE_SCOPE,error='The schedule changed. Refresh and try again.')
+      payload=schedule_history.read(state,p['date'],user);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',schedule_history.etag(state)))
+     elif path=='/api/schedule-notes' and method=='GET':
+      payload=schedule.schedule_notes.read(state)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'schedule-notes',('scheduleNoteSeries',))))
      elif path=='/api/schedule-notes' and method=='POST':
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'The schedule changed. Refresh and try again.')
-      before=state;state=schedule.schedule_notes.save(state,self.body(environ),user);self.commit(revision,state,actor=email,before=before);payload=schedule.schedule_notes.read(state);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
-     elif path=='/api/schedule-settings' and method=='GET':payload=schedule.settings(state)
+      scope=('scheduleNoteSeries',)
+      if not tag_matches(environ.get('HTTP_IF_MATCH',''),state,'schedule-notes',scope,revision):raise Problem(409,'The schedule changed. Refresh and try again.')
+      p=self.body(environ)
+      revision,state=self.write(revision,state,lambda current:schedule.schedule_notes.save(current,p,user),actor=email,keys=scope,error='The schedule changed. Refresh and try again.')
+      payload=schedule.schedule_notes.read(state);headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'schedule-notes',scope)))
+     elif path=='/api/schedule-settings' and method=='GET':
+      payload=schedule.settings(state)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'schedule-settings',('scheduleSettings',))))
 
      elif path=='/api/schedule-settings' and method=='POST':
 
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Schedule settings changed. Reload before saving.')
+      scope=('scheduleSettings',)
+      if not tag_matches(environ.get('HTTP_IF_MATCH',''),state,'schedule-settings',scope,revision):raise Problem(409,'Schedule settings changed. Reload before saving.')
+      p=self.body(environ)
+      revision,state=self.write(revision,state,lambda current:schedule.save_settings(current,p),actor=email,keys=scope,error='Schedule settings changed. Reload before saving.')
+      payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'schedule-settings',scope)))
 
-      state=schedule.save_settings(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
-
-     elif path=='/api/labour-settings' and method=='GET':payload=labour.read(state)
+     elif path=='/api/labour-settings' and method=='GET':
+      payload=labour.read(state)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'labour',('labourSettings',))))
 
      elif path=='/api/labour-settings' and method=='POST':
+      scope=('labourSettings',)
+      if not tag_matches(environ.get('HTTP_IF_MATCH',''),state,'labour',scope,revision):raise Problem(409,'Another change was saved. Refresh and try again.')
+      p=self.body(environ)
+      revision,state=self.write(revision,state,lambda current:labour.save(current,p),actor=email,keys=scope)
+      payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'labour',scope)))
 
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh and try again.')
-
-      state=labour.save(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
-
-     elif path=='/api/weekly-report' and method=='GET':payload=weekly_report.read(state,parse_qs(environ.get('QUERY_STRING','')).get('week',[''])[0],parse_qs(environ.get('QUERY_STRING','')).get('comparison',[None])[0])
+     elif path=='/api/weekly-report' and method=='GET':
+      payload=weekly_report.read(state,parse_qs(environ.get('QUERY_STRING','')).get('week',[''])[0],parse_qs(environ.get('QUERY_STRING','')).get('comparison',[None])[0])
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'weekly-report',('weeklyChargedHours','weeklyReportNotes'))))
 
      elif path=='/api/report-periods' and method=='POST':payload=weekly_report.selected_period(state,self.body(environ))
      elif path=='/api/report-periods-pdf' and method=='POST':payload=weekly_report.period_pdf(state,self.body(environ))
 
      elif path=='/api/weekly-report-save' and method=='POST':
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh the report before saving.')
-      state=weekly_report.save_report(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      scope=('weeklyChargedHours','weeklyReportNotes')
+      if not tag_matches(environ.get('HTTP_IF_MATCH',''),state,'weekly-report',scope,revision):raise Problem(409,'Another change was saved. Refresh the report before saving.')
+      p=self.body(environ)
+      revision,state=self.write(revision,state,lambda current:weekly_report.save_report(current,p),actor=email,keys=scope,error='Another change was saved. Refresh the report before saving.')
+      payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'weekly-report',scope)))
      elif path=='/api/weekly-report-notes' and method=='POST':
-
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh this report before saving notes.')
-
-      state=weekly_report.save_notes(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      scope=('weeklyChargedHours','weeklyReportNotes')
+      if not tag_matches(environ.get('HTTP_IF_MATCH',''),state,'weekly-report',scope,revision):raise Problem(409,'Another change was saved. Refresh this report before saving notes.')
+      p=self.body(environ)
+      revision,state=self.write(revision,state,lambda current:weekly_report.save_notes(current,p),actor=email,keys=scope,error='Another change was saved. Refresh this report before saving notes.')
+      payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'weekly-report',scope)))
 
      elif path=='/api/weekly-report-excel' and method=='POST':payload=weekly_export.weekly(state,self.body(environ))
      elif path=='/api/report-periods-excel' and method=='POST':payload=weekly_export.period(state,self.body(environ))
      elif path=='/api/weekly-report-pdf' and method=='POST':payload=weekly_report.pdf(state,self.body(environ))
 
-     elif path=='/api/staff-setup' and method=='GET':payload={**staff_setup.read(state),'emailMode':reminders.mail_mode(self.local)}
+     elif path=='/api/staff-setup' and method=='GET':
+      payload={**staff_setup.read(state),'emailMode':reminders.mail_mode(self.local)}
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'staff-setup',('staffSettings','users','vehicles','removedVehicles'))))
 
      elif path=='/api/staff-setup' and method=='POST':
 
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Reload staff setup before saving.')
-
-      p=self.body(environ);state=staff_setup.delete(state,p,user) if p.get('action')=='delete' else staff_setup.save(state,p,user);self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      scope=('staffSettings','users','vehicles','removedVehicles')
+      if not tag_matches(environ.get('HTTP_IF_MATCH',''),state,'staff-setup',scope,revision):raise Problem(409,'Another change was saved. Reload staff setup before saving.')
+      p=self.body(environ)
+      revision,state=self.write(revision,state,lambda current:staff_setup.delete(current,p,user) if p.get('action')=='delete' else staff_setup.save(current,p,user),actor=email,keys=scope,error='Another change was saved. Reload staff setup before saving.')
+      payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'staff-setup',scope)))
 
      elif path=='/api/users' and method=='GET':payload={'users':[accounts.public(u) for u in accounts.users(state).values()],'technicians':timesheets.settings(state)['technicians']}
 
@@ -516,11 +601,17 @@ class Application:
 
       if user['role']!='admin':payload.update(technicians=[user['technician']] if user['technician'] else [],lockedTechnician=user['technician'],approvedLeave=[r for r in payload['approvedLeave'] if r['technician']==user['technician']])
 
-     elif path=='/api/staff-settings' and method=='GET':payload=timesheets.settings(state)
+     elif path=='/api/staff-settings' and method=='GET':
+      payload=timesheets.settings(state)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'staff-settings',('staffSettings',))))
 
-     elif path=='/api/time-settings' and method=='GET':payload=state.get('timeSettings',{'start':'07:30','finish':'16:00'})
+     elif path=='/api/time-settings' and method=='GET':
+      payload=state.get('timeSettings',{'start':'07:30','finish':'16:00'})
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'time-settings',('timeSettings',))))
 
-     elif path=='/api/quote-settings' and method=='GET':payload=quote_settings.read(state)
+     elif path=='/api/quote-settings' and method=='GET':
+      payload=quote_settings.read(state)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'quote-settings',('workbook',))))
 
      elif path=='/api/leave' and method=='GET':payload={'requests':[r for r in state.get('leaveRequests',{}).values() if user['role']=='admin' or r['technician']==user['technician']],'technicians':[t for t in timesheets.settings(state)['technicians'] if user['role']=='admin' or t['name']==user['technician']],'lunchStart':schedule.settings(state)['lunchStart']}
 
@@ -533,7 +624,9 @@ class Application:
       except Exception:logging.exception('Leave saved; queued notification delivery will be checked by the scheduler.')
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{saved_revision}"'))
 
-     elif path=='/api/vehicles' and method=='GET':payload={'vehicles':vehicles.fleet(state),'activeVehicles':vehicles.active_fleet(state),'removedVehicles':list(state.get('removedVehicles',{}).values()),'checks':list(state.get('vehicleChecks',{}).values()),'technicians':timesheets.settings(state)['technicians'],'checklist':vehicles.CHECKLIST,'colourSettings':vehicles.colour_settings(state)}
+     elif path=='/api/vehicles' and method=='GET':
+      payload={'vehicles':vehicles.fleet(state),'activeVehicles':vehicles.active_fleet(state),'removedVehicles':list(state.get('removedVehicles',{}).values()),'checks':list(state.get('vehicleChecks',{}).values()),'technicians':timesheets.settings(state)['technicians'],'checklist':vehicles.CHECKLIST,'colourSettings':vehicles.colour_settings(state)}
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'vehicles',VEHICLE_SCOPE)))
 
      elif path=='/api/timesheets' and method=='GET':
 
@@ -567,7 +660,9 @@ class Application:
 
       if len(body)!=length:raise Problem(400,'Incomplete upload.')
 
-      if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':
+      scope=POST_SCOPES.get(path);token=environ.get('HTTP_IF_MATCH','')
+      permitted=tag_matches(token,state,scope[0],scope[1],revision) if scope else token==f'"{revision}"'
+      if not permitted:
        if path in ('/api/timesheets','/api/timesheet-drafts'):
         try:candidate=json.loads(body)
         except Exception:raise Problem(400,'Invalid time sheet.')
@@ -590,7 +685,7 @@ class Application:
 
         if not isinstance(p,dict) or timesheets.minutes(p.get('finish'))<=timesheets.minutes(p.get('start')):raise Problem(400,'Default finish time must be after start time, in 15-minute increments.')
 
-        state['timeSettings']={'start':p['start'],'finish':p['finish']}
+        state={**state,'timeSettings':{'start':p['start'],'finish':p['finish']}}
 
        payload={'saved':True}
 
@@ -661,7 +756,7 @@ class Application:
 
         if any(old[n].get(c,'')!=new[n].get(c,'') for c in ('AE','AF','AG')):raise Problem(400,'Change quotes in the quote form. Keep register identities, revisions and status intact when editing Excel.')
 
-       state['workbook']=base64.b64encode(body).decode();payload={'saved':True}
+       state={**state,'workbook':base64.b64encode(body).decode()};payload={'saved':True}
 
       else:
 
@@ -671,7 +766,7 @@ class Application:
 
        state,entry,upload,garbage=save_quote(state,p,self.objects,user);payload={'saved':True,'quote':entry}
 
-      mutation_before=self.read_state()[1]
+      mutation_before=self.read_state()[1] if path=='/api/quote-save' else baseline
       state=recycle.capture(mutation_before,state,email)
 
       try:committed=self.store.commit(revision,state)
@@ -690,7 +785,7 @@ class Application:
 
        raise Problem(409,'A newer change was saved. Return Home and reopen the quote.')
 
-      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,scope[0],scope[1]) if scope else f'"{revision+1}"'))
 
       if schedule_live.configuration()[0] and schedule_history.etag(mutation_before)!=schedule_history.etag(state):schedule_live.notify()
 

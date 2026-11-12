@@ -22,7 +22,7 @@ class ScheduleRefinements(unittest.TestCase):
 class TimesheetPeriodTests(unittest.TestCase):
  def setUp(self):
   self.user={'email':'admin@example.nz','role':'admin'};self.state={}
-  self.data={'technician':'Alex','weekStart':'2026-10-26','signature':'Alex','notes':'keep','days':[{'status':'Work','method':'direct','hours':8 if i<5 else 0,'notes':'','unpaidLunch':False} for i in range(7)]}
+  self.data={'technician':'Alex','weekStart':'2026-10-26','signature':'Alex','onCall':False,'notes':'keep','days':[{'status':'Work','method':'direct','hours':8 if i<5 else 0,'notes':'','unpaidLunch':False} for i in range(7)]}
  def test_submission_and_draft_cannot_duplicate_each_other(self):
   state,saved=timesheets.save(self.state,self.data,user=self.user);before=copy.deepcopy(state)
   for save in (lambda:timesheets.save(state,self.data,user=self.user),lambda:timesheet_drafts.save(state,self.data,self.user)):

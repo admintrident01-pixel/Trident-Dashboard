@@ -4,7 +4,7 @@ from core import Problem
 class TimesheetDraftTests(unittest.TestCase):
  def setUp(self):
   self.api=test_accounts.AccountsAPI();self.api.setUp()
-  self.payload={'technician':'Scott Yearbury','weekStart':'2026-10-12','signature':'','notes':'unfinished notes','days':[{'status':'Work','method':'direct','hours':'8.5','start':'07:30','finish':'16:00','unpaidLunch':True,'notes':''} for _ in range(7)]}
+  self.payload={'technician':'Scott Yearbury','weekStart':'2026-10-12','signature':'','onCall':False,'notes':'unfinished notes','days':[{'status':'Work','method':'direct','hours':'8.5','start':'07:30','finish':'16:00','unpaidLunch':True,'notes':''} for _ in range(7)]}
  def save(self,payload=None,token='tech'):
   return self.api.call('/api/timesheet-drafts','POST',payload or self.payload,token=token)
  def test_partial_draft_persists_without_submission_and_is_private(self):

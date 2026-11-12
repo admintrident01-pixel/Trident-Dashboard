@@ -277,3 +277,16 @@
 .schedule-workshop-options input[type=checkbox]{width:18px;min-width:18px;height:18px;margin:0;padding:0}
 @media(max-width:480px){.schedule-address-row{grid-template-columns:minmax(0,1fr)}.schedule-workshop-options{flex-direction:row;justify-content:flex-start;flex-wrap:wrap;gap:4px 16px}.schedule-workshop-options label{min-height:44px}}
 .schedule-appointment.leave.leave-pending{background:#fff3d4!important;border:2px dashed #b97a06!important;color:#704400!important}
+/* Drag feedback must stay out of the header flow. The status row is a flex
+   container; the history-actions child claims the full row, so a second line of
+   text would otherwise be squeezed to a single character per line and stretch
+   the page. Keep the row wrapping safe, and show live drag feedback as a
+   bottom toast so the board never moves while a block is being dragged. */
+.trident-portal .tech-schedule .schedule-toolbar-status:has(.schedule-history-actions){flex-wrap:wrap;max-height:none}
+.trident-portal .tech-schedule .schedule-toolbar-status>p{flex:1 1 100%;min-width:0}
+.trident-portal .tech-schedule:has(.drag-preview) .schedule-toolbar-status>p[role=status]{
+ position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:40;
+ max-width:calc(100vw - 24px);margin:0;padding:8px 12px;border-radius:6px;
+ background:#17345f;color:#fff;font-size:12px;line-height:16px;font-weight:600;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ box-shadow:0 2px 8px #17345f30;pointer-events:none}

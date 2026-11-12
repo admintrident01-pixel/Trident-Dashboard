@@ -135,3 +135,16 @@
 }
 @media(min-width:601px){.timesheet-review-link{display:none}}
 .direct-check{display:block;max-width:170px;white-space:normal;font-size:11px;color:#4e647b;margin-top:5px;line-height:1.3}
+
+/* On-call allowance: compulsory sign-off choice, deliberately distinct from the other fields. */
+.timesheet-form .on-call{border:1px solid #e0a13c;border-left:4px solid #d9821f;border-radius:8px;background:#fff8ec;padding:9px 10px;align-self:start}
+.timesheet-form .on-call .on-call-label{display:flex;align-items:center;gap:7px;font-weight:700;color:#8a4b06;margin-bottom:7px;font-size:13px}
+.timesheet-form .on-call .on-call-label em{font-style:normal;font-size:10px;letter-spacing:.04em;text-transform:uppercase;background:#d9821f;color:#fff;border-radius:999px;padding:2px 7px}
+.timesheet-form .on-call .on-call-options{display:flex;gap:6px}
+.timesheet-form .on-call .on-call-options label{display:flex;align-items:center;gap:6px;flex:1;justify-content:center;margin:0;padding:7px 10px;border:1px solid #e0a13c;border-radius:6px;background:#fff;font-weight:700;color:#6b3a05;cursor:pointer}
+.timesheet-form .on-call .on-call-options label:hover{background:#ffeccf}
+.timesheet-form .on-call .on-call-options input{width:auto;margin:0;accent-color:#d9821f}
+.timesheet-form .on-call .on-call-options label:has(input:checked){background:#d9821f;border-color:#b96c12;color:#fff}
+.timesheet-form .on-call .on-call-options label:has(input:focus-visible){outline:2px solid #7a3f00;outline-offset:2px}
+.timesheet-form .on-call .on-call-note{display:block;margin-top:7px;font-size:11px;line-height:1.35;color:#7a4a12;font-weight:700}
+.timesheet-form .on-call .on-call-note[hidden]{display:none}

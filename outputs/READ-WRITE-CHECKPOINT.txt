@@ -1,0 +1,67 @@
+REVIEWED LOCALLY - AWAITING EXPLICIT APPROVAL - NOT PUSHED OR DEPLOYED
+Read/write conflict and efficiency update, 13 November 2026 (Pacific/Auckland)
+Branch: codex/Readwrite
+
+PROBLEM
+Schedule and Stock saves intermittently failed with "another version exists".
+Every write checked the single global register revision, so an unrelated save
+(a time sheet draft, reminder job, settings change or another page) made the
+page's edit token look stale. The data being edited had not changed.
+
+FIX
+- Added scoped tokens in backend/core.py: scope_digest, state_tag, tag_matches.
+- Added Application.write() in backend/app.py. It retries and rebases a save only
+  when the collections that page edits are unchanged. Genuine concurrent edits
+  to the same collection still return 409, so real conflicts are not overwritten.
+- Added scoped ETags and POST checks for Stock, stocktake, Schedule, schedule
+  notes/settings, vehicle checks/settings/order, staff setup, labour, weekly
+  report, quote/workbook/time settings and the recycle bin.
+- Legacy global revision tokens remain accepted for older clients.
+- Appointment email saves never retry an uncertain delivery, avoiding duplicates.
+- Pages auto-refresh after a genuine 409 and ask the user to press Save again.
+
+EFFICIENCY
+- backend/stock.py indexes allocations and asset-number movements once instead
+  of rescanning them for every asset. balance_index() computes all product
+  balances in one pass over assets and receipts.
+- backend/stock_import.py reuses those indexes when exporting.
+- Stock, stocktake, schedule, schedule-link and history mutations copy only the
+  edited collections instead of deep-copying the whole register/workbook.
+- recycle.capture() copies state only when something is actually archived.
+- Stock and settings POST responses return fresh payloads, avoiding a second GET.
+- Synthetic 5,000-asset stock read: about 0.32-0.44 seconds. The current local
+  register is near-empty and reads in under a millisecond.
+
+VALIDATION
+- Backend: 561 tests passed. Stock-focused: 102. Schedule-focused: 173.
+- New backend/test_write_scopes.py: 4 tests passed. Covers unrelated stock save,
+  stale same-scope stock save, schedule save racing an unrelated commit, and
+  recycle capture leaving new state untouched.
+- Frontend: all tests/*.mjs passed, 88 tests. npm run build passed.
+- Targeted ESLint passed on the five changed JSX files.
+- Local API restarted on port 18782 with the new code. Schedule and Stock pages
+  load; Book appointment and Add product dialogs open and close cleanly.
+- The existing local appointment "mn mn" at 9:00 am for Daryll Anderson is
+  preserved. No business data was written during review.
+
+LOCAL PREVIEW
+http://127.0.0.1:18780/
+Vite PID 7868; local API PID 7308. In-app browser signed into local Admin.
+
+CHANGED FILES
+backend/app.py, backend/core.py, backend/recycle.py, backend/schedule.py,
+backend/schedule_history.py, backend/schedule_links.py, backend/schedule_notes.py,
+backend/stock.py, backend/stock_import.py, backend/stocktake_sessions.py,
+backend/test_write_scopes.py (new), src/StockPage.jsx, src/VehicleChecks.jsx,
+src/VehicleSettings.jsx, src/WeeklyReport.jsx, src/RecycleBin.jsx
+
+NEXT STEP - APPROVAL REQUIRED
+A push to main automatically deploys frontend and API. After explicit approval:
+back up and compare live authoritative register/uploads; push to main; verify
+both deployments; compare live data again. Online values remain authoritative.
+Superseded packages are archived, not deleted.
+
+Unrelated edits in outputs/On-call-roster-mockup/*, public/trident-theme.css,
+src/LeaveRequestEditor.jsx, src/leaveRequestModel.js, crop-order.png,
+outputs/Leave-update-review/* and work-tests/leave-lunch-options.test.mjs belong
+to another chat and are excluded from this release.

@@ -25,6 +25,8 @@ def save(state,data,user):
     except ValueError:raise Problem(400,'Choose a valid Monday.')
     if date.weekday()!=0:raise Problem(400,'Choose a Monday for the week starting date.')
     old=existing(state,data,user)
+    on_call=data.get('onCall')
+    if on_call is not None and not isinstance(on_call,bool):raise Problem(400,'Choose Yes or No for the on-call allowance.')
     from timesheet_period import require_available
     require_available(state,name,week,user,exclude_draft=old['id'] if old else None)
     days=data.get('days')
@@ -53,6 +55,7 @@ def save(state,data,user):
         approved=timed.get((date+dt.timedelta(days=index)).isoformat())
         if row['status']=='Work' and approved:total+=decimal.Decimal(str(approved['hoursPerDay']))
     entry={'id':old['id'] if old else str(uuid.uuid4()),'revision':old['revision']+1 if old else 1,'owner':old['owner'] if old else user['email'],'technician':name,'weekStart':week,'signature':timesheets.text(data.get('signature',''),'signature',160),'notes':timesheets.text(data.get('notes',''),'weekly notes',4000),'days':cleaned,'total':float(total),'createdAt':old['createdAt'] if old else stamp,'updatedAt':stamp,'isDraft':True}
+    entry['onCall']=on_call
     result=copy.deepcopy(state);result.setdefault('timesheetDrafts',{})[entry['id']]=entry
     return result,entry
 
@@ -60,6 +63,6 @@ def submit(state,data,user):
     if not isinstance(data,dict):raise Problem(400,'Invalid time sheet.')
     accounts.own(user,data.get('technician'))
     old=existing(state,data,user)
-    result,entry=timesheets.save(state,data,user=user,exclude_draft=old['id'] if old else None)
+    result,entry=timesheets.save(state,data,user=user,exclude_draft=old['id'] if old else None,require_on_call=True)
     if old:del result['timesheetDrafts'][old['id']]
     return result,entry

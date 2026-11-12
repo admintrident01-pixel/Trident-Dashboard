@@ -10,7 +10,7 @@ export function leaveCalculation(row){
  const start=minutes(row.startTime),end=minutes(row.endTime),first=minutes(row.lunchStart),last=minutes(row.lunchEnd)
  const lunch=row.lunchChoice==='none'?0:Math.max(0,Math.min(end,last)-Math.max(start,first))/60
  const hours=(end-start)/60-lunch
- return {hours:Number.isFinite(hours)?hours:0,lunch:Number.isFinite(lunch)?lunch:0,valid:end>start&&hours>0&&!!row.lunchChoice&&(row.lunchChoice==='none'||last>first)&&row.lunchConfirmed&&(row.lunchChoice==='usual'||!!row.lunchReason?.trim())}
+ return {hours:Number.isFinite(hours)?hours:0,lunch:Number.isFinite(lunch)?lunch:0,valid:end>start&&hours>0&&['usual','none'].includes(row.lunchChoice)&&(row.lunchChoice==='none'||last>first)&&row.lunchConfirmed&&(row.lunchChoice==='usual'||!!row.lunchReason?.trim())}
 }
 export function defaultLeaveDay(date,lunchStart='12:00'){
  const end=minutes(lunchStart)+30,lunchEnd=`${String(Math.floor(end/60)).padStart(2,'0')}:${String(end%60).padStart(2,'0')}`

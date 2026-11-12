@@ -4,6 +4,13 @@ from concurrent.futures import ThreadPoolExecutor
 from core import Problem
 import schedule_routes, schedule_booking
 
+SCHEDULE_COLLECTIONS=('appointments','travelBlocks','scheduleLinks','scheduleHiddenTravel','scheduleColumnOrders','deletedLunchIds')
+def copy_state(state):
+    result={**state}
+    for key in SCHEDULE_COLLECTIONS:
+        if key in state:result[key]=copy.deepcopy(state[key])
+    return result
+
 def active(state):
     return bool(schedule_routes.configuration()['key'] or state.get('scheduleLinks') or any('locked' in row for row in state.get('travelBlocks',{}).values()))
 
@@ -62,7 +69,7 @@ def connections(state,date,travels=None):
 
 def save_control(state,data,user):
     import schedule as s
-    date=s.day(data.get('date'));action=data.get('action');result=copy.deepcopy(state)
+    date=s.day(data.get('date'));action=data.get('action');result=copy_state(state)
     if action=='link_block':
         if type(data.get('linked')) is not bool:raise Problem(400,'Choose link or unlink.')
         edges=[e for e in connections(state,date) if data.get('blockId') in (e['leftId'],e['rightId'])]
@@ -206,7 +213,7 @@ def snap_gap(state,data,user):
             if block.get('source')!='travel' and schedule_booking.booked(block):raise Problem(409,f"The appointment {label} is booked ({block['client']}). Unbook it before moving.")
             require_movable(block)
     if above & below:raise Problem(409,'These blocks already belong to the same linked group. Unlink them before closing this gap.')
-    delta=gap['start']-gap['end'];result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
+    delta=gap['start']-gap['end'];result=copy_state(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
     for identifier in below:
         block=by_id[identifier];start=s.minutes(block['start'])+delta
         if start<0 or start+block['duration']>1440:raise Problem(409,'The snapped group would leave the selected day.')
@@ -241,7 +248,7 @@ def move_selection(state,data,user):
     if not selected<=by_id.keys():raise Problem(409,'The selected blocks changed. Refresh and select them again.')
     anchors={i for i in selected if by_id[i].get('source') not in ('travel','leave')}
     moving=selected|{b['id'] for b in blocks if b.get('source')=='travel' and b.get('linked',True) and b.get('anchorId') in anchors}
-    result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat();remapped={}
+    result=copy_state(state);now=dt.datetime.now(dt.timezone.utc).isoformat();remapped={}
     for edge in connections(state,date,[b for b in blocks if b.get('source')=='travel']):
         if (edge['leftId'] in moving)!=(edge['rightId'] in moving):result.setdefault('scheduleLinks',{})[edge['id']]=False
     def technicians(block):return list(dict.fromkeys(target if transfer and n==source else n for n in s.assigned(block)))
@@ -288,7 +295,7 @@ def booking_selection(state,data,user):
     if any(blocks[i].get('source') in ('leave','note','lunch') for i in ids):raise Problem(409,'Leave and recurring notes keep their own status.')
     appointments=[blocks[i] for i in set(ids) if not blocks[i].get('source')]
     if not appointments:raise Problem(400,'Select at least one appointment. Travel has no booking status.')
-    result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
+    result=copy_state(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
     for block in appointments:
         # Interpret existing marks before editing, retaining the owner's conflict rule.
         current=schedule_booking.controls(block)
@@ -303,7 +310,7 @@ def delete_selection(state,data,user):
     blocks={b['id']:b for b in day_blocks(state,date)}
     if any(i not in blocks for i in ids):raise Problem(409,'The selected blocks changed. Refresh and select them again.')
     if any(blocks[i].get('source') in ('leave','note') for i in ids):raise Problem(409,'Approved leave and recurring notes must be managed in their own settings.')
-    result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
+    result=copy_state(state);now=dt.datetime.now(dt.timezone.utc).isoformat()
     for identifier in set(ids):
         block=blocks[identifier]
         if block.get('source')=='travel':result.setdefault('scheduleHiddenTravel',{})[identifier]=True
@@ -327,7 +334,7 @@ def travel_next(state,data,user):
     duration=route['duration'];end=s.minutes(top['start'])+top['duration']
     if duration<=0:raise Problem(400,'These addresses need no driving time. Use Snap & link to join the blocks.')
     if end+duration>1440:raise Problem(409,'This journey would finish outside the selected day.')
-    result=copy.deepcopy(state);after_id=s.travel_id(date,name,top['id'],'after');before_id=s.travel_id(date,name,bottom['id'],'before')
+    result=copy_state(state);after_id=s.travel_id(date,name,top['id'],'after');before_id=s.travel_id(date,name,bottom['id'],'before')
     old=result.setdefault('travelBlocks',{}).get(after_id,{})
     result['travelBlocks'][after_id]={**old,'date':date,'start':s.time_string(end),'duration':duration,'locked':True,'linked':True,'workshopTravelExplicit':True,'version':old.get('version',0)+1,'updatedBy':user['email']}
     result.setdefault('scheduleHiddenTravel',{}).pop(after_id,None)
@@ -368,7 +375,7 @@ def move_to_date(state,data,user,edited=None):
         if block.get('source')=='leave':raise Problem(409,'Approved leave must be changed in Leave forms.')
         require_movable(block)
     delta=s.minutes(edited['start'])-s.minutes(by_id[edited['id']]['start']) if edited else 0
-    result=copy.deepcopy(state);now=dt.datetime.now(dt.timezone.utc).isoformat();moved_ids=set()
+    result=copy_state(state);now=dt.datetime.now(dt.timezone.utc).isoformat();moved_ids=set()
     for edge in connections(state,source,[b for b in original if b.get('source')=='travel']):
         if (edge['leftId'] in moving)!=(edge['rightId'] in moving):result.setdefault('scheduleLinks',{})[edge['id']]=False
     for identifier in anchors:
