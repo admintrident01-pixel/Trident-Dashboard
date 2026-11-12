@@ -1,17 +1,18 @@
-PUBLISHED AND VERIFIED - Keyless dbFLEX job import, 6 November 2026.
-Commit cf9eb564f336aa62bf6cb8c0d89a9dd4361a94fa; API trident-quote-api-00070-4sp,100% traffic. Exact frontend/assets/userscript verified.
-Import job is available to admins except scott@trice.nz / Scott Yearbury. Scott's
-other admin tools and permissions are preserved. No source record writes.
-Tampermonkey command transfers visible whitelisted job details to a review page.
-Choose normal appointment or quote; no API key or new cloud service required.
-Claim fields, hidden fields, attachments and source prices excluded. Existing
-Trident prices/autosave retained; recipient email chosen separately.
-72 frontend tests, lint/build passed. Backend source unchanged; prior 522-test
-baseline retained. Synthetic appointment/quote saves and mobile review passed.
-Fresh recoverable live register/upload backups verified; records and all prior
-uploads preserved; environment/secrets, identity and runtime settings unchanged.
-Concurrent edits retained/audited if present. No QA fixtures or production test writes.
-Manual-only Google routing preserved. Native Tampermonkey browser installation
-is a user step; extension context-menu installation has not been tested here.
-Evidence DBFLEX-RELEASE.json. Cumulative package updated; prior package archived.
-Original checkout and bulk migration source preserved.
+PUBLISHED AND VERIFIED - Combined read/write, on-call allowance and theme release, 13 November 2026.
+Commit 137e2372fc4a6e4242441c5fde777444afe12856; API trident-quote-api-00074-wmc, 100% traffic.
+Frontend bundle index-CbjkSAd0.js and schedule/theme/timesheet assets match the production build by SHA-256.
+Backend 566 tests, frontend 185 tests, ESLint and production Vite build passed; browser review passed.
+On-call allowance Yes/No is compulsory at time-sheet sign-off and carries into payables and weekly Excel.
+Leave part-day lunch options are limited to Usual lunch or No unpaid lunch. Schedule tiles are square and
+drag feedback stays contained. Read/write conflict scopes now prevent spurious concurrent-version errors.
+Pre-release register clone and 35 uploads are recoverable under tag readwrite_20261112T223707Z.
+Post-release comparison: all 35 prior uploads unchanged; environment, secrets, identity and runtime settings
+preserved. Concurrent staff activity retained: 2 appointments added, 1 appointment modified, 4 travel blocks
+added, 1 recycle item added, 1 reminder job and 1 schedule-history entry modified. No production records
+were overwritten by this release.
+Evidence COMBINED-RELEASE-EVIDENCE.json. Cumulative package updated; prior package archived.
+No app source changes remain unpushed from the on-call, cosmetic or read/write chat branches. crop-order.png
+remains an excluded local working image.
+Cumulative package: Trident-dashboard-cumulative-update.zip, 1,222,908 bytes, 563 entries,
+SHA256 568e793c62417abaeb357471835d6134b7e240107d377a298794f87b8d9ec532.
+Previous package archived as Release history/Trident-dashboard-cf9eb56-dbFLEX-import.zip.

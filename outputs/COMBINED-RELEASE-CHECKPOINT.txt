@@ -56,3 +56,13 @@ The user approved preparing the combined release and updating the site on
 13 November 2026. A push to main publishes both the frontend and API. After the
 push, verify the live frontend assets, API revision, and compare the register and
 all prior uploads against the verified pre-release snapshot.
+
+POST-RELEASE VERIFICATION - 13 November 2026
+- Published commit: 137e2372fc4a6e4242441c5fde777444afe12856 on main.
+- Cloud Build d63d4b2b-bbf5-4f2a-8112-d03026f1ef7f: SUCCESS.
+- API: trident-quote-api-00074-wmc, 100% traffic, commit-sha 137e237.
+- Live frontend assets verified by SHA-256 against dist; health endpoint returned {"ok": true, "version": "C"}.
+- Post-release comparison: all 35 prior uploads unchanged; environment, secrets, identity and runtime settings preserved.
+- Concurrent business activity preserved: appointments +2/+1 modified, travelBlocks +4, recycleBin +1,
+  reminderJob 1 modified, scheduleHistory 1 modified. No production data was overwritten.
+- Evidence: outputs/COMBINED-RELEASE-EVIDENCE.json and outputs/RELEASE-STATUS.txt.
