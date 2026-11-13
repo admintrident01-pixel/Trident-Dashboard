@@ -24,9 +24,14 @@ export function rangeFor(appointments,view='fit',workHours={start:'08:00',finish
  return {start:Math.min(Math.floor(normal.start/60)*60,...active.map(a=>Math.floor(timeMinutes(a.start)/60)*60)),end:Math.max(Math.ceil(normal.end/60)*60,...active.map(a=>Math.ceil((timeMinutes(a.start)+a.duration)/60)*60))}
 }
 export const hourMarks=range=>Array.from({length:Math.ceil((range.end-range.start)/60)},(_,i)=>range.start+i*60)
-export function scrollDayLayout(viewportHeight,headingHeight,normal){
+export function scheduleScale(value){
+ const scale=Number(value)
+ return Number.isFinite(scale)?Math.min(3,Math.max(.4,scale)):1
+}
+export function scrollDayLayout(viewportHeight,headingHeight,normal,scale=1){
  const pixelsPerMinute=Math.max(1,viewportHeight-headingHeight)/(normal.end-normal.start)
- return {trackHeight:1440*pixelsPerMinute,scrollTop:normal.start*pixelsPerMinute}
+ const factor=scheduleScale(scale)
+ return {trackHeight:1440*pixelsPerMinute*factor,scrollTop:normal.start*pixelsPerMinute*factor}
 }
 export function blockPosition(appointment,range){
  const start=Math.max(range.start,timeMinutes(appointment.start)),end=Math.min(range.end,timeMinutes(appointment.start)+appointment.duration)

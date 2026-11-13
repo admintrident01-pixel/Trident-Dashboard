@@ -16,10 +16,11 @@ class MyDayTests(unittest.TestCase):
   command={'operationId':'operation_'+str(len(my_day.book(state,self.user)['operations'])).zfill(20),'date':self.day,'revision':my_day.book(state,self.user)['revision'],'action':action,'jobId':'a',**extra}
   return my_day.operation(state,self.user,command,self.now),command
  def test_private_filtered_route_free_and_read_does_not_write(self):
+  self.state['scheduleSettings']={'appointmentTypes':['Repair'],'clientSearchUrlTemplate':'https://example.com/search?q={client}'}
   original=copy.deepcopy(self.state)
   with patch.object(schedule_routes,'_provider',side_effect=AssertionError('No Google')):
    data=my_day.read(self.state,self.user,self.day,self.now)
-  self.assertEqual([a['id'] for a in data['appointments']],['a']);self.assertEqual(data['plannedMinutes'],60)
+  self.assertEqual([a['id'] for a in data['appointments']],['a']);self.assertEqual(data['plannedMinutes'],60);self.assertEqual(data['clientSearchUrlTemplate'],'https://example.com/search?q={client}')
   self.assertEqual(data['appointments'][0]['notes'],'Stored job notes');self.assertEqual(self.state,original)
   for user in ({**self.user,'email':''},{**self.user,'role':'guest'}):
    with self.assertRaises(Problem):my_day.read(self.state,user,self.day,self.now)

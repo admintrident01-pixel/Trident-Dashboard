@@ -138,14 +138,14 @@
 /* Quiet dark top bar: page links carry an accent underline instead of folder tabs. */
 @media screen{
  .trident-portal .portal-header{background:#202020;color:#eef2f7;border-bottom:1px solid #0c0c0c;box-shadow:0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(9,20,35,.18);gap:14px;padding:0 20px}
- .trident-portal .portal-brand{padding-right:14px;margin-right:2px;border-right:1px solid rgba(255,255,255,.14)}
+ .trident-portal .portal-brand{padding-right:8px;margin-right:2px;border-right:0}
  .trident-portal .portal-brand img{width:132px}
  .trident-portal .portal-header nav{height:100%;align-items:stretch;gap:1px;overflow-x:auto;overflow-y:hidden}
  .trident-portal .portal-header nav button{position:relative;background:transparent;color:#b7c4d4;border:0;border-radius:7px;min-height:0;height:100%;padding:0 6px;font-size:12px;font-weight:500;line-height:1.2;transition:background-color .14s,color .14s}
  .trident-portal .portal-header nav button::after{content:"";position:absolute;left:6px;right:6px;bottom:0;height:2px;border-radius:2px 2px 0 0;background:transparent;transition:background-color .14s}
  .trident-portal .portal-header nav button:hover{background:rgba(255,255,255,.07);color:#fff}
  .trident-portal .portal-header nav button:hover::after{background:rgba(255,255,255,.2)}
- .trident-portal .portal-header nav button[aria-current=page]{background:transparent;border-color:transparent;color:#fff;font-weight:650;box-shadow:none}
+ .trident-portal .portal-header nav button[aria-current=page]{background:rgba(255,255,255,.08);border-color:transparent;color:#fff;font-weight:650;box-shadow:none}
  .trident-portal .portal-header nav button[aria-current=page]::after{background:var(--trident-accent)}
  .trident-portal .portal-header nav button:focus-visible{outline-offset:-4px}
  .trident-portal .portal-account{gap:7px;color:#a6b5c7;font-size:12px}
@@ -332,8 +332,10 @@
 
 @media screen{.trident-portal .portal-header{padding-left:4px;padding-right:6px;gap:4px}.trident-portal .portal-brand{margin:0;padding:0}.trident-portal .portal-header nav{gap:2px;margin:0}}
 
-@media screen{.trident-portal .portal-header nav{overflow:visible;flex-wrap:wrap;height:auto;align-content:center;gap:2px}.trident-portal .portal-header nav button{padding:5px 6px;font-size:12px;min-height:28px;line-height:16px}.trident-portal .portal-header{height:auto;min-height:44px}}
-@media screen and (max-width:1100px){.trident-portal .portal-header{flex-wrap:wrap;gap:0 4px;align-content:center}.trident-portal .portal-brand{order:1;height:38px}.trident-portal .portal-account{order:2}.trident-portal .portal-header nav{order:3;flex:0 0 100%;width:100%;padding:0;justify-content:flex-start;align-self:auto}.trident-portal .portal-header nav button{padding:4px 6px}.trident-portal .portal-account span{display:none}}
+@media screen{.trident-portal .portal-header{height:44px;min-height:44px}.trident-portal .portal-header nav{overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;height:100%;align-content:stretch;align-items:stretch;gap:0}.trident-portal .portal-header nav button{padding:0 4px;font-size:12px;min-height:0;height:100%;line-height:1.2;border-radius:0}}
+@media screen and (max-width:1230px){.trident-portal .portal-account span{display:none}}
+@media screen and (max-width:1120px){.trident-portal .workspace{--portal-height:82px}.trident-portal .portal-header{height:auto;min-height:82px;flex-wrap:wrap;gap:0 4px;align-content:center}.trident-portal .portal-brand{order:1;height:40px}.trident-portal .portal-account{order:2}.trident-portal .portal-header nav{order:3;flex:0 0 100%;width:100%;height:40px;padding:0;justify-content:flex-start;align-self:auto;align-items:stretch;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden}.trident-portal .portal-header nav button{height:100%;min-height:0;padding:0 6px;border-radius:0}.trident-portal .portal-account span{display:none}}
+@media screen and (max-width:760px){.trident-portal .workspace{--portal-height:90px}}
 
 /* Keep common tasks compact and visible across sections. */
 @media screen{
@@ -439,7 +441,7 @@
  .trident-portal .my-day-empty{margin:0 0 18px;padding:22px;border:1px dashed #d3dfed;border-radius:12px;background:#f8fafd;text-align:center;color:#6a7d94}
  .trident-portal .my-day-job{border-radius:14px;box-shadow:var(--trident-shadow-soft)}
  .trident-portal .my-day-job-time small{border-radius:999px;font-weight:650}
- .trident-portal .my-day-map{background:#f7fafd;color:#1f4777;border-top:1px solid #e4ebf4;font-weight:600}
+ .trident-portal .my-day-job-actions{border-top:1px solid #e4ebf4;background:#f7fafd}.trident-portal .my-day-client-search{background:#f7fafd;color:#1f4777}.trident-portal .my-day-map{background:#f7fafd;color:#1f4777;border-top:0;font-weight:600}
  .trident-portal .my-day-map:hover{background:#edf4fc;color:#17345f}
  .trident-portal .mobile-my-day-return{background:transparent;padding:10px 20px 2px}
  .trident-portal .leave-summary .leave-pill{border-radius:999px;padding:7px 13px;font-weight:600}

@@ -37,7 +37,7 @@ def read(state,user,day,now=None):
     draft=next((r for r in timesheet_drafts.visible(state,user) if r.get('technician')==user['technician'] and r.get('weekStart')==monday.isoformat()),None)
     cfg=reminders.settings(state);sheet_due=dt.datetime.combine(monday+dt.timedelta(days=7+cfg['timesheetWeekday']),dt.time.fromisoformat(cfg['timesheetTime']),ZONE)
     leaves=sorted([copy.deepcopy(r) for r in state.get('leaveRequests',{}).values() if r.get('technician')==user['technician']],key=lambda r:r.get('submittedAt',''),reverse=True)[:5]
-    return {'date':day,'today':local.date().isoformat(),'serverNow':now.isoformat(),'technician':user['technician'],
+    return {'date':day,'today':local.date().isoformat(),'serverNow':now.isoformat(),'technician':user['technician'],'clientSearchUrlTemplate':schedule.settings(state)['clientSearchUrlTemplate'],
         'appointments':rows,'recurringNotes':notes,'plannedMinutes':sum(a['duration'] for a in rows if a.get('type','').casefold()!='notes'),
         'revision':log['revision'],'day':record,'active':active,'attention':due,'leave':leaves,
         'timesheet':{'weekStart':monday.isoformat(),'due':sheet_due.isoformat(),'daysRemaining':(sheet_due.date()-local.date()).days,

@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {assignedTechs,reassignTechnician,blockPosition,moveAppointment,rangeFor,scrollDayLayout,pointerMinute} from '../src/scheduleMath.js'
+import {assignedTechs,reassignTechnician,blockPosition,moveAppointment,rangeFor,scrollDayLayout,scheduleScale,pointerMinute} from '../src/scheduleMath.js'
 const booking={start:'09:00',duration:60,timing:'flexible'}
 test('block width follows booked duration',()=>{
  assert.deepEqual(blockPosition(booking,{start:480,end:1080}),{left:10,width:10})
@@ -49,6 +49,15 @@ test('scrolling a full day preserves normal workday scale and quarter-hour place
   const rect={top:-layout.scrollTop+24,height:layout.trackHeight}
   assert.equal(pointerMinute(full,rect,{y:rect.top+19.25/24*rect.height},true),1155)
  }
+})
+test('vertical scale enlarges the time axis without changing the time position',()=>{
+ const normal={start:480,end:960}
+ const base=scrollDayLayout(600,24,normal),double=scrollDayLayout(600,24,normal,2)
+ assert.equal(double.trackHeight,base.trackHeight*2)
+ assert.equal(double.scrollTop,base.scrollTop*2)
+ assert.equal(scheduleScale(99),3)
+ assert.equal(scheduleScale(.1),.4)
+ assert.equal(scheduleScale('bad'),1)
 })
 test('dragging a shared booking replaces only the dragged technician and avoids duplicates',()=>{
  const team={...booking,technician:'Scott',technicians:['Scott','Bala']}

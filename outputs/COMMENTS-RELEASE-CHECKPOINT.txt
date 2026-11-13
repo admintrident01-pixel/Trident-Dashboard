@@ -1,0 +1,66 @@
+APPROVED FOR RELEASE - LIVE BACKUP AND ROLLOUT IN PROGRESS - NOT YET PUSHED
+Schedule and My Day comments update, 13 November 2026 (Pacific/Auckland)
+Branch: codex/Readwrite (HEAD e7ee4a9, level with origin/main)
+
+SCOPE
+- Header: removed the logo's right divider; page buttons fill the dark header
+  height; active page keeps a subtle full-height background.
+- Header fit: compact spacing keeps every page link visible at 1242px; account
+  text is hidden only below 1230px; the compact two-row layout starts at 1120px.
+- Schedule: removed the appointment gradient; appointments and recurring notes
+  share a borderless solid-fill shape with different colours; travel is borderless.
+- Schedule toolbar: touches the header with zero vertical gap; Undo/Redo are
+  symbol-only; the visible Live word is removed; status messages sit immediately
+  left of the refresh symbol.
+- Schedule vertical scale: a bottom-right, mostly transparent overlay with -,
+  percentage/reset and + controls scales only the time-axis height (40%-300% in
+  20-point steps). It reveals on hover or keyboard focus, stays visible on touch,
+  preserves the visible centre time, and disables while a block gesture is active.
+- Responsive height: the wrapped navigation now sets the real 82px header token
+  (90px below 760px), keeping the schedule inside the viewport. The selection
+  action row wraps below 550px instead of widening the page.
+- My Day: every appointment can show the same configured client-search URL and
+  magnifying-search icon used by Schedule blocks, alongside the Maps action.
+  The backend My Day payload now includes the read-only clientSearchUrlTemplate.
+
+VALIDATION
+- Backend: 566 tests passed with the performance workbook fixture.
+- Focused backend: test_my_day and test_schedule_client_search, 16 passed.
+- Frontend: 186 tests passed (93 in tests/, 93 in work-tests/), including the new
+  vertical-scale calculation and clamping test.
+- Targeted ESLint on src/public passed; production Vite build passed.
+- Browser checks at 1242x667, 1065x480, 706x667 and 480x667: no horizontal page
+  overflow and no page-height overflow after the header token correction.
+- Scale checks: overlay opacity is 0 by default and 1 on hover/focus; + changed
+  the normal-view track 1209px -> 1450.8px and a 60-minute block 50.4px -> 60.4px;
+  Fit view changed 403px -> 483.6px; - changed 100% to 80%; the percentage button
+  reset to 100%; normal/fit switching kept the control at the bottom-right and
+  appointment times stayed aligned to the time axis. No business data was written.
+- Existing header checks still pass:
+  every desktop nav item visible, full-height active button, logo divider gone,
+  toolbar/header gap 0px, undo/redo symbols only, no Live text, message left of
+  refresh, appointment/travel/note blocks all with zero borders, and distinct
+  appointment/recurring-note fills.
+- My Day client search verified with a browser-intercepted appointment:
+  https://www.google.com/search?q=Marlee%20Indigo%20Arendt; no business data was
+  written. The local API also returned the configured template on the real payload.
+
+LOCAL PREVIEW
+http://127.0.0.1:18780/
+Vite PID 7868; local API PID 12680. In-app browser is signed into local Admin.
+
+EXCLUSIONS
+crop-order.png remains an unrelated untracked working image and is not part of
+this release. No business records, credentials, runtime data or uploads are included.
+
+OTHER CHAT WORK
+Chat 3 contains the on-call roster design mockups only; it has no implemented
+roster app code to publish. The on-call allowance sign-off from that workstream
+was already published in commit 137e237. No additional unpushed app source
+remains from the on-call, cosmetic or read/write chat branches.
+
+APPROVAL
+A push to main automatically publishes both frontend and API. After explicit
+approval: create a fresh recoverable live backup, push, verify Cloud Build, the
+new Cloud Run revision and traffic, live frontend asset checksums and API health,
+then compare the authoritative register and prior uploads against the backup.
