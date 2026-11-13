@@ -34,7 +34,7 @@ to ink and navy. Matching the asset removes the rectangular seam around the logo
 | Reminders | 10 | Refresh deadlines, rows-per-page, pagination, four sort headers, preview email | Compact table controls, teal sort triangles |
 | Quotes (dashboard) | 19 | Quote dashboard, New quote, All/Drafts/Completed filters, search, five sort headers, pagination, Open draft, Delete, Quote dashboard | Amber New quote; pill filters; navy active filter with amber inset |
 | Quotes (editor) | 20+ form fields, line editors | Quote details/Calculate labour tabs, quote type, number/date/by, customer and client fields, job details, equipment/vehicle, wording, line items, Add item, notes, Save draft, Load draft, Email quote, Finalise & save PDF, Delete draft | Ghost actions on the navy toolbar; amber Finalise; navy active tab with amber rule |
-| Tech schedule | 35 | Search, messages disclosure, cancelled checkbox, previous/next day, date, filter, weekday buttons, undo/redo, Move/Book/Unbook/Optional/Delete selected, sync refresh, Book appointment, eight technician swap selects, eight appointment tracks, appointment cards, zoom controls | 32px dense buttons; amber Book appointment; teal selection and drop states; appointment cards lift on hover |
+| Tech schedule | 30 | Search, messages disclosure, cancelled checkbox, previous/next day, date, compact first-name technician filter, weekday buttons with undo/redo pinned at the right of Friday, sync refresh, Book appointment, eight technician swap selects, eight appointment tracks, appointment cards, zoom controls. Bulk Move/Book/Unbook/Optional/Delete stay in the block context menu | 32px dense buttons; amber Book appointment; teal selection and drop states; 13px block checkboxes centred in the colour rail; travel labels clipped to 9px/10px icon so they cannot bleed into neighbouring blocks |
 | On call | 11 | Previous/next week, This week, Hand over, Release to pool, Resend email, Recent activity, Resend, Edit order | Teal avatar rings, navy Hand over, quiet text actions |
 | Time sheet | 117 | Back to My day, history search/sort/pagination, refresh, technician/week fields, seven day rows (work/leave, entry method, direct hours, start/finish AM/PM, lunch, notes), signature, on-call radios, Save draft, New sheet, Generate PDF, Sign and submit, Download, history actions | Standard fields; compact time geometry; amber Sign and submit; white secondary actions |
 | Leave forms | 17 | Back to My day, leave type, dates, day editor, timed leave fields, reason, submit, status pills, detail/review actions | Semantic status pills; teal focus and row hover |
@@ -94,6 +94,7 @@ to ink and navy. Matching the asset removes the rectangular seam around the logo
 | `td-fade-up` (new) | First paint of page content and quote dashboard | Soft orientation without delaying input |
 | `td-sync-glow` (new) | Schedule sync button while syncing | Reinforces the spinning icon |
 | `td-live-pulse` (new) | On-call activity dot | Quiet live indicator |
+| `td-spin` (new) | Boot splash and every "Opening page…" / "Loading…" state | Teal ring spinner sized to the theme |
 | Navigation underline | Header tabs | Amber rule scales from the centre |
 | Card top rule | Module cards | Teal-to-amber rule expands on hover |
 | Hover lift | Buttons, cards, stock metrics, appointment blocks | 1–3px lift with shadow increase |

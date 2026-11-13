@@ -303,7 +303,27 @@
 .tech-schedule .schedule-zoom button:focus-visible{outline:2px solid #1669c1;outline-offset:1px}
 @media(hover:none){.schedule-zoom{opacity:1}}
 @media(prefers-reduced-motion:reduce){.schedule-zoom{transition:none}}
-@media(max-width:550px){
- .trident-portal .tech-schedule .schedule-toolbar-status:has(.schedule-history-actions){width:100%;max-width:100%;min-width:0}
- .trident-portal .tech-schedule .schedule-history-actions{width:100%;min-width:0;flex-wrap:wrap}
+/* Toolbar density: compact technician filter and history pinned to the day row. */
+.schedule-control-row [aria-label="Filter technician"],
+.schedule-unified-toolbar [aria-label="Filter technician"]{width:124px;max-width:124px}
+.schedule-control-row .schedule-week{flex-wrap:nowrap}
+.schedule-week .schedule-history-actions{flex:0 0 auto;margin-left:3px;gap:4px;white-space:nowrap}
+.tech-schedule .schedule-week>button{flex:1 1 0;min-width:0}
+.tech-schedule .schedule-week .schedule-history-actions button{width:30px;min-width:30px;height:30px;min-height:30px;padding:0;display:inline-grid;place-items:center}
+@media(max-width:700px){.schedule-control-row .schedule-week{width:100%}}
+
+/* Travel labels stay inside their block, including the status icon. */
+.trident-portal .tech-schedule .schedule-appointment.travel{font-size:9px;line-height:11px;padding:2px 5px}
+.trident-portal .tech-schedule .schedule-appointment.travel .travel-label{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;line-height:11px}
+.trident-portal .tech-schedule .schedule-travel-check{width:10px;height:10px;overflow:hidden!important;flex:0 0 auto}
+.trident-portal .tech-schedule .schedule-travel-check svg{width:10px;height:10px}
+
+/* Block selection checkbox: centred in the colour rail, never clipped. */
+.trident-portal .tech-schedule input.schedule-select-block{
+  left:4px;top:calc(50% - 6.5px);width:13px;height:13px;
+  min-height:13px;max-height:13px;padding:0;
+  border:1.5px solid var(--td-line-strong);border-radius:3px;
+  background:var(--td-surface);accent-color:var(--td-teal);
+  box-shadow:0 0 0 1px rgba(255,255,255,.6)
 }
+.trident-portal .tech-schedule .schedule-appointment:has(.schedule-select-block){padding-left:22px}

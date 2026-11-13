@@ -110,6 +110,15 @@ Motion: `140ms` colour/press, `220ms` transform/dialog, ease
   rotate 180 degrees when open.
 - All of the above is disabled under `prefers-reduced-motion`.
 
+### Loading
+
+- The first paint shows the `.td-boot` splash: a 30px teal ring on the app
+  background tint with "Loading Trident…". It fades out as soon as React mounts.
+- Every in-flight message uses `.module-loading`, which pairs the same 16px teal
+  spinner ring with the existing status text. Never show a bare "Loading…".
+- Keep spinners on `td-spin` (720ms linear); do not invent skeleton colours or a
+  second accent for loading.
+
 ## Ownership and review
 
 - Add reusable visual rules to `public/trident-ui-theme.css`; component CSS should

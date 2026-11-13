@@ -105,7 +105,7 @@
     appearance:none;
     border:1px solid var(--td-line-strong);
     border-radius:var(--td-radius);
-    background:var(--td-surface);
+    background-color:var(--td-surface);
     color:var(--td-navy);
     padding:7px 12px;
     min-height:34px;
@@ -210,7 +210,7 @@
   body.trident-timesheet :is(input:not([type=checkbox]):not([type=radio]),select,textarea){
     border:1px solid #c8d7e6;
     border-radius:var(--td-radius);
-    background:var(--td-surface);
+    background-color:var(--td-surface);
     color:var(--td-ink);
     min-height:36px;
     padding:8px 10px;
@@ -240,7 +240,7 @@
     background-position:right 10px center;
     background-size:12px 8px;
     appearance:none;
-    padding-right:32px;
+    padding-right:32px!important;
   }
   body.trident-portal :is(input,select,textarea)::placeholder,
   body.trident-quote :is(input,textarea)::placeholder,
@@ -434,8 +434,39 @@
   body.trident-portal .tech-schedule button.schedule-help{min-height:28px;height:28px;padding:0;border-radius:50%}
   body.trident-portal .tech-schedule button:is(.schedule-hours-view,.schedule-zoom-reset){border-color:transparent;background:transparent;box-shadow:none;color:#3f5770}
   body.trident-portal .tech-schedule button:is(.schedule-hours-view,.schedule-zoom-reset):hover:not(:disabled){background:var(--td-surface-3);border-color:transparent;box-shadow:none}
-  body.trident-portal .tech-schedule :is(input,select,textarea){border-radius:var(--td-radius-sm);min-height:32px;padding:5px 8px;font-size:12px}
+  body.trident-portal .tech-schedule .schedule-hours-view{width:132px;min-width:132px;justify-content:center}
+  body.trident-portal .tech-schedule .schedule-search-button{
+    width:32px;min-width:32px;height:32px;min-height:32px;max-height:32px;padding:0;
+    display:inline-grid;place-items:center;border-radius:var(--td-radius-sm)
+  }
+  body.trident-portal .tech-schedule .schedule-search-button svg{width:15px;height:15px}
+  body.trident-portal .tech-schedule .schedule-history-actions button{
+    width:30px;min-width:30px;height:30px;min-height:30px;padding:0;
+    display:inline-grid;place-items:center;border-radius:var(--td-radius-sm);
+    border:1px solid var(--td-line-strong);background:var(--td-surface);
+    color:var(--td-navy);box-shadow:var(--td-shadow-1)
+  }
+  body.trident-portal .tech-schedule .schedule-history-actions button:hover:not(:disabled){
+    border-color:var(--td-teal-line);background:var(--td-surface-2);box-shadow:var(--td-shadow-2)
+  }
+  body.trident-portal .tech-schedule .schedule-history-actions button:active:not(:disabled){
+    transform:none;box-shadow:inset 0 1px 2px rgba(11,34,57,.12)
+  }
+  body.trident-portal .tech-schedule .schedule-history-actions button svg{width:15px;height:15px}
+  @media(pointer:coarse){
+    body.trident-portal .tech-schedule .schedule-search-button,
+    body.trident-portal .tech-schedule .schedule-history-actions button{width:34px;min-width:34px;height:34px;min-height:34px}
+  }
+  body.trident-portal .tech-schedule :is(input:not([type=checkbox]):not([type=radio]),select,textarea){border-radius:var(--td-radius-sm);min-height:32px;padding:5px 8px;font-size:12px}
   body.trident-portal .tech-schedule select:not([multiple]){padding-right:28px;background-position:right 8px center}
+  body.trident-portal .tech-schedule .schedule-column-headings .schedule-tech-name select{
+    min-height:22px;height:22px;padding:1px 14px 1px 0!important;border:0;border-radius:0;
+    background-color:transparent;box-shadow:none;
+    background-position:right 0 center;background-size:9px 6px;
+    font-weight:700;color:var(--td-ink)
+  }
+  body.trident-portal .tech-schedule .schedule-column-headings .schedule-tech-name select:hover:not(:disabled){border:0;background-color:transparent}
+  body.trident-portal .tech-schedule .schedule-column-headings .schedule-tech-name select:focus{box-shadow:var(--td-ring)}
   body.trident-portal .schedule-scroll{border-color:var(--td-line);border-radius:var(--td-radius);box-shadow:var(--td-shadow-1);background:var(--td-surface)}
   body.trident-portal .schedule-time-row{background:linear-gradient(180deg,#eef4fa,#e8f0f7)}
   body.trident-portal .schedule-name-heading,body.trident-portal .schedule-tech-name{border-color:var(--td-line)}
@@ -568,6 +599,34 @@
   body.trident-portal .tech-schedule{animation:td-fade-up .24s var(--td-ease) both}
   body.trident-quote #homePage{animation:td-fade-up .26s var(--td-ease) both}
   body.trident-portal .oncall-activity-dot{animation:td-live-pulse 2.4s var(--td-ease) infinite}
+
+  /* ---------- Loading ---------- */
+  @keyframes td-spin{to{transform:rotate(360deg)}}
+  .td-spinner{
+    width:18px;height:18px;flex:0 0 auto;border-radius:50%;
+    border:2px solid rgba(14,124,134,.22);border-top-color:var(--td-teal);
+    animation:td-spin .72s linear infinite
+  }
+  .module-loading{
+    display:flex;align-items:center;gap:10px;margin:16px;max-width:520px;padding:13px 15px;
+    border:1px solid var(--td-line);border-radius:var(--td-radius);
+    background:var(--td-surface);color:var(--td-muted);font-size:12px;
+    box-shadow:var(--td-shadow-1)
+  }
+  .module-loading::before{
+    content:"";width:16px;height:16px;flex:0 0 auto;border-radius:50%;
+    border:2px solid rgba(14,124,134,.22);border-top-color:var(--td-teal);
+    animation:td-spin .72s linear infinite
+  }
+  .td-boot{
+    position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:15px;
+    background:linear-gradient(160deg,#eef3f8 0%,#e3ecf4 100%);
+    color:var(--td-navy);transition:opacity .32s var(--td-ease)
+  }
+  .td-boot.is-done{opacity:0;pointer-events:none}
+  .td-boot .td-spinner{width:30px;height:30px;border-width:3px}
+  .td-boot-text{font-size:13px;font-weight:600;letter-spacing:.02em}
 
   /* Themed scrollbars keep the schedule and tables calm. */
   body.trident-portal *,
