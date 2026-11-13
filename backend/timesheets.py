@@ -120,7 +120,8 @@ def save(state, data, user=None, exclude_submission=None, exclude_draft=None, ch
             if minutes(finish)<minutes(start):raise Problem(400,'Finish time must not be before start time.')
         if not (net_direct and method=='direct'):hours -= lunch_hours
         total += hours
-        cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'enteredHours': float(entered_hours), 'netDirectHours':net_direct,'unpaidLunch': unpaid_lunch, 'lunchHours': float(lunch_hours), 'start': start if status=='Work' and (method=='times' or (net_direct and hours>0)) else '', 'finish': finish if status=='Work' and (method=='times' or (net_direct and hours>0)) else ''})
+        keep_times = status == 'Work' and (method == 'times' or bool(start and finish))
+        cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'enteredHours': float(entered_hours), 'netDirectHours':net_direct,'unpaidLunch': unpaid_lunch, 'lunchHours': float(lunch_hours), 'start': start if keep_times else '', 'finish': finish if keep_times else ''})
     entry = {'id': str(uuid.uuid4()), 'revision': 1, 'technician': technician, 'weekStart': week, 'signature': signature, 'notes': text(data.get('notes', ''), 'weekly notes', 4000), 'days': cleaned, 'total': float(total), 'submittedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
     if isinstance(on_call, bool):
         entry['onCall'] = on_call

@@ -1,131 +1,114 @@
 {
-  "commit": "137e2372fc4a6e4242441c5fde777444afe12856",
-  "shortCommit": "137e237",
+  "commit": "3ebac21383959407c1d777e245a9da8011f26218",
+  "shortCommit": "3ebac21",
   "branch": "codex/Readwrite",
   "published": true,
-  "publishedAt": "2026-11-12T22:45:20.863785Z",
+  "publishedAt": "2026-11-13T01:43:52.582852Z",
   "releaseDateLocal": "2026-11-13",
-  "releaseName": "Combined read/write, on-call allowance and theme release",
+  "releaseName": "Schedule borders and visible scale control",
   "build": {
-    "id": "d63d4b2b-bbf5-4f2a-8112-d03026f1ef7f",
+    "id": "ad60df03-f4d4-4d06-acf1-ddfec873da05",
     "status": "SUCCESS",
-    "createTime": "2026-11-13T11:43:42+13:00",
-    "finishTime": "2026-11-12T22:45:20.863785Z",
+    "createTime": "2026-11-13T01:42:02.055214Z",
+    "finishTime": "2026-11-13T01:43:52.582852Z",
     "triggerId": "78b1d7da-d069-4fa0-af9b-87ab6500b6ce"
   },
   "backup": {
-    "tag": "readwrite_20261112T223707Z",
-    "registerSnapshot": "trident-dashboard-511203.trident_quotes.app_state_before_schedule_readwrite_20261112T223707Z",
-    "registerRevision": 16695,
-    "stateSha256": "4e17e95928a372cd8f3164c4b468cea091194ae481c9b4e9bdd7d48f78730dc5",
+    "tag": "borders_20261113T013757Z",
+    "registerSnapshot": "trident-dashboard-511203.trident_quotes.app_state_before_schedule_borders_20261113T013757Z",
+    "registerRevision": 16826,
+    "stateSha256": "55d2a1852a609ca0fadb6c67288652d849a5176395e18a3db4955a288a366066",
     "liveUploadObjects": 35,
-    "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-readwrite_20261112T223707Z/",
-    "apiRevision": "trident-quote-api-00073-fx7"
+    "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-borders_20261113T013757Z/",
+    "apiRevision": "trident-quote-api-00076-f64",
+    "trafficPercent": 100,
+    "commitSha": "3f68f9391ef581d978f45de57bc88fa1fadc4af8"
   },
   "after": {
-    "registerSnapshot": "trident-dashboard-511203.trident_quotes.app_state_after_schedule_readwrite_20261112T223707Z",
-    "registerRevision": 16706,
-    "stateSha256": "743fad431765261c3ca7f4a13976dd033ff76e21b8d357191adb69b254b73039",
+    "registerSnapshot": "trident-dashboard-511203.trident_quotes.app_state_after_schedule_borders_20261113T013757Z",
+    "registerRevision": 16826,
+    "stateSha256": "55d2a1852a609ca0fadb6c67288652d849a5176395e18a3db4955a288a366066",
     "liveUploadObjects": 35,
-    "apiRevision": "trident-quote-api-00074-wmc",
+    "apiRevision": "trident-quote-api-00077-b9s",
     "trafficPercent": 100,
-    "commitShaLabel": "137e2372fc4a6e4242441c5fde777444afe12856",
-    "allStateIdentical": false,
-    "businessValuesIdentical": false,
-    "changedSections": [
-      "appointments",
-      "recycleBin",
-      "reminderJob",
-      "scheduleHistory",
-      "travelBlocks"
-    ],
-    "changedCollections": {
-      "appointments": {
-        "removed": 0,
-        "added": 2,
-        "modified": 1
-      },
-      "recycleBin": {
-        "removed": 0,
-        "added": 1,
-        "modified": 0
-      },
-      "reminderJob": {
-        "removed": 0,
-        "added": 0,
-        "modified": 1
-      },
-      "scheduleHistory": {
-        "removed": 0,
-        "added": 0,
-        "modified": 1
-      },
-      "travelBlocks": {
-        "removed": 0,
-        "added": 4,
-        "modified": 0
-      }
-    },
+    "commitShaLabel": "3ebac21383959407c1d777e245a9da8011f26218",
+    "allStateIdentical": true,
+    "businessValuesIdentical": true,
+    "changedSections": [],
+    "changedCollections": {},
     "priorUploadsUnchanged": true,
     "priorUploadCount": 35,
     "environmentAndSecretsPreserved": true,
     "serviceIdentityPreserved": true,
-    "runtimeSettingsPreserved": true,
-    "concurrentActivityPreserved": true
+    "runtimeSettingsPreserved": true
   },
   "frontend": {
     "url": "https://trident-dashboard.admintrident01.workers.dev/",
-    "allReleaseAssetsMatch": true,
+    "commit": "3ebac21383959407c1d777e245a9da8011f26218",
+    "allComparedAssetsMatch": true,
+    "comparedFiles": 37,
     "files": {
-      "index.html": "9e8a7463858a203921af016bfc808a3b779d9c9ffa0ba4052f0f9d9a975afa37",
-      "trident-theme.css": "6dd9e14abf4a38a2748f3fde3775e632d9f2873d71bf07f82c4a9178441baf97",
+      "index.html": "e5329b9fe62d64d7fa26c61e5b9334520c5e8e455d136f2bd23cd018cfe4546c",
+      "quote-builder.html": "1d90f87ccb32b74ac60098d3c318304c2324fae2c4a77f788350e16f6d41033d",
+      "pdf-lib.min.js": "0f9a5cad07941f0826586c94e089d89b918c46e5c17cf2d5a3c6f666e3bc694f",
+      "history-pagination.js": "9f6aac713b82554b357f771827c7ee5a1cab04da8f282935113d5024da95f343",
       "timesheet.html": "86f33acef6036f91588cc014a047575fc9ab6652f40002c066b5cbcc3a42e6c5",
       "timesheet-form.css": "990c481ef4aa9a49fa6629358d2bd769dde731b42e1cc470e379be2682321897",
-      "assets/index-CbjkSAd0.js": "2fa3ccecd28e8db646e266104a8a4759616610cbd067e1ecbebc6e4d0d21e7ca",
-      "assets/index-DJax543j.css": "918f9731258136a72cc335ea5e1d68f62448bc437df24207712d3e6ed276671e",
-      "assets/TechSchedule-CR14z37d.js": "5bc5bac84ed421e8ad450ace0536bebde3a77fbc68a9122cd8a6c5dd1d2d1d84",
-      "assets/TechSchedule-Kvv5L9up.css": "9e4035d642f4f970edf7ed89fc735c998e9569df4087a002fe9af42d22e0d137"
-    },
-    "comparedFiles": 335,
-    "exactMatches": 325,
-    "lineEndingOnlyDifferencesInUnchangedStaticFiles": [
-      "history-pagination.js",
-      "pdf-lib-LICENSE.txt",
-      "pdf-lib.min.js",
-      "quote-builder.html",
-      "quote-preview.js",
-      "time-controls.js",
-      "time-entry.css",
-      "time-entry.js",
-      "week-dates.js",
-      "icons/feather/LICENSE.txt"
-    ]
+      "trident-dbflex.user.js": "5418d72b905905b5be0b57a6608973e57a0c13c614be57df2c17a86fd3fc963e",
+      "job-import-review.js": "78dd4ad3751404f7cb96f156b9bd98959403837e8058322355598d420eeefae1",
+      "job-import-mapping.js": "337932843026b1df2bc0a9179ad79ec0edf441fd4f7f51c3c9bdb5fffebb6fae",
+      "trident-theme.css": "43b3481f2060eda02593d58a3432a1bb48f4762435be933b56a0515e036be84e",
+      "icons/custom-sprite.svg": "f90bfc05cf02995e2e3bf04d2e36890d30b7932c134fbdea61e58761ee8ef024",
+      "assets/clientSearch-BWKrrgW7.js": "79cbab30477a8f7c6c5062c99e1534dbed8769f81405e7c1caa425afccc9c609",
+      "assets/docx-preview-DRFIAawr.js": "c23f834e1f8c3cb732fa46fca2b15870dcc6b2f04030d7790a4ef9ad2d9ff863",
+      "assets/index-C7xkYjPO.css": "e2865baea0330ed499979465b98eab0f64c591923a818922a539fe815fca1216",
+      "assets/index-DcggNX4E.js": "4129df13dbe4f5bbde7ec5c79fdce87c57a435c1ba8905807c2a7fc5519fc920",
+      "assets/JobImport-BsXPpI4g.js": "bd98138e43d4d95f5b788eb673b637f11bae9089ec1f1ec7923fc7279507922c",
+      "assets/JobImport-DBYwQRl5.css": "9d3147ec17339287f467fb38d8d3bb2354265de6948a6636ca3faf61cb5a5725",
+      "assets/jsx-runtime-DLyUyuBb.js": "e282e53fb206925a4c42717a08aee015cb10477007d87cd23eef75ec427fdb95",
+      "assets/LeaveForms-CYCN1ZAu.css": "2633b91f56543bedd3e14f27344c0a4cb3ba0c82f70b071eed15e2c53271f060",
+      "assets/LeaveForms-n_coNY1Z.js": "1be9a036deebb3b388b95a9ced801e0527647eebe297ef6d20bb014409122ce2",
+      "assets/MyDay-DUmZlPj1.js": "08617ddf85437865d0e8460cfd6fa6bc89993f61af38e4a1e7260ad019c558b3",
+      "assets/OfficeFiles-B-yBR9Xf.js": "06121c77df5424277dff04a79472377b05ba906f033263349e5e8b003e0ad007",
+      "assets/OfficeFiles-CAhd_hXM.css": "565233c125f09e26e89498d263f6ae952203131db8ff0f597fd6949acb16ea60",
+      "assets/rolldown-runtime-W7wSyTde.js": "ba03c472dc22425d3172a1d58a7f5ffe871faaf8f2c94eb503882fa17fc78d48",
+      "assets/scheduleResize-CdiiUbUa.js": "075f10812e90a72aca89b85213d5bdba7f18309f137f5e328e8d157562ca3c33",
+      "assets/SettingsPage-BrpvDh2P.js": "820643b64aece7299caa2d7b729d9ed68f737023f96626d233a7c95e37055881",
+      "assets/SettingsPage-DVsZoH9A.css": "707053c0056fc35931dec24ec88086510a9a42f31b52aead191aa5a1a0851411",
+      "assets/StockPage-BqqUxrRj.js": "f89fbacb26659b0b89273b27879d184be539d4636009d74d1e67080b7111f8c1",
+      "assets/StockPage-C9bteKf5.css": "41a05e2744fe54442b6ddf3d479f3686118f5e75df96153078fb73ac8d6ddb16",
+      "assets/TechSchedule-Db-4ymNZ.js": "9b78d25ec8a23a659af252b3f4a1ba927d0c22f1da9911a7c456354d7218b3fb",
+      "assets/TechSchedule-GkcwheRE.css": "87080fdfab4e4893ef1e7a1e34a58723747f85dd85a540c40f75295e74570891",
+      "assets/VehicleChecks-CR3-YPlN.js": "66b4c895b0b30f4d32de4304bb83ce31bd17394abb1e136fbb92820751c4b1ae",
+      "assets/VehicleColours-CLUVXM9-.css": "082c49ab5d4d086245c16eb85257582e0274dcf0680daa2a7e2ad9eeb91088b4",
+      "assets/VehicleColours-gvo13WNZ.js": "f8341580568854bef3d8d8ae713316c6ea6d69f298d2e57fb6acb4de42521642",
+      "assets/weekDates-B_tmiLHj.js": "739241ad2c68be76f1f538707378d2f54606c5a2237cd4844e711405c902b6f2",
+      "assets/WeeklyReport-CieB4-gW.css": "652c654371c060cf62e217b34da441ec51faf923a86396cd0bac80282e568cf5",
+      "assets/WeeklyReport-DAXjfs04.js": "155d3e0813068eb44c86989aa787f5d20de9c9408e16a93b66a68311ae66b56e"
+    }
+  },
+  "liveUI": {
+    "jobBordersRestored": true,
+    "travelBorderless": true,
+    "recurringNotesBorderless": true,
+    "scaleControlRestingOpacity": "0.3",
+    "horizontalPageOverflowPx": 0,
+    "verticalPageOverflowPx": 0,
+    "businessDataWritten": false,
+    "evidence": "BORDERS-LIVE-UI.json"
   },
   "verification": {
-    "backendTestsPassed": 566,
-    "frontendTestsPassed": 185,
-    "eslintClean": true,
+    "frontendTestsPassed": 186,
     "productionBuildClean": true,
-    "browserReviewPassed": true,
-    "liveApiHealth": "{\"ok\": true, \"version\": \"C\"}",
-    "onCallValidationBlocksSubmission": true,
-    "yesGuidanceVisible": true,
-    "leaveLunchOptionsRestricted": true,
-    "stockSchedulePayablesRendered": true
+    "cleanCommitBuildAssetsMatchLive": true,
+    "backendUnchanged": true,
+    "onlineBusinessTestWrites": 0
   },
   "package": {
     "path": "outputs/Trident-dashboard-cumulative-update.zip",
-    "bytes": 1222908,
-    "sha256": "568e793c62417abaeb357471835d6134b7e240107d377a298794f87b8d9ec532",
-    "entries": 563,
-    "archivedPrevious": "outputs/Release history/Trident-dashboard-cf9eb56-dbFLEX-import.zip"
-  },
-  "otherChats": {
-    "branches": [
-      "codex/Oncallroster",
-      "codex/Cosmeticupdate"
-    ],
-    "unpushedCommits": 0,
-    "includedInRelease": true
+    "bytes": 1226268,
+    "sha256": "5e08a718492acfe53f43c2c7b9a2798d98619396800140c092267b3ec95a404a",
+    "entries": 568,
+    "archivedPrevious": "outputs/Release history/Trident-dashboard-3f68f939-schedule-comments.zip"
   }
 }

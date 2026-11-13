@@ -1,7 +1,7 @@
 import copy, datetime as dt, unittest
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
-import accounts, on_call_roster, reminders, test_accounts
+import accounts, on_call_roster, reminders, test_accounts, timesheets
 from core import Problem
 
 NZ = ZoneInfo('Pacific/Auckland')
@@ -35,20 +35,55 @@ class OnCallRosterTests(unittest.TestCase):
     def mails(self):
         return list(self.api.store.state.get('mailOutbox', {}).values())
 
-    def test_view_builds_six_week_rotation_and_does_not_mutate_state(self):
+    def test_view_builds_three_month_rotation_and_does_not_mutate_state(self):
         view = on_call_roster.read(self.state, self.admin, now=NOW)
         self.assertNotIn('onCallRoster', self.state)
         self.assertEqual(view['currentWeek'], MONDAY)
         self.assertEqual(view['weekNumber'], 46)
         self.assertEqual(view['headerDates'], 'Mon 9 – Sun 15 November 2026')
-        self.assertEqual(len(view['rows']), 6)
-        self.assertEqual([row['status'] for row in view['rows']], ['awaiting', 'awaiting', 'scheduled', 'scheduled', 'scheduled', 'scheduled'])
+        self.assertEqual(len(view['rows']), 14)
+        self.assertEqual(len(view['defaultPlan']), 14)
+        self.assertEqual([row['status'] for row in view['rows']][:3], ['awaiting', 'awaiting', 'scheduled'])
         self.assertEqual(view['rows'][0]['technician'], 'Scott Yearbury')
         self.assertEqual(view['rows'][1]['technician'], 'Daryll Anderson')
         self.assertEqual(view['rows'][0]['deadlineLabel'], 'Sun 8 Nov, 5 pm')
         self.assertEqual(view['rows'][1]['deadlineLabel'], 'Sun 15 Nov, 5 pm')
         self.assertTrue(view['rows'][0]['canHandover'])
         self.assertFalse(view['rows'][0]['canAccept'])
+
+    def test_admin_can_choose_eligible_staff_and_plan_three_months(self):
+        with self.at():
+            self.assertEqual(self.api.call('/api/on-call')[0], 200)
+            staff_rows = timesheets.settings(self.api.store.state)['technicians']
+            staff_rows.append({'name': 'Office Admin', 'rego': '', 'staffType': 'office', 'hasVehicle': False})
+            self.api.store.state['staffSettings'] = {'technicians': staff_rows}
+            code, body, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'eligibility',
+                'eligible': ['Scott Yearbury', 'Bala Ganesh Venkatesan', 'Office Admin'],
+            })
+        self.assertEqual(code, 200, body)
+        self.assertEqual(body['eligible'], ['Scott Yearbury', 'Bala Ganesh Venkatesan', 'Office Admin'])
+        self.assertIn('Office Admin', body['order'])
+        self.assertTrue(next(option for option in body['staffOptions'] if option['name'] == 'Bala Ganesh Venkatesan')['admin'])
+        with self.at():
+            plan = [
+                {'weekStart': MONDAY, 'technician': 'Office Admin'},
+                {'weekStart': '2026-11-16', 'technician': 'Bala Ganesh Venkatesan'},
+            ]
+            code, body, _ = self.api.call('/api/on-call', 'POST', {'action': 'plan', 'plan': plan})
+        self.assertEqual(code, 200, body)
+        self.assertEqual(body['rows'][0]['technician'], 'Office Admin')
+        self.assertEqual(body['rows'][1]['technician'], 'Bala Ganesh Venkatesan')
+        self.assertTrue(self.api.store.state['onCallRoster']['weeks'][MONDAY]['manual'])
+        self.assertTrue(any('next three months' in mail['subject'].lower() for mail in self.mails()))
+
+    def test_plan_rejects_staff_who_are_not_eligible(self):
+        with self.at():
+            self.assertEqual(self.api.call('/api/on-call')[0], 200)
+            self.assertEqual(self.api.call('/api/on-call', 'POST', {
+                'action': 'eligibility', 'eligible': ['Scott Yearbury']})[0], 200)
+            self.assertEqual(self.api.call('/api/on-call', 'POST', {
+                'action': 'plan', 'plan': [{'weekStart': MONDAY, 'technician': 'Daryll Anderson'}]})[0], 400)
 
     def test_technician_accepts_own_week_and_everyone_is_emailed(self):
         with self.at():

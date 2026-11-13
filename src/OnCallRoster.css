@@ -74,6 +74,16 @@
 .oncall-otop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px 5px}
 .oncall-olabel{font-size:9.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:#8a99ad;display:flex;align-items:center;gap:9px}
 .oncall-admin{font-size:8px;letter-spacing:.6px;border:1px solid #dfe6ef;border-radius:4px;padding:2px 5px;color:#6e7f95;background:#f7f9fc}
+.oncall-admin-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.oncall-plan-dialog{width:min(560px,100%)}
+.oncall-plan-help{margin:0 0 12px;font-size:11px;line-height:1.5;color:#6b7d94}
+.oncall-plan-list{display:grid;gap:5px;max-height:52vh;overflow:auto;padding-right:2px}
+.oncall-plan-row{display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.2fr);align-items:center;gap:10px;border:1px solid #e1e8f1;border-radius:6px;padding:7px 10px}
+.oncall-plan-row span{display:grid;gap:1px}
+.oncall-plan-row b{font-size:11.5px;color:#17345f}
+.oncall-plan-row small{font-size:9.5px;color:#93a2b5}
+.oncall-plan-row select{width:100%;min-width:0;border:1px solid #cfd9e6;border-radius:5px;padding:6px 7px;font:inherit;font-size:11px;color:#20334d;background:#fff}
+.oncall-choice.is-selected{background:#f4f7fc;border-color:#b9c9de}
 .oncall-onames{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 20px 0;font-size:13px;color:#17345f}
 .oncall-oname{display:inline-flex;align-items:center;gap:8px}
 .oncall-oname i{font-style:normal;color:#a6b2c2}

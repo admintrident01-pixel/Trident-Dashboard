@@ -33,3 +33,10 @@ class BreakdownTests(unittest.TestCase):
   day['hours']=7
   with self.assertRaisesRegex(Problem,'do not match'):timesheets.save(self.state,data)
   day['notes']='Separate work periods';self.assertEqual(timesheets.save(self.state,data)[1]['total'],7)
+ def test_legacy_direct_hours_keep_start_and_finish_for_payables(self):
+  day={'status':'Work','method':'direct','netDirectHours':False,'hours':8,'start':'07:30','finish':'16:00','unpaidLunch':True}
+  data={'technician':'Alex','weekStart':'2026-11-09','signature':'Alex','days':[day]+[{'status':'Work','method':'direct','hours':0} for _ in range(6)]}
+  state,entry=timesheets.save(self.state,data)
+  self.assertEqual(entry['days'][0]['start'],'07:30');self.assertEqual(entry['days'][0]['finish'],'16:00')
+  row=weekly_report.week_rows(state,'2026-11-09')[0]
+  self.assertEqual(row['days'][0]['workFrom'],'07:30');self.assertEqual(row['days'][0]['workTo'],'16:00')

@@ -593,7 +593,12 @@ class Application:
 
       if path in ('/api/user-invite','/api/send-reminder'):
 
-       reminders.deliver(self.store,self.local);payload['message']='Email preview saved; no email sent.' if self.local else 'Delivery attempted. Check Email history for the result.'
+       sent=reminders.deliver(self.store,self.local)
+       if self.local:payload['message']='Email preview saved; no email sent.'
+       elif not reminders.within_delivery_hours(state):
+        window=state.get('timeSettings') or {'start':'07:30','finish':'16:00'}
+        payload['message']='Email queued; delivery runs during normal work hours ('+window.get('start','07:30')+'–'+window.get('finish','16:00')+').'
+       else:payload['message']='Delivery attempted. Check Email history for the result.'
 
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{self.read_state()[0]}"'))
 

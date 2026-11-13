@@ -67,6 +67,22 @@ def mail_mode(local):
 def require_mail(local):
     if mail_mode(local) == 'unconfigured': raise Problem(503, 'Email delivery is not configured. Ask your administrator to connect the email service.')
 
+
+def within_delivery_hours(state, now=None):
+    """Business email is held until the saved normal work hours."""
+    zone = ZoneInfo('Pacific/Auckland')
+    now = (now or dt.datetime.now(zone)).astimezone(zone)
+    cfg = state.get('timeSettings') or {}
+    try:
+        start = dt.time.fromisoformat(cfg.get('start', '07:30'))
+        finish = dt.time.fromisoformat(cfg.get('finish', '16:00'))
+    except (TypeError, ValueError):
+        return True
+    if finish <= start:
+        return True
+    return start <= now.time() < finish
+
+
 def queue(state, recipient, subject, body, kind, key=None, context=None):
     mails = state.setdefault('mailOutbox', {})
     if key and any(m.get('dedupe') == key for m in mails.values()): return False
@@ -212,9 +228,13 @@ def due_reminders(state, now=None):
             count += enqueue_reminder(result, row, True, now)
     return result, count
 
-def deliver(store, local=False):
+def deliver(store, local=False, now=None):
     """Claim mail before sending: concurrent runners cannot send the same entry."""
     require_mail(local)
+    if not local:
+        _, current = store.read()
+        if not within_delivery_hours(current, now):
+            return 0
     processed = 0
     for _ in range(100):
         revision, state = store.read()

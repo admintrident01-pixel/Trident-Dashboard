@@ -1,0 +1,40 @@
+LOCAL VERIFICATION - combined release, 14 November 2026
+Status: complete locally, awaiting the user's approval before commit/push/deploy.
+
+Scope on this branch (codex/themepack, from verified 1729f02)
+- Trident interaction theme pack (public/trident-ui-theme.css) applied to the portal,
+  quote builder and time sheet; supporting docs THEME-RULE.md and UI-INTERACTION-MAP.md.
+- Schedule: 18px Booked/Unbooked/Optional status strip restored on job blocks; job blocks
+  keep a 1px border while travel, leave, lunch and recurring notes stay borderless.
+- Schedule: bookings whose type is "Notes" now render like recurring notes (no border,
+  no status strip) in their own teal tint instead of the job card style.
+- Schedule: right-click status order is Booked, Unbook appointment (yellow), Optional.
+- Schedule: multi-select toolbar shows only Move/Book/Unbook/Optional/Delete selected.
+- Schedule: search is an icon-only control; undo/redo are icon-only; the sync indicator is
+  icon-only with the save message to its left; the scale control sits bottom-right at 30%
+  opacity and reaches full opacity on hover/focus.
+- On call: eligibility dialog lists every staff member including admins and office staff.
+- On call: "Plan next 3 months" reads 14 weeks prefilled from the default rotation order.
+- Time sheet: direct-entry start/finish times are retained and flow to Labour Payables and
+  the weekly Excel export.
+- Email: outbound mail is held until the saved Auckland work window (production only).
+- Quotes: action cell spacing fixed; View PDF is a themed blue button that keeps its colour
+  on hover; Email quote opens an Outlook web compose window prefilled with recipient,
+  subject and quote details instead of downloading an .eml file.
+
+Verification run 14 November 2026
+- Backend: 585 tests OK (TEST_WORKBOOK=performance-fixture.xlsx).
+- Frontend: 186 node tests pass.
+- ESLint: clean on TechSchedule.jsx, ScheduleSearch.jsx, OnCallRoster.jsx.
+- npm run build: success (index-tDw5r2LI.js).
+- Local preview http://127.0.0.1:18780/: verified schedule blocks, context menu, on-call
+  dialogs at desktop and 617x480, plus computed block styling for all six block types.
+
+Evidence images
+- outputs/REVIEW-schedule-blocks.png
+- outputs/REVIEW-oncall-roster.png
+- outputs/REVIEW-oncall-eligibility.png
+
+Open item before publishing
+- Regenerate outputs/Trident-dashboard-cumulative-update.zip and the release manifests so the
+  package matches these final edits, then push and watch the frontend/API deployments.

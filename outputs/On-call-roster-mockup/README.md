@@ -1,8 +1,7 @@
 # On-call roster — design mockup
 
-Status: **implemented locally, awaiting release approval**. The screenshots below
-show both the approved design and the running local page. No commit, push or
-deployment has been made from this design review.
+Status: **published and verified on 13 November 2026**. The screenshots below
+show the approved design, the running local page and the production page.
 
 ## Images
 
@@ -13,6 +12,7 @@ deployment has been made from this design review.
 - `oncall-live-mobile.png` — running local page at 390px width.
 - `oncall-live-handover.png` — running hand-over dialog.
 - `oncall-live-order.png` — admin rotation-order editor.
+- `oncall-live-production.png` — published page after release verification.
 
 ## Page structure
 

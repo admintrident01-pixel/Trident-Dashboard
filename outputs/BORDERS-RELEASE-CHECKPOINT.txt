@@ -1,0 +1,38 @@
+PUBLISHED AND VERIFIED
+Schedule borders and visible scale control, 13 November 2026 (Pacific/Auckland)
+Branch: codex/Readwrite; published commit 3ebac21383959407c1d777e245a9da8011f26218
+Push: 3f68f93..3ebac21 -> main. Cloud Build and Cloud Run deployment succeeded.
+
+SCOPE
+- Restored borders on job/appointment blocks only.
+- Travel blocks remain borderless.
+- Recurring notes remain borderless.
+- Schedule vertical-scale control resting opacity changed from 0 to 30%; hover/focus remains 100%.
+
+VALIDATION
+- Production Vite build passed.
+- All 186 frontend tests passed.
+- Clean build of commit 3ebac21 matches the live frontend assets by SHA-256.
+- Production browser check: 12 job blocks with solid borders, 8 travel blocks with border:0, scale control
+  opacity 0.3, no horizontal or vertical page overflow.
+
+PRE-RELEASE LIVE BACKUP - VERIFIED
+- Tag: borders_20261113T013757Z
+- Register clone: trident-dashboard-511203.trident_quotes.app_state_before_schedule_borders_20261113T013757Z
+- Register revision: 16826
+- Register state SHA256: 55d2a1852a609ca0fadb6c67288652d849a5176395e18a3db4955a288a366066
+- Live uploads: 35, all copied to
+  gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-borders_20261113T013757Z/ and verified.
+- Baseline API: trident-quote-api-00076-f64 at 100% traffic; commit-sha 3f68f93.
+
+PUBLICATION AND POST-RELEASE COMPARISON
+- Cloud Build ad60df03-f4d4-4d06-acf1-ddfec873da05: SUCCESS; started 2026-11-13T01:42:02Z,
+  finished 2026-11-13T01:43:52Z.
+- Cloud Run: trident-quote-api-00077-b9s, 100% traffic; commit-sha label 3ebac21383959407c1d777e245a9da8011f26218.
+- After snapshot revision 16826; SHA256 55d2a1852a609ca0fadb6c67288652d849a5176395e18a3db4955a288a366066.
+- Register state identical before and after. All 35 prior uploads unchanged.
+- Environment, secrets, service identity and runtime settings preserved.
+
+EXCLUSIONS
+No business records, credentials, runtime data or uploads are included. Uncommitted on-call roster work in the
+working tree was excluded from this release.

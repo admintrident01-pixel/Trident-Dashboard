@@ -1,66 +1,64 @@
-APPROVED FOR RELEASE - LIVE BACKUP AND ROLLOUT IN PROGRESS - NOT YET PUSHED
-Schedule and My Day comments update, 13 November 2026 (Pacific/Auckland)
-Branch: codex/Readwrite (HEAD e7ee4a9, level with origin/main)
+PUBLISHED AND VERIFIED
+Schedule scaling, My Day client search and header corrections, 13 November 2026 (Pacific/Auckland)
+Branch: codex/Readwrite; published commit 3f68f9391ef581d978f45de57bc88fa1fadc4af8
+Push: e7ee4a9..3f68f93 -> main. GitHub push and Cloud Build/Cloud Run deployment succeeded.
 
 SCOPE
-- Header: removed the logo's right divider; page buttons fill the dark header
-  height; active page keeps a subtle full-height background.
-- Header fit: compact spacing keeps every page link visible at 1242px; account
-  text is hidden only below 1230px; the compact two-row layout starts at 1120px.
-- Schedule: removed the appointment gradient; appointments and recurring notes
-  share a borderless solid-fill shape with different colours; travel is borderless.
-- Schedule toolbar: touches the header with zero vertical gap; Undo/Redo are
-  symbol-only; the visible Live word is removed; status messages sit immediately
-  left of the refresh symbol.
-- Schedule vertical scale: a bottom-right, mostly transparent overlay with -,
-  percentage/reset and + controls scales only the time-axis height (40%-300% in
-  20-point steps). It reveals on hover or keyboard focus, stays visible on touch,
-  preserves the visible centre time, and disables while a block gesture is active.
-- Responsive height: the wrapped navigation now sets the real 82px header token
-  (90px below 760px), keeping the schedule inside the viewport. The selection
-  action row wraps below 550px instead of widening the page.
-- My Day: every appointment can show the same configured client-search URL and
-  magnifying-search icon used by Schedule blocks, alongside the Maps action.
-  The backend My Day payload now includes the read-only clientSearchUrlTemplate.
+- Header: removed the logo's right divider; page buttons fill the dark header height; the active page keeps
+  a subtle full-height background. Compact spacing keeps every page link visible at 1242px; account text is
+  hidden only below 1230px; the compact two-row layout starts at 1120px.
+- Schedule: removed the appointment gradient; appointments and recurring notes share a borderless solid-fill
+  shape with different colours; travel is borderless.
+- Schedule toolbar: touches the header with zero vertical gap; Undo/Redo are symbol-only; the visible Live
+  word is removed; status messages sit immediately left of the refresh symbol.
+- Schedule vertical scale: bottom-right, mostly transparent overlay with -, percentage/reset and + controls
+  scales only the time-axis height (40%-300% in 20-point steps). It reveals on hover or keyboard focus, stays
+  visible on touch, preserves the visible centre time, and disables while a block gesture is active.
+- Responsive height: wrapped navigation sets the real 82px header token (90px below 760px), keeping the
+  schedule inside the viewport. The selection action row wraps below 550px instead of widening the page.
+- My Day: every appointment can show the same configured client-search URL and magnifying-search icon used
+  by Schedule blocks. The backend My Day payload includes the read-only clientSearchUrlTemplate.
 
 VALIDATION
 - Backend: 566 tests passed with the performance workbook fixture.
 - Focused backend: test_my_day and test_schedule_client_search, 16 passed.
-- Frontend: 186 tests passed (93 in tests/, 93 in work-tests/), including the new
-  vertical-scale calculation and clamping test.
+- Frontend: 186 tests passed (93 in tests/, 93 in work-tests/), including the vertical-scale calculation test.
 - Targeted ESLint on src/public passed; production Vite build passed.
-- Browser checks at 1242x667, 1065x480, 706x667 and 480x667: no horizontal page
-  overflow and no page-height overflow after the header token correction.
-- Scale checks: overlay opacity is 0 by default and 1 on hover/focus; + changed
-  the normal-view track 1209px -> 1450.8px and a 60-minute block 50.4px -> 60.4px;
-  Fit view changed 403px -> 483.6px; - changed 100% to 80%; the percentage button
-  reset to 100%; normal/fit switching kept the control at the bottom-right and
-  appointment times stayed aligned to the time axis. No business data was written.
-- Existing header checks still pass:
-  every desktop nav item visible, full-height active button, logo divider gone,
-  toolbar/header gap 0px, undo/redo symbols only, no Live text, message left of
-  refresh, appointment/travel/note blocks all with zero borders, and distinct
-  appointment/recurring-note fills.
+- Browser checks at 1242x667, 1065x480, 706x667 and 480x667: no horizontal or page-height overflow.
+- Scale checks: overlay opacity 0 by default and 1 on hover/focus; + changed the normal-view track
+  1209px -> 1450.8px and a 60-minute block 50.4px -> 60.4px; Fit view 403px -> 483.6px; - changed 100%
+  to 80%; percentage reset to 100%; normal/fit kept the control bottom-right and times stayed aligned.
+- Header checks: every desktop nav item visible, full-height active button, logo divider gone, toolbar/header
+  gap 0px, undo/redo symbols only, no Live text, message left of refresh, all schedule blocks borderless,
+  distinct appointment/recurring-note fills.
 - My Day client search verified with a browser-intercepted appointment:
-  https://www.google.com/search?q=Marlee%20Indigo%20Arendt; no business data was
-  written. The local API also returned the configured template on the real payload.
+  https://www.google.com/search?q=Marlee%20Indigo%20Arendt; no business data was written.
 
-LOCAL PREVIEW
-http://127.0.0.1:18780/
-Vite PID 7868; local API PID 12680. In-app browser is signed into local Admin.
+PRE-RELEASE LIVE BACKUP - VERIFIED
+- Cloud Shell tag: schedule-comments_20261113T010350Z
+- Register clone: trident-dashboard-511203.trident_quotes.app_state_before_schedule_comments_20261113T010350Z
+- Register revision: 16808
+- Register state SHA256: 1b7b0a2ac2d8208c475e241ad7f6468362409c3748100abbfb8067f913b85101
+- Live uploads: 35, all copied to
+  gs://trident-dashboard-511203-quote-pdfs/release-backups/schedule-comments_20261113T010350Z/ and verified.
+- Baseline API: trident-quote-api-00075-24l at 100% traffic; commit-sha e7ee4a9; assertion passed.
 
-EXCLUSIONS
-crop-order.png remains an unrelated untracked working image and is not part of
-this release. No business records, credentials, runtime data or uploads are included.
+PUBLICATION AND POST-RELEASE COMPARISON
+- Cloud Build 951a16a2-f466-4a05-8490-7df0ab75732b: SUCCESS; started 2026-11-13T01:08:19Z,
+  finished 2026-11-13T01:10:14Z.
+- Cloud Run: trident-quote-api-00076-f64, 100% traffic; commit-sha label 3f68f9391ef581d978f45de57bc88fa1fadc4af8.
+- Frontend assets match the production build by SHA-256; API health is ok/version C.
+- After snapshot revision 16810; SHA256 e4de0e121a3871a65291bc492988b528e6fdfbcb928d5a7d1bbfd4d6babc4f48.
+- All 35 prior uploads unchanged. Environment, secrets, service identity and runtime settings preserved.
+- Business values identical; one concurrent reminder-job update retained. No production records were written.
+- Live UI: scale overlay present, hidden by default, visible on focus; 100% -> 120% changed the track from
+  1135.06px to 1362.07px, reset restored 1135.06px, visible centre preserved, zero page overflow.
 
 OTHER CHAT WORK
-Chat 3 contains the on-call roster design mockups only; it has no implemented
-roster app code to publish. The on-call allowance sign-off from that workstream
-was already published in commit 137e237. No additional unpushed app source
-remains from the on-call, cosmetic or read/write chat branches.
+Chat 3 contains on-call roster design mockups only; it has no implemented app code to publish. Its on-call
+allowance sign-off was already published in 137e237. codex/Oncallroster and codex/Cosmeticupdate contain no
+additional unpushed commits.
 
-APPROVAL
-A push to main automatically publishes both frontend and API. After explicit
-approval: create a fresh recoverable live backup, push, verify Cloud Build, the
-new Cloud Run revision and traffic, live frontend asset checksums and API health,
-then compare the authoritative register and prior uploads against the backup.
+EXCLUSIONS
+crop-order.png remains an unrelated untracked working image and is not part of this release. No business
+records, credentials, runtime data or uploads are included.

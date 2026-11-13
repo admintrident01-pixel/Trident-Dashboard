@@ -22,6 +22,10 @@
 
 - For every future update, review clarity, compact spacing, button placement, responsiveness and loading cost. Prioritise the main working content, especially schedule blocks. Preserve all existing functionality and business data; verify improvements locally. Requested on 20 October 2026.
 
+## UI interaction theme — 14 November 2026
+
+- Every future button, arrow, tab, filter, field, card, table control, dialog, drag handle and animation must follow the shared “Deep Current” theme in `public/trident-ui-theme.css` and the rules in `THEME-RULE.md`. Extend the shared tokens and states instead of adding one-off colours, radii, shadows or timings. Keep the theme linked after the base theme in `index.html`, `public/quote-builder.html` and `public/timesheet.html`. Preserve compact schedule density, accessible focus states, existing business behaviour and all online data. The full control inventory is `outputs/UI-INTERACTION-MAP.md`.
+
 ## Supabase migration priority — 9 November 2026
 
 - Full migration to Supabase is the target architecture and takes priority in future implementation choices. Keep the frontend on Cloudflare. Use Supabase Postgres, private Storage, Auth and Edge Functions as appropriate for the completed backend; retaining the existing Python/Google backend or one large compatibility JSON record is a temporary migration step, not completion.

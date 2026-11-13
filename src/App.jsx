@@ -3,6 +3,7 @@ import TimesheetHistory from './TimesheetHistory'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import './App.css'
+import './LogoTheme.css'
 import './MyDay.css'
 import './TechnicianForms.css'
 

@@ -1,12 +1,13 @@
-HELD LOCALLY - AWAITING EXPLICIT APPROVAL - NOT COMMITTED, PUSHED OR DEPLOYED
+PUBLISHED AND VERIFIED
 Weekly on-call roster release checkpoint, 13 November 2026 (Pacific/Auckland)
 
 RELEASE STATE
 - Branch: codex/Readwrite
-- Base commit: 3ebac21383959407c1d777e245a9da8011f26218
-- No feature commit, push or deployment has occurred.
-- Production remains on the previously verified schedule-borders release.
-  The published status in outputs/RELEASE-STATUS.txt has not been replaced.
+- Published commit: 1729f02912fd4b850dd2e4653f6d73f6b0783f98
+- Push: 3ebac21..1729f02 -> main.
+- Cloud Build 1995c889-ea60-4b35-8200-8ec1779f2269 SUCCESS.
+- API: trident-quote-api-00078-9xc at 100% traffic, commit-sha 1729f02.
+- Live frontend assets: index-DSGEzN7w.js and index-C7xkYjPO.css.
 
 SCOPE
 - Adds an On call page showing the current technician, next technician and a
@@ -41,13 +42,14 @@ VALIDATION
   public-pool release, admin assignment and rotation ordering. No horizontal
   page overflow at 390px.
 - Local data was copied before interaction testing and restored afterwards.
-- No real email was sent.
+- No production roster-changing action was performed after release.
+- A live-page check initialized the roster without sending email.
 
 LOCAL PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- Bytes: 1,243,895
+- Bytes: 1,244,220
 - Entries: 573
-- SHA256: 7db49c6251a34090e80092e25853814c73e7f94d379a658ae5381fa500b75a83
+- SHA256: b234c2c6b9e9dc58f0cb469b077f7e30b3f0f2cfc481847da40bfda11f78f20a
 - Verified included:
   src/OnCallRoster.jsx, src/OnCallRoster.css, backend/on_call_roster.py,
   backend/test_on_call_roster.py, ON-CALL-ROSTER-UPDATE.txt
@@ -58,10 +60,22 @@ LOCAL PREVIEW
 - http://127.0.0.1:18780/#oncall
 - Vite PID 7868; local API PID 15212 on port 18782.
 - Screenshots: outputs/On-call-roster-mockup/oncall-live-desktop.png,
-  oncall-live-mobile.png, oncall-live-handover.png and oncall-live-order.png.
+  oncall-live-mobile.png, oncall-live-handover.png, oncall-live-order.png and
+  oncall-live-production.png.
 
-APPROVAL GATE
-No commit, push or deployment is permitted until the user explicitly approves
-this locally reviewed release. After approval: back up and compare live
-register/uploads first, commit only the intended files, push to main, then
-verify the live page and notification queue.
+PRE-RELEASE LIVE BACKUP - VERIFIED
+- Tag: oncall_20261113T031134Z
+- Register clone: trident-dashboard-511203.trident_quotes.app_state_before_oncall_oncall_20261113T031134Z
+- Register revision: 16869
+- Register state SHA256: 0e84933586b7c20bc753e00169b5daa5bbdb7c7cf01bff99cd7e46eca0cac9a0
+- Live uploads: 35, all copied to
+  gs://trident-dashboard-511203-quote-pdfs/release-backups/oncall-oncall_20261113T031134Z/
+  and checksum-verified.
+
+POST-RELEASE COMPARISON
+- After snapshot revision: 16872; SHA256 a9aca4e1ad165d1a586adee1dc3188b2e33b0379b618bedbea9dd461245ca6a7.
+- Business values identical; changed sections were onCallRoster and reminderJob.
+- Prior 35 uploads unchanged.
+- Environment, secrets, service identity and runtime settings preserved.
+- Live On call page loaded current technician Daryll Anderson, next technician
+  Andrew Thomas, the six-week roster and rotation order.

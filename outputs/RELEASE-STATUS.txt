@@ -1,18 +1,15 @@
-PUBLISHED AND VERIFIED - Combined read/write, on-call allowance and theme release, 13 November 2026.
-Commit 137e2372fc4a6e4242441c5fde777444afe12856; API trident-quote-api-00074-wmc, 100% traffic.
-Frontend bundle index-CbjkSAd0.js and schedule/theme/timesheet assets match the production build by SHA-256.
-Backend 566 tests, frontend 185 tests, ESLint and production Vite build passed; browser review passed.
-On-call allowance Yes/No is compulsory at time-sheet sign-off and carries into payables and weekly Excel.
-Leave part-day lunch options are limited to Usual lunch or No unpaid lunch. Schedule tiles are square and
-drag feedback stays contained. Read/write conflict scopes now prevent spurious concurrent-version errors.
-Pre-release register clone and 35 uploads are recoverable under tag readwrite_20261112T223707Z.
-Post-release comparison: all 35 prior uploads unchanged; environment, secrets, identity and runtime settings
-preserved. Concurrent staff activity retained: 2 appointments added, 1 appointment modified, 4 travel blocks
-added, 1 recycle item added, 1 reminder job and 1 schedule-history entry modified. No production records
-were overwritten by this release.
-Evidence COMBINED-RELEASE-EVIDENCE.json. Cumulative package updated; prior package archived.
-No app source changes remain unpushed from the on-call, cosmetic or read/write chat branches. crop-order.png
-remains an excluded local working image.
-Cumulative package: Trident-dashboard-cumulative-update.zip, 1,222,908 bytes, 563 entries,
-SHA256 568e793c62417abaeb357471835d6134b7e240107d377a298794f87b8d9ec532.
-Previous package archived as Release history/Trident-dashboard-cf9eb56-dbFLEX-import.zip.
+PUBLISHED AND VERIFIED - Weekly on-call roster, 13 November 2026.
+Commit 1729f02912fd4b850dd2e4653f6d73f6b0783f98; API trident-quote-api-00078-9xc, 100% traffic.
+Cloud Build 1995c889-ea60-4b35-8200-8ec1779f2269 SUCCESS; deployed from main.
+The live On call page shows the current and next technician, six-week roster and admin rotation order.
+Technicians can accept, hand over, release to the public pool and grab open weeks; admins can reorder and assign.
+Every roster change queues email to active, verified technicians and admins.
+Backend 581 tests passed (15 focused roster tests); ESLint and the production Vite build passed.
+Live frontend assets index-DSGEzN7w.js and index-C7xkYjPO.css match the approved build.
+Pre-release snapshot revision 16869 and all 35 uploads are recoverable under tag oncall_20261113T031134Z.
+Post-release comparison: business values identical; prior 35 uploads unchanged; environment, secrets,
+service identity and runtime settings preserved. New onCallRoster state and one scheduled reminder update only.
+No roster-changing action was performed during verification, so no notification email was sent by this check.
+Cumulative package: Trident-dashboard-cumulative-update.zip, 1,244,220 bytes, 573 entries,
+SHA256 b234c2c6b9e9dc58f0cb469b077f7e30b3f0f2cfc481847da40bfda11f78f20a.
+Previous package archived as Release history/Trident-dashboard-before-oncall-roster.zip.

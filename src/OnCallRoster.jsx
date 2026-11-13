@@ -57,7 +57,7 @@ function RowAction({row,busy,onAccept,onGrab,onHandover,onResend}){
 
 export default function OnCallRoster({request}){
  const [data,setData]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[focus,setFocus]=useState(0)
- const [dialog,setDialog]=useState(null),[selectedTech,setSelectedTech]=useState(''),[orderDraft,setOrderDraft]=useState([])
+ const [dialog,setDialog]=useState(null),[selectedTech,setSelectedTech]=useState(''),[orderDraft,setOrderDraft]=useState([]),[planDraft,setPlanDraft]=useState([]),[eligibleDraft,setEligibleDraft]=useState([])
 
  const load=useCallback(async()=>{
   const result=await request('/api/on-call',{cache:'no-store'})
@@ -89,6 +89,8 @@ export default function OnCallRoster({request}){
 
  function openHandover(row){setSelectedTech('');setDialog({type:'handover',row})}
  function openOrder(){setOrderDraft([...(data?.order||[])]);setDialog({type:'order'})}
+ function openPlan(){setPlanDraft((data?.defaultPlan||[]).map(row=>({...row})));setDialog({type:'plan'})}
+ function openEligibility(){setEligibleDraft([...(data?.eligible||[])]);setDialog({type:'eligibility'})}
  function openActivity(){setDialog({type:'activity'})}
  function closeDialog(){if(!busy)setDialog(null)}
 
@@ -105,6 +107,8 @@ export default function OnCallRoster({request}){
    else if(payload.action==='release')setNotice('Week '+number+' is now open to all technicians.')
    else if(payload.action==='handover')setNotice(payload.technician?'Week '+number+' has been handed over.':'Week '+number+' is now open to all technicians.')
    else if(payload.action==='order')setNotice('Rotation order saved. Future weeks now follow the new order.')
+   else if(payload.action==='plan')setNotice('Next three months confirmed. Every planned week now follows this roster.')
+   else if(payload.action==='eligibility')setNotice('On-call staff selection saved.')
    else if(payload.action==='resend')setNotice('Acceptance email queued for '+row?.technician+'.')
    window.dispatchEvent(new Event('trident-mail-updated'))
   }catch(problem){setError(problem.message)}
@@ -121,6 +125,8 @@ export default function OnCallRoster({request}){
   act({action:'release',weekStart:row.weekStart})
  }
  function resend(row){act({action:'resend',weekStart:row.weekStart})}
+ function toggleEligible(name){setEligibleDraft(current=>current.includes(name)?current.filter(item=>item!==name):[...current,name])}
+ function setPlanWeek(weekStart,name){setPlanDraft(current=>current.map(row=>row.weekStart===weekStart?{...row,technician:name}:row))}
  function move(index,delta){
   setOrderDraft(current=>{
    const next=[...current],target=index+delta
@@ -183,7 +189,7 @@ export default function OnCallRoster({request}){
   <section className="oncall-card oncall-order">
    <div className="oncall-otop">
     <span className="oncall-olabel">Rotation order <span className="oncall-admin">Admin</span></span>
-    {data.isAdmin&&<button className="oncall-btn tiny" onClick={openOrder}><Icon name="edit-2" size={12}/>Edit order</button>}
+    {data.isAdmin&&<div className="oncall-admin-actions"><button className="oncall-btn tiny" onClick={openEligibility}><Icon name="users" size={12}/>Who can be on call</button><button className="oncall-btn tiny" onClick={openPlan}><Icon name="calendar" size={12}/>Plan next 3 months</button><button className="oncall-btn tiny" onClick={openOrder}><Icon name="edit-2" size={12}/>Edit order</button></div>}
    </div>
    <div className="oncall-onames">{data.order.map((name,position)=><span className="oncall-oname" key={name}>{position>0&&<i aria-hidden="true">→</i>}<span>{name}</span></span>)}</div>
    <p className="oncall-onote">Sets who takes each new week. Position 1 is on call now.</p>
@@ -219,6 +225,30 @@ export default function OnCallRoster({request}){
     <ol className="oncall-order-list">{orderDraft.map((name,position)=><li key={name}><span className="oncall-order-pos">{position+1}</span><span>{name}</span><span className="oncall-order-move"><button aria-label={'Move '+name+' up'} disabled={busy||position===0} onClick={()=>move(position,-1)}><Icon name="chevron-up" size={14}/></button><button aria-label={'Move '+name+' down'} disabled={busy||position===orderDraft.length-1} onClick={()=>move(position,1)}><Icon name="chevron-down" size={14}/></button></span></li>)}</ol>
     <p className="oncall-dialog-note"><Icon name="mail" size={13}/>All technicians and admins will be emailed.</p>
     <div className="oncall-dialog-actions"><button className="oncall-btn" disabled={busy} onClick={closeDialog}>Cancel</button><button className="oncall-btn primary" disabled={busy||!orderDraft.length} onClick={()=>act({action:'order',order:orderDraft})}>{busy?'Saving…':'Save order'}</button></div>
+   </div>
+  </div>}
+
+  {dialog?.type==='plan'&&<div className="oncall-overlay" onMouseDown={event=>{if(event.target===event.currentTarget)closeDialog()}}>
+   <div className="oncall-dialog oncall-plan-dialog" role="dialog" aria-modal="true" aria-labelledby="oncall-plan-title">
+    <div className="oncall-dialog-head"><div><h2 id="oncall-plan-title">Plan next three months</h2><p>{planDraft.length} weeks · starts from the default rotation order</p></div><button className="oncall-icon-btn" aria-label="Close three-month plan" disabled={busy} onClick={closeDialog}><Icon name="x" size={16}/></button></div>
+    <p className="oncall-plan-help">Each week starts with the default rotation order. Change any week, then confirm to lock the plan.</p>
+    <div className="oncall-plan-list">{planDraft.map(row=><label className="oncall-plan-row" key={row.weekStart}><span><b>Week {row.weekNumber}</b><small>{row.dates}</small></span><select aria-label={`On call for week ${row.weekNumber}`} disabled={busy} value={row.technician} onChange={event=>setPlanWeek(row.weekStart,event.target.value)}><option value="">Open to anyone</option>{(data.eligible||data.order).map(name=><option key={name} value={name}>{name}</option>)}</select></label>)}</div>
+    <p className="oncall-dialog-note"><Icon name="mail" size={13}/>Confirming sends one summary email to all staff.</p>
+    <div className="oncall-dialog-actions"><button className="oncall-btn" disabled={busy} onClick={closeDialog}>Cancel</button><button className="oncall-btn primary" disabled={busy||!planDraft.length} onClick={()=>act({action:'plan',plan:planDraft.map(({weekStart,technician})=>({weekStart,technician}))})}>{busy?'Saving…':'Confirm 3-month roster'}</button></div>
+   </div>
+  </div>}
+
+  {dialog?.type==='eligibility'&&<div className="oncall-overlay" onMouseDown={event=>{if(event.target===event.currentTarget)closeDialog()}}>
+   <div className="oncall-dialog" role="dialog" aria-modal="true" aria-labelledby="oncall-eligibility-title">
+    <div className="oncall-dialog-head"><div><h2 id="oncall-eligibility-title">Who can be on call</h2><p>Choose from every staff member, including admins and office staff.</p></div><button className="oncall-icon-btn" aria-label="Close on-call staff selection" disabled={busy} onClick={closeDialog}><Icon name="x" size={16}/></button></div>
+    <fieldset className="oncall-choices"><legend>Eligible staff</legend>
+     {(data.staffOptions||[]).map(option=><label key={option.name} className={'oncall-choice'+(eligibleDraft.includes(option.name)?' is-selected':'')}>
+      <input type="checkbox" checked={eligibleDraft.includes(option.name)} disabled={busy} onChange={()=>toggleEligible(option.name)}/>
+      <span>{option.name}</span>{option.admin?<small>Admin</small>:option.staffType==='office'?<small>Office</small>:null}
+     </label>)}
+    </fieldset>
+    <p className="oncall-dialog-note"><Icon name="users" size={13}/>Only selected staff appear in the rotation, handover list and open-week pool.</p>
+    <div className="oncall-dialog-actions"><button className="oncall-btn" disabled={busy} onClick={closeDialog}>Cancel</button><button className="oncall-btn primary" disabled={busy||!eligibleDraft.length} onClick={()=>act({action:'eligibility',eligible:eligibleDraft})}>{busy?'Saving…':'Save staff selection'}</button></div>
    </div>
   </div>}
 

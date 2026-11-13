@@ -1,0 +1,30 @@
+{
+  "url": "https://trident-dashboard.admintrident01.workers.dev/#schedule",
+  "checkedAt": "2026-11-13T01:13:00Z",
+  "commit": "3f68f9391ef581d978f45de57bc88fa1fadc4af8",
+  "viewport": {
+    "width": 921,
+    "height": 518
+  },
+  "scaleControl": {
+    "present": true,
+    "defaultOpacity": "0",
+    "opacityOnFocus": "1",
+    "defaultText": "-100%+",
+    "rightOffsetPx": 16.13,
+    "bottomOffsetPx": 14.02,
+    "plusResultText": "-120%+",
+    "trackHeightBeforePx": 1135.06,
+    "trackHeightAfterPx": 1362.07,
+    "visibleCentreScrollTopPreserved": true,
+    "resetText": "-100%+",
+    "trackHeightAfterResetPx": 1135.06
+  },
+  "layout": {
+    "horizontalPageOverflowPx": 0,
+    "verticalPageOverflowPx": 0,
+    "checkedAtDefaultAnd120Percent": true
+  },
+  "businessDataWritten": false,
+  "screenshot": ".local-runtime/live-schedule-3f68f93.png"
+}

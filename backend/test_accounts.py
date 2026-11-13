@@ -196,14 +196,26 @@ class ReminderRules(unittest.TestCase):
     def test_smtp_success_failure_and_claim_no_duplicate(self):
         reminders.queue(self.state,'test@example.nz','Test','Body','vehicle')
         store=MemoryStore(self.state)
+        send_time=dt.datetime(2026,11,13,10,0,tzinfo=ZoneInfo('Pacific/Auckland'))
         with patch.dict(os.environ,{'SMTP_HOST':'smtp.example.nz','SMTP_FROM':'noreply@example.nz'}),patch('smtplib.SMTP') as smtp:
-            reminders.deliver(store)
-            reminders.deliver(store)
+            reminders.deliver(store,now=send_time)
+            reminders.deliver(store,now=send_time)
             self.assertEqual(smtp.return_value.__enter__.return_value.send_message.call_count,1)
         self.assertEqual(next(iter(store.state['mailOutbox'].values()))['status'],'sent')
         reminders.queue(store.state,'test@example.nz','Test 2','Body','vehicle')
-        with patch.dict(os.environ,{'SMTP_HOST':'smtp.example.nz','SMTP_FROM':'noreply@example.nz'}),patch('smtplib.SMTP',side_effect=OSError):reminders.deliver(store)
+        with patch.dict(os.environ,{'SMTP_HOST':'smtp.example.nz','SMTP_FROM':'noreply@example.nz'}),patch('smtplib.SMTP',side_effect=OSError):reminders.deliver(store,now=send_time)
         self.assertEqual(list(store.state['mailOutbox'].values())[-1]['status'],'failed')
+    def test_delivery_waits_for_normal_work_hours(self):
+        reminders.queue(self.state,'test@example.nz','After hours','Body','vehicle')
+        store=MemoryStore(self.state)
+        evening=dt.datetime(2026,11,13,18,0,tzinfo=ZoneInfo('Pacific/Auckland'))
+        morning=dt.datetime(2026,11,13,10,0,tzinfo=ZoneInfo('Pacific/Auckland'))
+        with patch.dict(os.environ,{'SMTP_HOST':'smtp.example.nz','SMTP_FROM':'noreply@example.nz'}),patch('smtplib.SMTP') as smtp:
+            self.assertEqual(reminders.deliver(store,now=evening),0)
+            smtp.assert_not_called()
+            self.assertEqual(next(iter(store.state['mailOutbox'].values()))['status'],'queued')
+            self.assertEqual(reminders.deliver(store,now=morning),1)
+            smtp.return_value.__enter__.return_value.send_message.assert_called_once()
     def test_reminder_validation(self):
         for cfg in [{**reminders.DEFAULTS,'timesheetWeekday':7},{**reminders.DEFAULTS,'timesheetTime':'25:00'},{**reminders.DEFAULTS,'vehicleLeadDays':-1}]:
             with self.assertRaises(Problem):reminders.save_settings(self.state,cfg)

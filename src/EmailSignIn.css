@@ -12,3 +12,23 @@
 .signin .report-hint{font-size:13px;margin:0;color:#65758a}
 .signin>p.report-hint{margin-top:16px}
 @media(max-width:560px){.signin{margin:12px;padding:20px}.signin h1{font-size:22px}}
+.trident-portal:has(.signin){background:radial-gradient(1200px 620px at 50% -12%,#c9ccd0 0%,#d7d9dc 55%,#ced1d5 100%)}
+.trident-portal .signin{background:linear-gradient(180deg,#000 0,var(--td-navy-2) 100%);color:#eef2f7;border:1px solid rgba(255,255,255,.12);box-shadow:0 24px 60px rgba(6,18,30,.35)}
+.trident-portal .signin h1{color:#fff}
+.trident-portal .signin p{color:#c9d8e8}
+.trident-portal .signin .vehicle-field{color:#dfe9f3}
+.trident-portal .signin .vehicle-field input{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24);color:#fff}
+.trident-portal .signin .vehicle-field input::placeholder{color:#9fb3c8}
+.trident-portal .signin .vehicle-field input:focus{border-color:var(--td-amber);outline:2px solid rgba(224,138,52,.35);outline-offset:1px}
+.trident-portal .signin .signin-remember{color:#dfe9f3}
+.trident-portal .signin .signin-remember input{accent-color:var(--td-amber)}
+.trident-portal .signin button{background:linear-gradient(180deg,var(--td-amber-2),var(--td-amber));color:#1a1a1a;font-weight:700;border:0;box-shadow:0 6px 16px rgba(224,138,52,.22)}
+.trident-portal .signin button:hover:not(:disabled){filter:brightness(1.04)}
+.trident-portal .signin .signin-secondary{background:rgba(255,255,255,.08)!important;color:#eef2f7!important;border:1px solid rgba(255,255,255,.22);box-shadow:none;font-weight:600}
+.trident-portal .signin .signin-secondary:hover:not(:disabled){background:rgba(255,255,255,.14)!important}
+.trident-portal .signin .report-hint{color:#a9bdd2}
+.trident-portal .signin a{color:var(--td-amber-2)}
+.trident-portal .signin [role=alert]{color:#ffc0c0}
+.trident-portal .signin [role=status]{color:#bfe6e8}
+.trident-portal .signin .local-signin{border-top-color:rgba(255,255,255,.16)}
+.trident-portal .signin .local-signin p{color:#a9bdd2}

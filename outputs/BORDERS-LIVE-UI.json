@@ -1,0 +1,35 @@
+{
+  "url": "https://trident-dashboard.admintrident01.workers.dev/#schedule",
+  "checkedAt": "2026-11-13T01:48:00Z",
+  "commit": "3ebac21383959407c1d777e245a9da8011f26218",
+  "viewport": {
+    "width": 507,
+    "height": 480
+  },
+  "jobBlocks": {
+    "count": 12,
+    "borderStyle": "solid",
+    "computedBorderWidth": "0.57554px",
+    "cssBorderWidth": "1px",
+    "note": "The browser viewport is scaled; the stylesheet sets a 1px solid border."
+  },
+  "travelBlocks": {
+    "count": 8,
+    "borderStyle": "none",
+    "borderWidth": "0px"
+  },
+  "recurringNotes": {
+    "visibleOnCheckedDay": 0,
+    "borderlessRuleRetained": true
+  },
+  "scaleControl": {
+    "opacity": "0.3",
+    "text": "-100%+"
+  },
+  "layout": {
+    "horizontalPageOverflowPx": 0,
+    "verticalPageOverflowPx": 0
+  },
+  "businessDataWritten": false,
+  "screenshot": "C:/Users/TECH11/trident-borders-live.png"
+}

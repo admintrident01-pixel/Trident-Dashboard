@@ -1,4 +1,4 @@
-APPROVED FOR PUBLICATION - LIVE BACKUP VERIFIED - DEPLOYMENT IN PROGRESS
+PUBLISHED AND VERIFIED - Weekly on-call roster, 13 November 2026
 Weekly on-call roster, 13 November 2026 (Pacific/Auckland)
 
 SCOPE
@@ -49,7 +49,15 @@ Vite PID 7868; local API PID 15212 on port 18782.
 Final screenshots and the approved mockup are in
 outputs/On-call-roster-mockup/.
 
-PUBLICATION
-The user approved this local release. A recoverable register clone and all 35
-live uploads were checksum-verified before publication. A push to main publishes
-both frontend and API; post-release comparison and live-page verification follow.
+PUBLICATION AND VERIFICATION
+- Commit 1729f02912fd4b850dd2e4653f6d73f6b0783f98 pushed to main.
+- Cloud Build 1995c889-ea60-4b35-8200-8ec1779f2269 succeeded.
+- API trident-quote-api-00078-9xc serves 100% traffic with commit-sha 1729f02.
+- Live frontend uses assets/index-DSGEzN7w.js and assets/index-C7xkYjPO.css.
+- Live On call page loaded the current and next technician and the six-week roster.
+- Pre-release snapshot: register revision 16869, 35 uploads checksum-verified.
+- Post-release: business values identical; prior 35 uploads unchanged; environment,
+  secrets, service identity and runtime settings preserved. The new onCallRoster
+  section and one scheduled reminderJob update are the only changed state sections.
+- No production roster-changing action was performed during verification, so no
+  notification email was sent by this deployment check. Notifications run on changes.
