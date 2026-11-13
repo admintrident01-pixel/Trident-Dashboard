@@ -85,7 +85,7 @@ export default function App(){
 
   if(!session||page!=='quotes'||document)return;let cancelled=false
 
-  fetch('/quote-builder.html').then(r=>{if(!r.ok)throw Error('Unable to load the quote builder.');return r.text()}).then(html=>{
+  fetch('/quote-builder.html?v=20261114b',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the quote builder.');return r.text()}).then(html=>{
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin}).replace(/</g,'\\u003c')
 
@@ -101,7 +101,7 @@ export default function App(){
 
   if(!session||page!=='timesheet'||timesheetDocument)return;let cancelled=false
 
-  fetch('/timesheet.html').then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
+  fetch('/timesheet.html?v=20261114b',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin,pilot:myDayEnabled(session)}).replace(/</g,'\\u003c')
 
