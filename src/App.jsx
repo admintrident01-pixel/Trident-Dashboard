@@ -32,7 +32,7 @@ const OnCallRoster=lazy(()=>import('./OnCallRoster'))
 
 const localMode=import.meta.env.DEV&&import.meta.env.VITE_LOCAL_DEVELOPMENT==='true'
 
-const api=localMode?'http://127.0.0.1:18782':(import.meta.env.VITE_API_URL||'https://trident-quote-api-dsn2tnnc3q-ts.a.run.app').replace(/\/$/,'')
+const api=localMode?'http://127.0.0.1:18782':(import.meta.env.VITE_API_URL||'https://trident-quote-api-383423323438.australia-southeast1.run.app').replace(/\/$/,'')
 
 export default function App(){
 
@@ -44,12 +44,14 @@ export default function App(){
  const consumeIncoming=useCallback(()=>setIncomingJob(null),[])
  const [navigationMode,setNavigationMode]=useState(()=>{try{return localStorage.getItem('trident-navigation-mode')||'pinned'}catch{return 'pinned'}})
  const [navigationOpen,setNavigationOpen]=useState(false)
+ const inFlightReads=useRef(new Map())
  const navigationVisible=navigationMode==='pinned'||navigationOpen
  function navigationPreference(mode){setNavigationMode(mode);setNavigationOpen(false);try{localStorage.setItem('trident-navigation-mode',mode)}catch{/* Keep this window's preference. */}}
  const [visitedPages,setVisitedPages]=useState(()=>({[loadPage()]:true}))
  const visitPage=useCallback(next=>{if(next!=='timesheet')setTimesheetOpenRequest(null);setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
 
  useEffect(()=>saveSession(session),[session])
+ useEffect(()=>{inFlightReads.current.clear()},[session?.token])
  useEffect(()=>{const titles={home:'My day',workspace:'Reminders','my-day':'My day',quotes:'Quotes','job-import':'Import job',schedule:'Tech schedule',oncall:'On call',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
 
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}${page==='job-import'?(savedJobId?'?job='+savedJobId:transferId(location.hash)?'?transfer='+transferId(location.hash):''):''}`)},[page,session,savedJobId])
@@ -69,15 +71,28 @@ export default function App(){
 
   const headers=new Headers(init.headers);headers.set('Authorization',`Bearer ${session?.token}`)
 
-  const started=performance.now()
-  const response=await fetch(api+path,{...init,headers}),data=await response.json()
-  performance.measure(path.startsWith('/api/schedule')?'trident.api.schedule':'trident.api.request',{start:started,duration:performance.now()-started})
+  // Coalesce simultaneous identical reads (for example a focus event and a
+  // timer firing together). This never caches a completed response.
+  const dedupeKey=(init.method||'GET').toUpperCase()==='GET'&&!init.body&&!init.signal?path:''
+  const pending=dedupeKey?inFlightReads.current.get(dedupeKey):null
+  if(pending)return pending
+  const operation=(async()=>{
+   const started=performance.now()
+   const response=await fetch(api+path,{...init,headers}),data=await response.json()
+   performance.measure(path.startsWith('/api/schedule')?'trident.api.schedule':'trident.api.request',{start:started,duration:performance.now()-started})
 
-  if(response.status===401||response.status===403&&data.error==='Your account is not active. Contact an administrator.'){setSession(null);setDocument('');setTimesheetDocument('');setPage('home')}
+   if(response.status===401||response.status===403&&data.error==='Your account is not active. Contact an administrator.'){setSession(null);setDocument('');setTimesheetDocument('');setPage('home')}
 
-  if(!response.ok)throw Object.assign(Error(data.error||'Unable to complete this request.'),{status:response.status})
+   if(!response.ok)throw Object.assign(Error(data.error||'Unable to complete this request.'),{status:response.status})
 
-  return {data,etag:response.headers.get('ETag')}
+   return {data,etag:response.headers.get('ETag')}
+  })()
+  if(dedupeKey){
+   inFlightReads.current.set(dedupeKey,operation)
+   const clear=()=>{if(inFlightReads.current.get(dedupeKey)===operation)inFlightReads.current.delete(dedupeKey)}
+   operation.then(clear,clear)
+  }
+  return operation
 
  },[session])
 
@@ -85,7 +100,7 @@ export default function App(){
 
   if(!session||page!=='quotes'||document)return;let cancelled=false
 
-  fetch('/quote-builder.html?v=20261114b',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the quote builder.');return r.text()}).then(html=>{
+  fetch('/quote-builder.html?v=20261114c',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the quote builder.');return r.text()}).then(html=>{
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin}).replace(/</g,'\\u003c')
 
@@ -101,7 +116,7 @@ export default function App(){
 
   if(!session||page!=='timesheet'||timesheetDocument)return;let cancelled=false
 
-  fetch('/timesheet.html?v=20261114b',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
+  fetch('/timesheet.html?v=20261114c',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin,pilot:myDayEnabled(session)}).replace(/</g,'\\u003c')
 
@@ -124,11 +139,11 @@ export default function App(){
 
   if(!session)return
 
-  let cancelled=false
-  const check=async()=>{try{const r=await fetch(api+'/api/session',{headers:{Authorization:'Bearer '+session.token}}),d=await r.json();if(cancelled)return;if(r.status===401||r.status===403){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');return}if(!r.ok)return;if(d.role!==session.role||d.technician!==session.technician){setSession({...session,...d,token:session.token});setDocument('');setTimesheetDocument('')}}catch{/* Keep the session through temporary connection failures. */}}
+  let cancelled=false,checking=false,lastCheck=0
+  const check=async()=>{if(cancelled||checking||window.document.hidden||Date.now()-lastCheck<30000)return;checking=true;lastCheck=Date.now();try{const r=await fetch(api+'/api/session',{headers:{Authorization:'Bearer '+session.token}}),d=await r.json();if(cancelled)return;if(r.status===401||r.status===403){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');return}if(!r.ok)return;if(d.role!==session.role||d.technician!==session.technician){setSession({...session,...d,token:session.token});setDocument('');setTimesheetDocument('')}}catch{/* Keep the session through temporary connection failures. */}finally{checking=false}}
   check()
   const resume=()=>{if(!window.document.hidden)check()}
-  const timer=setInterval(resume,60000)
+  const timer=setInterval(resume,300000)
   window.document.addEventListener('visibilitychange',resume)
 
   return()=>{cancelled=true;clearInterval(timer);window.document.removeEventListener('visibilitychange',resume)}
