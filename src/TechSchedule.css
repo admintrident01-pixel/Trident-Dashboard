@@ -200,7 +200,7 @@
 
 /* Select once; dedicated move grip and two compact resize edges. */
 .trident-portal .tech-schedule .schedule-help{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:auto;min-width:0;height:28px;min-height:28px;padding:4px 7px;border-radius:5px;font-size:11px;white-space:nowrap}
-.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note){background:var(--appointment-fill,#e5efff);color:#17345f;border:0;padding-left:19px}
+.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note){background:var(--appointment-fill,#e5efff);color:#17345f;border-width:1px;padding-left:19px}
 .trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note)>input.schedule-select-block{left:3.5px}
 .trident-portal .tech-schedule .schedule-appointment.travel{background:#edf0f3!important;color:#35465a;border:0}
 .schedule-travel-check{display:inline-flex!important;vertical-align:middle;overflow:visible!important;align-items:center;margin-right:3px}
@@ -293,7 +293,7 @@
 
 /* Vertical scale stays out of the way until the pointer or keyboard reaches it. */
 .trident-portal .tech-schedule{position:relative}
-.schedule-zoom{position:absolute;right:16px;bottom:14px;z-index:20;display:flex;align-items:center;gap:2px;padding:3px;border:1px solid #c7d4e4;border-radius:8px;background:#ffffffeb;box-shadow:0 4px 16px #17345f24;opacity:0;transition:opacity .16s ease}
+.schedule-zoom{position:absolute;right:16px;bottom:14px;z-index:20;display:flex;align-items:center;gap:2px;padding:3px;border:1px solid #c7d4e4;border-radius:8px;background:#ffffffeb;box-shadow:0 4px 16px #17345f24;opacity:.3;transition:opacity .16s ease}
 .schedule-zoom:is(:hover,:focus-within){opacity:1}
 .tech-schedule .schedule-zoom button{min-width:30px;height:28px;min-height:28px;padding:0 7px;border:0;border-radius:5px;background:transparent;color:#254a76;font-size:14px;line-height:1}
 .tech-schedule .schedule-zoom button:is(:hover,:focus-visible){background:#e8f0fb}
