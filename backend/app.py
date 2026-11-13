@@ -38,6 +38,8 @@ import recycle
 
 import accounts,reminders,secrets
 
+import on_call_roster
+
 MAX_BODY=40*1024*1024
 
 STOCK_SCOPE=('stock',)
@@ -612,6 +614,22 @@ class Application:
      elif path=='/api/quote-settings' and method=='GET':
       payload=quote_settings.read(state)
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'quote-settings',('workbook',))))
+
+     elif path=='/api/on-call' and method=='GET':
+      if not state.get('onCallRoster'):
+       revision,state=self.write(revision,state,lambda current:on_call_roster.initialise(current,email),actor=email,keys=('onCallRoster',),error='The roster was just set up. Refresh and try again.')
+      payload=on_call_roster.read(state,user)
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'on-call',('onCallRoster',))))
+
+     elif path=='/api/on-call' and method=='POST':
+      change=self.body(environ)
+      revision,state=self.write(revision,state,lambda current:on_call_roster.action(current,change,user),actor=email,keys=('onCallRoster',),error='The roster changed. Refresh and try again.')
+      payload=on_call_roster.read(state,user)
+      try:
+       if reminders.mail_mode(self.local)!='unconfigured':reminders.deliver(self.store,self.local)
+      except Exception:
+       logging.exception('On-call change saved; queued notification delivery will be checked by the scheduler.')
+      headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'on-call',('onCallRoster',))))
 
      elif path=='/api/leave' and method=='GET':payload={'requests':[r for r in state.get('leaveRequests',{}).values() if user['role']=='admin' or r['technician']==user['technician']],'technicians':[t for t in timesheets.settings(state)['technicians'] if user['role']=='admin' or t['name']==user['technician']],'lunchStart':schedule.settings(state)['lunchStart']}
 

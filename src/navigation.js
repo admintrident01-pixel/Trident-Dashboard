@@ -1,6 +1,6 @@
 import {myDayEnabled} from './myDayModel.js'
-const pages=['home','workspace','my-day','job-import','quotes','schedule','timesheet','leave','reports','vehicles','stock','settings','office']
-const staffPages=['home','workspace','schedule','timesheet','leave','vehicles']
+const pages=['home','workspace','my-day','job-import','quotes','schedule','oncall','timesheet','leave','reports','vehicles','stock','settings','office']
+const staffPages=['home','workspace','schedule','oncall','timesheet','leave','vehicles']
 export const homePage=session=>myDayEnabled(session)?'my-day':'workspace'
 export function loadPage(){
  const page=window.location.hash.slice(1).split('?')[0]

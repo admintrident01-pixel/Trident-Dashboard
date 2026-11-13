@@ -27,6 +27,7 @@ const VehicleChecks=lazy(()=>import('./VehicleChecks'))
 const LeaveForms=lazy(()=>import('./LeaveForms'))
 const TechSchedule=lazy(()=>import('./TechSchedule'))
 const OfficeFiles=lazy(()=>import('./OfficeFiles'))
+const OnCallRoster=lazy(()=>import('./OnCallRoster'))
 
 const localMode=import.meta.env.DEV&&import.meta.env.VITE_LOCAL_DEVELOPMENT==='true'
 
@@ -48,7 +49,7 @@ export default function App(){
  const visitPage=useCallback(next=>{if(next!=='timesheet')setTimesheetOpenRequest(null);setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
 
  useEffect(()=>saveSession(session),[session])
- useEffect(()=>{const titles={home:'My day',workspace:'Reminders','my-day':'My day',quotes:'Quotes','job-import':'Import job',schedule:'Tech schedule',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
+ useEffect(()=>{const titles={home:'My day',workspace:'Reminders','my-day':'My day',quotes:'Quotes','job-import':'Import job',schedule:'Tech schedule',oncall:'On call',timesheet:'Time sheet',leave:'Leave forms',reports:'Labour payables',vehicles:'Vehicle checks',stock:'Stock & assets',settings:'Settings',office:'Shared resources'};window.document.title=(titles[page]||'Home')+' · Trident Dashboard'},[page])
 
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}${page==='job-import'?(savedJobId?'?job='+savedJobId:transferId(location.hash)?'?transfer='+transferId(location.hash):''):''}`)},[page,session,savedJobId])
  useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}visitPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page,visitPage])
@@ -61,7 +62,7 @@ export default function App(){
  const isAdmin=session?.role==='admin'
 
  const hasMyDay=myDayEnabled(session)
- const allowed=key=>key==='job-import'?canAccessPage(key,session):key==='my-day'?hasMyDay:isAdmin||['home','workspace','timesheet','leave','vehicles','schedule'].includes(key)
+ const allowed=key=>key==='job-import'?canAccessPage(key,session):key==='my-day'?hasMyDay:isAdmin||['home','workspace','timesheet','leave','vehicles','schedule','oncall'].includes(key)
 
  const request=useCallback(async(path,init={})=>{
 
@@ -152,7 +153,7 @@ export default function App(){
 
    <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate(homePage(session))}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
 
-   <nav aria-label="Main navigation">{[['my-day','My day'],['quotes','Quotes'],['schedule','Tech schedule'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources'],['workspace','Reminders']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
+   <nav aria-label="Main navigation">{[['my-day','My day'],['quotes','Quotes'],['schedule','Tech schedule'],['oncall','On call'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources'],['workspace','Reminders']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
 
    <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button className="portal-pin" aria-label={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} aria-pressed={navigationMode==='pinned'} title={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} onClick={()=>navigationPreference(navigationMode==='pinned'?'hidden':'pinned')}><Icon name={navigationMode==='pinned'?'custom-pin-off':'custom-pin'} size={16}/><span>{navigationMode==='pinned'?'Unpin':'Pin'}</span></button><button className="portal-hide" aria-label="Hide navigation" title="Hide navigation" onClick={()=>navigationPreference('hidden')}><Icon name="chevron-up" size={14}/></button><button onClick={signOut}>Sign out</button></div>
 
@@ -179,6 +180,8 @@ export default function App(){
   {page==='timesheet'&&!timesheetDocument&&<p className="module-loading" role="status">Loading your time sheet…</p>}
 
   {timesheetDocument&&<section className="quote-module timesheet-module" hidden={page!=='timesheet'} aria-label="Time sheet"><iframe ref={timesheetFrame} title="Trident time sheet" onLoad={()=>{if(pendingDraft.current){timesheetFrame.current.contentWindow.postMessage({type:'trident-resume-timesheet-draft',id:pendingDraft.current},location.origin);pendingDraft.current=''}}} style={{height:timesheetHeight}} srcDoc={timesheetDocument}/>{page==='timesheet'&&<TimesheetHistory openRequest={timesheetOpenRequest} request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/>}</section>}
+
+  {(page==='oncall'||visitedPages.oncall)&&<section hidden={page!=='oncall'}><OnCallRoster request={request}/></section>}
 
   {(page==='leave'||visitedPages.leave)&&<section hidden={page!=='leave'}><LeaveForms technician={session.technician} isAdmin={isAdmin} request={request} active={page==='leave'} onChanged={()=>{timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin);window.dispatchEvent(new Event('trident-leave-updated'))}}/></section>}
 

@@ -200,6 +200,9 @@ def due_reminders(state, now=None):
     now = (now or dt.datetime.now(ZoneInfo('Pacific/Auckland'))).astimezone(ZoneInfo('Pacific/Auckland'))
     cfg = settings(state)
     count = 0
+    if state.get('onCallRoster'):
+        import on_call_roster
+        count += on_call_roster.rollover(result, now)
     for row in dashboard(state, now):
         enabled = cfg['automaticVehicles'] if row['kind'] == 'vehicle' else cfg['automaticTimesheets']
         due = (row['daysRemaining'] is None or row['daysRemaining'] <= cfg['vehicleLeadDays']) if row['kind'] == 'vehicle' else (row['kind']=='stocktake' or now >= dt.datetime.fromisoformat(row['due']) - dt.timedelta(hours=cfg['timesheetLeadHours']))

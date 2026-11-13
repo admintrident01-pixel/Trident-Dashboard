@@ -1,0 +1,55 @@
+APPROVED FOR PUBLICATION - LIVE BACKUP VERIFIED - DEPLOYMENT IN PROGRESS
+Weekly on-call roster, 13 November 2026 (Pacific/Auckland)
+
+SCOPE
+- New On call page in the main navigation for technicians and admins.
+- Shows who is on call this week, who is next, a six-week roster and the
+  admin-defined rotation order.
+- Technicians accept their own week, hand it to another technician, or release
+  it to the open pool. An approved-leave technician cannot receive or grab a
+  week they are away.
+- Any technician can grab an open week; the first successful grab wins.
+- Admins edit the rotation order with up/down controls and can assign an open
+  week back to a technician.
+- The assigned technician or an admin can resend the acceptance email.
+- Every change queues an email to all active, verified technicians and admins.
+  Local development keeps those messages as previews and never sends them.
+
+WEEK RULES
+- Weeks run Monday 12:00 am to Sunday 11:59 pm Pacific/Auckland.
+- Current and next week are published as Awaiting accept. The next week's
+  deadline is Sunday 5 pm; if it is missed, the week joins the open pool.
+- Future weeks remain Scheduled until they become current/next.
+- The current-week card confirms availability without showing a past deadline.
+
+CHANGED SOURCE
+backend/on_call_roster.py             New roster, public pool, rotation and email logic.
+backend/app.py                        Authenticated GET/POST /api/on-call routes.
+backend/reminders.py                  One-minute rollover and notification checks.
+backend/Dockerfile                    Includes the new backend module.
+backend/test_on_call_roster.py        Roster behaviour, permissions, deadline and mail tests.
+src/OnCallRoster.jsx                  Page, table, dialogs and actions.
+src/OnCallRoster.css                  Desktop/mobile styling.
+src/App.jsx, src/navigation.js         Navigation and lazy page loading.
+
+VALIDATION
+- Backend: 581 tests pass against the existing workbook fixture; 15 focused
+  roster tests cover acceptance, deadline rollover, hand-over, release, grab,
+  admin order, open-week assignment, leave blocking, resend and mail dedupe.
+- Frontend: ESLint clean and production Vite build successful.
+- Browser: desktop, 390px mobile, hand-over dialog, rotation editor, open-pool
+  release and admin reassignment checked locally. The page has no horizontal
+  overflow at 390px.
+- Local data was copied before the interaction test and restored afterwards.
+  No real email was sent.
+
+LOCAL PREVIEW
+http://127.0.0.1:18780/
+Vite PID 7868; local API PID 15212 on port 18782.
+Final screenshots and the approved mockup are in
+outputs/On-call-roster-mockup/.
+
+PUBLICATION
+The user approved this local release. A recoverable register clone and all 35
+live uploads were checksum-verified before publication. A push to main publishes
+both frontend and API; post-release comparison and live-page verification follow.

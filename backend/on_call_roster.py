@@ -1,0 +1,579 @@
+"""Weekly on-call roster, public pool and change notifications."""
+import copy, datetime as dt, uuid
+from zoneinfo import ZoneInfo
+from core import Problem
+import accounts, leave, timesheets
+
+NZ = ZoneInfo('Pacific/Auckland')
+LINK = 'https://trident-dashboard.admintrident01.workers.dev/#oncall'
+HORIZON = 6
+STATUSES = ('scheduled', 'awaiting', 'accepted', 'open')
+
+
+def now_auckland():
+    return dt.datetime.now(NZ)
+
+
+def _now(value=None):
+    value = value or now_auckland()
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=NZ)
+    return value.astimezone(NZ)
+
+
+def _monday(day):
+    return day - dt.timedelta(days=day.weekday())
+
+
+def _week(value):
+    if not isinstance(value, str) or len(value) != 10:
+        raise Problem(400, 'Choose a valid roster week.')
+    try:
+        day = dt.date.fromisoformat(value)
+    except ValueError:
+        raise Problem(400, 'Choose a valid roster week.')
+    if day.weekday() != 0:
+        raise Problem(400, 'Roster weeks must start on a Monday.')
+    return day
+
+
+def _short_dates(start):
+    end = start + dt.timedelta(days=6)
+    if start.month == end.month:
+        return f"{start.day}–{end.day} {start:%b}"
+    return f"{start.day} {start:%b} – {end.day} {end:%b}"
+
+
+def _long_dates(start):
+    end = start + dt.timedelta(days=6)
+    if start.year == end.year and start.month == end.month:
+        return f"Mon {start.day} – Sun {end.day} {start:%B %Y}"
+    if start.year == end.year:
+        return f"Mon {start.day} {start:%b} – Sun {end.day} {end:%b %Y}"
+    return f"Mon {start.day} {start:%b %Y} – Sun {end.day} {end:%b %Y}"
+
+
+def _header_dates(start):
+    end = start + dt.timedelta(days=6)
+    if start.year == end.year and start.month == end.month:
+        return f"Mon {start.day} – Sun {end.day} {start:%B %Y}"
+    if start.year == end.year:
+        return f"Mon {start.day} {start:%b} – Sun {end.day} {end:%b %Y}"
+    return f"Mon {start.day} {start:%b %Y} – Sun {end.day} {end:%b %Y}"
+
+
+def _deadline(start):
+    return dt.datetime.combine(start - dt.timedelta(days=1), dt.time(17, 0), NZ)
+
+
+def _deadline_label(start):
+    day = start - dt.timedelta(days=1)
+    return f"Sun {day.day} {day:%b}, 5 pm"
+
+
+def _initials(name):
+    parts = [part for part in (name or '').split() if part]
+    if not parts:
+        return '?'
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return (parts[0][0] + parts[-1][0]).upper()
+
+
+def _staff(state):
+    rows = []
+    seen = set()
+    for row in timesheets.settings(state)['technicians']:
+        if row.get('staffType', 'technician') != 'technician':
+            continue
+        name = (row.get('name') or '').strip()
+        if name and name.casefold() not in seen:
+            rows.append(name)
+            seen.add(name.casefold())
+    return rows
+
+
+def _clean_order(block, state, strict=False):
+    staff = _staff(state)
+    canonical = {name.casefold(): name for name in staff}
+    raw = block.get('order') if isinstance(block.get('order'), list) else []
+    order, seen = [], set()
+    for name in raw:
+        if not isinstance(name, str):
+            continue
+        key = name.strip().casefold()
+        if key in canonical and key not in seen:
+            order.append(canonical[key])
+            seen.add(key)
+    if strict and seen != set(canonical):
+        raise Problem(400, 'Include every technician in the rotation order. Refresh the roster if staff changed.')
+    for name in staff:
+        if name.casefold() not in seen:
+            order.append(name)
+            seen.add(name.casefold())
+    return order
+
+
+def _anchor(block, monday):
+    try:
+        anchor = _week(block.get('anchor'))
+    except Problem:
+        anchor = monday
+        block['anchor'] = anchor.isoformat()
+    return anchor
+
+
+def _rotation_name(order, anchor, week):
+    if not order:
+        return ''
+    return order[((week - anchor).days // 7) % len(order)]
+
+
+def _bump(record):
+    record['revision'] = int(record.get('revision') or 0) + 1
+
+
+def _log(block, at, actor, action, week, detail):
+    block.setdefault('activity', []).append({
+        'at': at.isoformat(), 'actor': actor, 'action': action,
+        'weekStart': week.isoformat(), 'detail': detail,
+    })
+    block['activity'] = block['activity'][-100:]
+
+
+def _open(record, at, actor, reason):
+    record.update({
+        'technician': '', 'status': 'open', 'manual': True,
+        'acceptedAt': '', 'acceptedBy': '',
+        'releasedAt': at.isoformat(), 'releasedBy': actor,
+        'releaseReason': reason, 'updatedAt': at.isoformat(),
+    })
+    _bump(record)
+
+
+def _manual_after_deadline(record, deadline):
+    if not record.get('manual'):
+        return False
+    try:
+        changed = dt.datetime.fromisoformat(record.get('updatedAt') or '')
+    except ValueError:
+        return False
+    if changed.tzinfo is None:
+        changed = changed.replace(tzinfo=NZ)
+    return changed.astimezone(NZ) >= deadline
+
+
+def _base(state, at):
+    monday = _monday(at.date())
+    block = state.setdefault('onCallRoster', {})
+    block['order'] = _clean_order(block, state)
+    anchor = _anchor(block, monday)
+    if not isinstance(block.get('weeks'), dict):
+        block['weeks'] = {}
+    if not isinstance(block.get('activity'), list):
+        block['activity'] = []
+    for offset in range(HORIZON):
+        week = monday + dt.timedelta(days=7 * offset)
+        key = week.isoformat()
+        record = block['weeks'].get(key)
+        if not isinstance(record, dict):
+            record = {
+                'weekStart': key,
+                'technician': _rotation_name(block['order'], anchor, week),
+                'status': 'scheduled', 'manual': False,
+                'acceptedAt': '', 'acceptedBy': '',
+                'releasedAt': '', 'releasedBy': '', 'releaseReason': '',
+                'updatedAt': at.isoformat(), 'revision': 1,
+            }
+            block['weeks'][key] = record
+            continue
+        record.setdefault('weekStart', key)
+        record.setdefault('manual', False)
+        record.setdefault('acceptedAt', '')
+        record.setdefault('acceptedBy', '')
+        record.setdefault('releasedAt', '')
+        record.setdefault('releasedBy', '')
+        record.setdefault('releaseReason', '')
+        record.setdefault('updatedAt', at.isoformat())
+        record.setdefault('revision', 1)
+        if record.get('status') not in STATUSES:
+            record['status'] = 'scheduled'
+        if record['status'] in ('scheduled', 'awaiting') and not record.get('technician'):
+            record['technician'] = _rotation_name(block['order'], anchor, week)
+    return block, monday
+
+
+def _prepare(state, at, events=None):
+    block, monday = _base(state, at)
+    order_keys = {name.casefold() for name in block['order']}
+    for offset in range(HORIZON):
+        week = monday + dt.timedelta(days=7 * offset)
+        record = block['weeks'][week.isoformat()]
+        if record['status'] in ('scheduled', 'awaiting') and record.get('technician') and record['technician'].casefold() not in order_keys:
+            previous = record['technician']
+            detail = f"Week {week.isocalendar()[1]} moved to the open pool because {previous} is no longer a technician."
+            _open(record, at, 'Automatic', 'Technician removed')
+            _log(block, at, 'Automatic', 'open', week, detail)
+            if events is not None:
+                events.append({'kind': 'open', 'weekStart': week.isoformat(), 'technician': previous})
+            continue
+        if record['status'] == 'scheduled' and offset <= 1:
+            record['status'] = 'awaiting'
+            record['updatedAt'] = at.isoformat()
+            _bump(record)
+            if events is not None:
+                events.append({'kind': 'awaiting', 'weekStart': week.isoformat(), 'technician': record['technician']})
+        deadline = _deadline(week)
+        missed = record['status'] == 'awaiting' and offset >= 1 and at >= deadline
+        missed = missed and not _manual_after_deadline(record, deadline)
+        if missed:
+            previous = record['technician']
+            detail = f"Week {week.isocalendar()[1]} moved to the open pool because {previous or 'the assigned technician'} did not accept by {_deadline_label(week)}."
+            _open(record, at, 'Automatic', 'Acceptance deadline passed')
+            _log(block, at, 'Automatic', 'open', week, detail)
+            if events is not None:
+                events.append({'kind': 'open', 'weekStart': week.isoformat(), 'technician': previous})
+    return block, monday
+
+
+def initialise(state, actor='', now=None):
+    result = copy.deepcopy(state)
+    _base(result, _now(now))
+    return result
+
+
+def _recipients(state):
+    return [user for user in accounts.users(state).values()
+            if user.get('active') and user.get('verified') and user.get('email')]
+
+
+def _tech_users(state, technician):
+    wanted = (technician or '').casefold()
+    return [user for user in _recipients(state)
+            if (user.get('technician') or '').casefold() == wanted]
+
+
+def _actor_name(state, email):
+    if not email or email == 'Automatic':
+        return 'Automatic'
+    user = accounts.users(state).get(email)
+    return (user or {}).get('name') or email
+
+
+def _status_label(record):
+    return record['status'].capitalize() if record['status'] != 'awaiting' else 'Awaiting accept'
+
+
+def _notify(state, block, week, event, detail, at):
+    import reminders
+    record = block['weeks'][week.isoformat()]
+    number = week.isocalendar()[1]
+    subjects = {
+        'accept': f"On-call accepted — Week {number}",
+        'handover': f"On-call changed — Week {number}",
+        'release': f"On-call opened to the pool — Week {number}",
+        'grab': f"On-call grabbed — Week {number}",
+        'awaiting': f"Accept your on-call week — Week {number}",
+        'auto-open': f"On-call open for grabs — Week {number}",
+    }
+    subject = subjects.get(event, f"On-call roster changed — Week {number}")
+    body = (
+        f"{detail}\n\n"
+        f"Week {number}: {_long_dates(week)}\n"
+        f"On call: {record.get('technician') or 'Open to anyone'}\n"
+        f"Status: {_status_label(record)}\n\n"
+        f"View the roster: {LINK}"
+    )
+    key = f"oncall:{week.isoformat()}:{event}:{record.get('revision', 0)}"
+    context = {'weekStart': week.isoformat(), 'event': event}
+    for user in _recipients(state):
+        reminders.queue(state, user['email'], subject, body, 'oncall', key + ':' + user['email'], context)
+
+
+def _notify_order(state, block, detail, at):
+    import reminders
+    key = f"oncall:order:{block.get('orderRevision', 0)}"
+    subject = 'On-call rotation order updated'
+    body = f"{detail}\n\nPosition 1 is on call now, then the roster rotates in this order.\n\nView the roster: {LINK}"
+    for user in _recipients(state):
+        reminders.queue(state, user['email'], subject, body, 'oncall', key + ':' + user['email'], {'event': 'order'})
+
+
+def _actor(user):
+    return user.get('name') or user.get('technician') or user.get('email') or 'A user'
+
+
+def _my_technician(user):
+    return (user.get('technician') or '').strip()
+
+
+def _leave_days(state):
+    rows = {}
+    for request in leave.approved(state):
+        rows.setdefault((request.get('technician') or '').casefold(), set()).update(request.get('dates') or [])
+    return rows
+
+
+def _away(state, technician, week):
+    days = _leave_days(state).get((technician or '').casefold(), set())
+    return any((week + dt.timedelta(days=offset)).isoformat() in days for offset in range(7))
+
+
+def read(state, user, now=None):
+    at = _now(now)
+    snapshot = copy.deepcopy(state)
+    block, monday = _prepare(snapshot, at)
+    technician = _my_technician(user)
+    admin = user.get('role') == 'admin'
+    rows = []
+    for offset in range(HORIZON):
+        week = monday + dt.timedelta(days=7 * offset)
+        record = block['weeks'][week.isoformat()]
+        mine = bool(technician and record.get('technician') and technician.casefold() == record['technician'].casefold())
+        status = record['status']
+        options = []
+        for name in block['order']:
+            if name.casefold() == (record.get('technician') or '').casefold():
+                continue
+            options.append({'name': name, 'away': _away(snapshot, name, week)})
+        rows.append({
+            'weekStart': week.isoformat(),
+            'weekNumber': week.isocalendar()[1],
+            'year': week.isocalendar()[0],
+            'dates': _short_dates(week),
+            'datesLong': _long_dates(week),
+            'status': status,
+            'statusLabel': _status_label(record),
+            'technician': record.get('technician') or '',
+            'initials': _initials(record.get('technician')),
+            'mine': mine,
+            'isCurrent': offset == 0,
+            'acceptedAt': record.get('acceptedAt') or '',
+            'acceptedBy': record.get('acceptedBy') or '',
+            'deadline': _deadline(week).isoformat(),
+            'deadlineLabel': _deadline_label(week),
+            'canAccept': mine and status == 'awaiting',
+            'canHandover': (admin and status in ('awaiting', 'accepted', 'open')) or (mine and status in ('awaiting', 'accepted')),
+            'canRelease': (admin or mine) and status in ('awaiting', 'accepted'),
+            'canGrab': status == 'open' and bool(technician),
+            'canResend': (admin or mine) and status == 'awaiting',
+            'handoverOptions': options,
+        })
+    activity = []
+    for row in reversed(block.get('activity', [])[-20:]):
+        activity.append({**row, 'actorName': _actor_name(snapshot, row.get('actor', ''))})
+    return {
+        'currentWeek': monday.isoformat(),
+        'weekNumber': monday.isocalendar()[1],
+        'year': monday.isocalendar()[0],
+        'headerDates': _header_dates(monday),
+        'rows': rows,
+        'order': block['order'],
+        'openWeeks': sum(1 for row in rows if row['status'] == 'open'),
+        'activity': activity,
+        'myTechnician': technician,
+        'isAdmin': admin,
+        'timezone': 'NZDT' if at.dst() else 'NZST',
+    }
+
+
+def _record_for(block, week):
+    record = block['weeks'].get(week.isoformat())
+    if not record:
+        raise Problem(404, 'That roster week is no longer available. Refresh the page.')
+    return record
+
+
+def action(state, data, user, now=None):
+    if not isinstance(data, dict):
+        raise Problem(400, 'Invalid on-call change.')
+    kind = data.get('action')
+    if kind not in ('accept', 'handover', 'release', 'grab', 'order', 'resend'):
+        raise Problem(400, 'Choose a valid on-call action.')
+    at = _now(now)
+    result = copy.deepcopy(state)
+    events = []
+    block, monday = _prepare(result, at, events)
+    _notify_events(result, block, [event for event in events if event['kind'] == 'open'], at)
+    actor_name = _actor(user)
+    technician = _my_technician(user)
+    admin = user.get('role') == 'admin'
+    if kind == 'order':
+        accounts.admin(user)
+        names = data.get('order')
+        if not isinstance(names, list) or not 1 <= len(names) <= 200:
+            raise Problem(400, 'Choose a valid rotation order.')
+        staff = {name.casefold(): name for name in _staff(result)}
+        order, seen = [], set()
+        for name in names:
+            if not isinstance(name, str) or not name.strip():
+                raise Problem(400, 'Choose a valid rotation order.')
+            key = name.strip().casefold()
+            if key not in staff:
+                raise Problem(400, 'Choose only technicians from Settings.')
+            if key in seen:
+                raise Problem(400, 'Each technician can appear only once.')
+            order.append(staff[key])
+            seen.add(key)
+        if seen != set(staff):
+            raise Problem(400, 'Include every technician in the rotation order. Refresh if staff changed.')
+        block['order'] = order
+        block['anchor'] = monday.isoformat()
+        block['orderRevision'] = int(block.get('orderRevision') or 0) + 1
+        for offset in range(HORIZON):
+            week = monday + dt.timedelta(days=7 * offset)
+            record = block['weeks'][week.isoformat()]
+            if record.get('manual') or record['status'] == 'accepted':
+                continue
+            record.update({
+                'technician': _rotation_name(order, monday, week),
+                'status': 'awaiting' if offset <= 1 else 'scheduled',
+                'acceptedAt': '', 'acceptedBy': '', 'updatedAt': at.isoformat(),
+            })
+            _bump(record)
+        detail = f"{actor_name} updated the rotation order: {' → '.join(order)}."
+        _log(block, at, user['email'], 'order', monday, detail)
+        _notify_order(result, block, detail, at)
+        return result
+
+    week = _week(data.get('weekStart'))
+    horizon_end = monday + dt.timedelta(days=7 * (HORIZON - 1))
+    if week < monday or week > horizon_end:
+        raise Problem(400, 'Choose a week from the current roster.')
+    record = _record_for(block, week)
+    number = week.isocalendar()[1]
+    mine = bool(technician and record.get('technician') and technician.casefold() == record['technician'].casefold())
+
+    if kind == 'accept':
+        if not mine:
+            raise Problem(403, 'Only the assigned technician can accept this week.')
+        if record['status'] != 'awaiting':
+            raise Problem(409, 'This week is not waiting for acceptance.')
+        record.update({
+            'status': 'accepted', 'acceptedAt': at.isoformat(),
+            'acceptedBy': user['email'], 'updatedAt': at.isoformat(),
+        })
+        _bump(record)
+        detail = f"{actor_name} accepted on call for Week {number}."
+        _log(block, at, user['email'], 'accept', week, detail)
+        _notify(result, block, week, 'accept', detail, at)
+        return result
+
+    if kind == 'release':
+        if not (admin or mine):
+            raise Problem(403, 'Only the assigned technician or an admin can release this week.')
+        if record['status'] == 'open':
+            raise Problem(409, 'This week is already open to everyone.')
+        if record['status'] not in ('awaiting', 'accepted'):
+            raise Problem(409, 'This week is not published for handover yet.')
+        previous = record.get('technician')
+        _open(record, at, user['email'], 'Released by ' + actor_name)
+        detail = f"{actor_name} released Week {number} to the open pool."
+        if previous and previous.casefold() != (technician or '').casefold():
+            detail = f"{actor_name} released {previous}'s Week {number} to the open pool."
+        _log(block, at, user['email'], 'release', week, detail)
+        _notify(result, block, week, 'release', detail, at)
+        return result
+
+    if kind == 'handover':
+        if not (admin or mine):
+            raise Problem(403, 'Only the assigned technician or an admin can hand over this week.')
+        if record['status'] not in ('awaiting', 'accepted') and not (admin and record['status'] == 'open'):
+            raise Problem(409, 'This week is not published for handover yet.')
+        target = (data.get('technician') or '').strip() if isinstance(data.get('technician') or '', str) else ''
+        if len(target) > 160:
+            raise Problem(400, 'Choose a valid technician.')
+        if not target:
+            if record['status'] == 'open':
+                raise Problem(400, 'Choose a technician for this open week.')
+            previous = record.get('technician')
+            _open(record, at, user['email'], 'Released by ' + actor_name)
+            detail = f"{actor_name} released Week {number} to the open pool."
+            if previous and previous.casefold() != (technician or '').casefold():
+                detail = f"{actor_name} released {previous}'s Week {number} to the open pool."
+            _log(block, at, user['email'], 'release', week, detail)
+            _notify(result, block, week, 'release', detail, at)
+            return result
+        staff = {name.casefold(): name for name in _staff(result)}
+        canonical = staff.get(target.casefold())
+        if not canonical:
+            raise Problem(400, 'Choose a technician from the roster.')
+        if record.get('technician') and canonical.casefold() == record['technician'].casefold():
+            raise Problem(400, 'Choose a different technician, or release the week to the pool.')
+        if _away(result, canonical, week):
+            raise Problem(409, f"{canonical} has approved leave that week. Choose another technician or open the pool.")
+        record.update({
+            'technician': canonical, 'status': 'awaiting', 'manual': True,
+            'acceptedAt': '', 'acceptedBy': '', 'releasedAt': '', 'releasedBy': '',
+            'releaseReason': '', 'updatedAt': at.isoformat(),
+        })
+        _bump(record)
+        detail = f"{actor_name} handed Week {number} to {canonical}."
+        _log(block, at, user['email'], 'handover', week, detail)
+        _notify(result, block, week, 'handover', detail, at)
+        return result
+
+    if kind == 'grab':
+        if record['status'] != 'open':
+            raise Problem(409, 'Someone else already took this week. Refresh the roster.')
+        if not technician:
+            raise Problem(403, 'Only technicians can grab an open week.')
+        if technician.casefold() not in {name.casefold() for name in block['order']}:
+            raise Problem(403, 'Your technician profile is not in the roster. Ask an admin to update Settings.')
+        if _away(result, technician, week):
+            raise Problem(409, 'You have approved leave that week, so you cannot take it.')
+        record.update({
+            'technician': technician, 'status': 'accepted', 'manual': True,
+            'acceptedAt': at.isoformat(), 'acceptedBy': user['email'],
+            'updatedAt': at.isoformat(),
+        })
+        _bump(record)
+        detail = f"{actor_name} grabbed Week {number}."
+        _log(block, at, user['email'], 'grab', week, detail)
+        _notify(result, block, week, 'grab', detail, at)
+        return result
+
+    if kind == 'resend':
+        if not (admin or mine):
+            raise Problem(403, 'Only the assigned technician or an admin can resend this email.')
+        if record['status'] != 'awaiting':
+            raise Problem(409, 'Only a week waiting for acceptance can resend the email.')
+        import reminders
+        recipients = _tech_users(result, record.get('technician'))
+        if not recipients:
+            raise Problem(404, f"No active Trident account is linked to {record.get('technician') or 'this technician'}.")
+        for recipient in recipients:
+            body = (
+                f"Hello {recipient.get('name') or record.get('technician')},\n\n"
+                f"You are on call for Week {number} ({_long_dates(week)}).\n"
+                f"Please accept by {_deadline_label(week)}. If you do not accept, the week moves to the open pool.\n\n"
+                f"Accept or view the roster: {LINK}"
+            )
+            reminders.queue(result, recipient['email'], f"Accept your on-call week — Week {number}", body,
+                            'oncall', f"oncall:resend:{week.isoformat()}:{uuid.uuid4().hex}:{recipient['email']}",
+                            {'weekStart': week.isoformat(), 'event': 'resend'})
+        detail = f"{actor_name} resent the acceptance email to {record.get('technician')}."
+        _log(block, at, user['email'], 'resend', week, detail)
+        return result
+
+    raise Problem(400, 'Choose a valid on-call action.')
+
+
+def _notify_events(state, block, events, at):
+    for event in events:
+        week = dt.date.fromisoformat(event['weekStart'])
+        number = week.isocalendar()[1]
+        if event['kind'] == 'awaiting':
+            detail = f"Week {number} is waiting for {event.get('technician') or 'the assigned technician'} to accept."
+            _notify(state, block, week, 'awaiting', detail, at)
+        else:
+            detail = f"Week {number} is now open to all technicians because {event.get('technician') or 'the assigned technician'} did not accept in time."
+            _notify(state, block, week, 'auto-open', detail, at)
+
+
+def rollover(state, now=None):
+    at = _now(now)
+    events = []
+    block, _ = _prepare(state, at, events)
+    _notify_events(state, block, events, at)
+    return len(events)

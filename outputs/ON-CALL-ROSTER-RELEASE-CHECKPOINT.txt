@@ -1,0 +1,67 @@
+HELD LOCALLY - AWAITING EXPLICIT APPROVAL - NOT COMMITTED, PUSHED OR DEPLOYED
+Weekly on-call roster release checkpoint, 13 November 2026 (Pacific/Auckland)
+
+RELEASE STATE
+- Branch: codex/Readwrite
+- Base commit: 3ebac21383959407c1d777e245a9da8011f26218
+- No feature commit, push or deployment has occurred.
+- Production remains on the previously verified schedule-borders release.
+  The published status in outputs/RELEASE-STATUS.txt has not been replaced.
+
+SCOPE
+- Adds an On call page showing the current technician, next technician and a
+  six-week roster.
+- Technicians can accept, hand over, release to the public pool or grab an open
+  week. First successful grab wins.
+- Admins can edit the weekly rotation order, assign an open week and resend the
+  acceptance email.
+- Every roster change queues email to all active verified technicians/admins;
+  local development records previews only and sends no real email.
+- Approved leave blocks a technician from receiving or grabbing that week.
+
+IMPLEMENTATION
+- backend/on_call_roster.py
+- backend/test_on_call_roster.py
+- backend/app.py
+- backend/reminders.py
+- backend/Dockerfile
+- src/OnCallRoster.jsx
+- src/OnCallRoster.css
+- src/App.jsx
+- src/navigation.js
+- ON-CALL-ROSTER-UPDATE.txt
+
+VALIDATION
+- Backend full suite: 581 tests passed using the existing workbook fixture.
+- Focused roster suite: 15 tests passed.
+- Deployment module check passed.
+- Final ESLint: npx eslint src - passed.
+- Final production build: npm run build - passed.
+- Browser: desktop 1242x667 and mobile 390px checked, including hand-over,
+  public-pool release, admin assignment and rotation ordering. No horizontal
+  page overflow at 390px.
+- Local data was copied before interaction testing and restored afterwards.
+- No real email was sent.
+
+LOCAL PACKAGE
+- outputs/Trident-dashboard-cumulative-update.zip
+- Bytes: 1,243,895
+- Entries: 573
+- SHA256: 7db49c6251a34090e80092e25853814c73e7f94d379a658ae5381fa500b75a83
+- Verified included:
+  src/OnCallRoster.jsx, src/OnCallRoster.css, backend/on_call_roster.py,
+  backend/test_on_call_roster.py, ON-CALL-ROSTER-UPDATE.txt
+- Previous package archived as
+  outputs/Release history/Trident-dashboard-before-oncall-roster.zip
+
+LOCAL PREVIEW
+- http://127.0.0.1:18780/#oncall
+- Vite PID 7868; local API PID 15212 on port 18782.
+- Screenshots: outputs/On-call-roster-mockup/oncall-live-desktop.png,
+  oncall-live-mobile.png, oncall-live-handover.png and oncall-live-order.png.
+
+APPROVAL GATE
+No commit, push or deployment is permitted until the user explicitly approves
+this locally reviewed release. After approval: back up and compare live
+register/uploads first, commit only the intended files, push to main, then
+verify the live page and notification queue.
