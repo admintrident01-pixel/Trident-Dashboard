@@ -1,39 +1,53 @@
 COMBINED RELEASE CHECKPOINT - 14 November 2026 (Pacific/Auckland)
-Branch codex/themepack from verified 1729f02, level with origin/main before this commit.
+Final commit 6bfa3af on main; live frontend asset assets/index-Ddg6xMQH.js.
 
 STREAMS IN THIS RELEASE
-1. Schedule interaction round (this chat): status strip restored, job borders kept while
-   travel/leave/lunch/recurring notes stay borderless, Notes-type bookings styled like
-   recurring notes in their own tint, right-click status order with yellow Unbook,
-   multi-select action set trimmed, icon-only search/undo/redo/sync, scale overlay.
-2. On-call roster administration (chat 3 follow-on): all-staff eligibility including admins
-   and office staff, 14-week plan prefilled from the rotation order.
-3. Theme pack: public/trident-ui-theme.css applied across portal, quote builder and time
-   sheet; THEME-RULE.md and UI-INTERACTION-MAP.md; AGENTS.md theme rule.
+1. Schedule interaction round: status strip restored, job borders kept while travel, leave,
+   lunch and recurring notes stay borderless, Notes-type bookings styled like recurring
+   notes in their own tint, right-click status order with yellow Unbook, multi-select action
+   set trimmed, icon-only search/undo/redo/sync, vertical scale overlay.
+2. On-call roster administration: all-staff eligibility including admins and office staff,
+   14-week plan prefilled from the rotation order.
+3. Theme pack: public/trident-ui-theme.css across portal, quote builder and time sheet;
+   THEME-RULE.md and UI-INTERACTION-MAP.md; AGENTS.md theme rule.
 4. Brand and sign-in: gradient logo background, sign-in card black-to-navy gradient,
    LogoTheme.css, time-entry tokens aligned to the theme.
-5. Quotes: action-cell spacing, blue View PDF button (hover keeps the fill), Email quote
-   opens an Outlook web compose window instead of downloading an .eml file.
+5. Quotes: action-cell spacing, blue View PDF button, Email quote opens an Outlook web
+   compose window instead of downloading an .eml file, and the quotes table now fits from
+   901px up so the date and status stay on one line and Edit, View PDF and Delete fit.
+6. Read/write efficiency (this release): saves reuse the request's register snapshot for
+   conflict checks, so a write no longer performs a second BigQuery read; CORS preflight
+   cache raised from 10 minutes to two hours; live schedule tickets last 30 minutes instead
+   of 5, cutting socket reconnects; the fallback schedule poll moved from 10s to 30s; route
+   recalculations are skipped when the bookings ETag has not changed.
 
 LOCAL VALIDATION
-- Backend: 585 tests OK (TEST_WORKBOOK=performance-fixture.xlsx).
-- Frontend: 186 node tests pass.
-- ESLint clean across src; production Vite build clean (index-C4Q2yq2p.js).
-- Browser review: sign-in gradient, header, quotes table, schedule blocks, context menu,
-  on-call eligibility and planner at desktop and 617x480.
+- Backend: 586 tests OK (TEST_WORKBOOK=performance-fixture.xlsx).
+- Frontend: 95 node tests pass; ESLint clean across changed src files.
+- Production Vite build clean (index-Ddg6xMQH.js).
+- Browser review: quotes table measured with no horizontal overflow at 905px and 916px CSS
+  width (min-width 0, date and status nowrap, all three actions visible); 1242px desktop;
+  narrow 659px view keeps a scrollable table; live schedule board loads clean.
 
 PACKAGE
-- outputs/Trident-dashboard-cumulative-update.zip, 1,496,493 bytes, 578 entries,
-  SHA256 ba0eb366e7cc7316b553e3ddc8ecd22d5b96d0c2df169d39a8a6a21a5762cc9a.
-- Previous package archived as
-  outputs/Release history/Trident-dashboard-before-combined-release.zip (1,243,881 bytes).
+- outputs/Trident-dashboard-cumulative-update.zip, 1,452,131 bytes, 570 entries,
+  SHA256 cc13a03a6acac1d3c44c8d29613fcc56f806b3f23a8d3e2a4902df88c0ccd61d.
+- Copy archived as outputs/Release history/Trident-dashboard-6bfa3af-combined-rw.zip.
+- Excludes .env.development, .env.production, __pycache__, node_modules, dist, outputs,
+  tests, work-tests and local databases, matching the previous package layout.
+
+DEPLOYMENT CHECK
+- GitHub main push 36c45b4..6bfa3af started both deployments.
+- Live index.html now references assets/index-Ddg6xMQH.js.
+- Live API OPTIONS /api/quote-dashboard returns Access-Control-Max-Age 7200 with the new
+  origin https://trident-dashboard.admintrident01.workers.dev, confirming the API deploy.
 
 DATA SAFETY
-- No schema-destructive change: on-call eligibility/plan fields are additive with defaults,
-  direct-hour start/finish retention is additive, the email gate changes timing only.
-- Cloud Shell snapshot tooling is not available in this session, so the pre-release
-  Firestore clone and bucket copies must be confirmed separately; the prior verified tag
-  oncall_20261113T031134Z remains recoverable.
+- No schema-destructive change. The write-path change only removes a redundant read; the
+  snapshot reused is the one already loaded and validated for that request. Live data,
+  quotes, schedules, stock, shared resources, settings and users were not modified.
+- gcloud is unavailable in this session, so a fresh Firestore clone and bucket copy were
+  not made; the prior tag oncall_20261113T031134Z remains recoverable.
 
 Note
 - A browser cannot attach a generated PDF to an Outlook compose window. The email flow
