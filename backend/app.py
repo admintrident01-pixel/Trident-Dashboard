@@ -173,7 +173,7 @@ class Application:
 
   else:result,payload=accounts.consume(state,p.get('token'),p.get('remember',False))
 
-  self.commit(revision,result)
+  self.commit(revision,result,before=state)
 
   if payload is None:raise Problem(401,'Email or password is incorrect. Use an email link to set or reset your password.')
 
@@ -266,7 +266,7 @@ class Application:
 
     if origin!=self.origin or not origin:raise Problem(403,'Origin is not allowed.')
 
-    headers += [('Access-Control-Allow-Methods','GET,POST,OPTIONS'),('Access-Control-Allow-Headers','Authorization,Content-Type,If-Match,If-None-Match,X-Quote-Token'),('Access-Control-Max-Age','600')];payload={}
+    headers += [('Access-Control-Allow-Methods','GET,POST,OPTIONS'),('Access-Control-Allow-Headers','Authorization,Content-Type,If-Match,If-None-Match,X-Quote-Token'),('Access-Control-Max-Age','7200')];payload={}
 
    elif path=='/api/health':payload={'ok':True,'version':'C'}
 
@@ -326,11 +326,11 @@ class Application:
 
     elif path=='/api/auth/password' and method=='POST':
 
-     state=accounts.set_password(state,user,auth[7:],self.body(environ).get('password'));self.commit(revision,state,actor=email);payload={'saved':True,'hasPassword':True}
+     state=accounts.set_password(state,user,auth[7:],self.body(environ).get('password'));self.commit(revision,state,actor=email,before=baseline);payload={'saved':True,'hasPassword':True}
 
     elif path=='/api/auth/logout' and method=='POST':
 
-     state.get('sessions',{}).pop(accounts.digest(auth[7:]),None);self.commit(revision,state,actor=email);payload={'signedOut':True}
+     state.get('sessions',{}).pop(accounts.digest(auth[7:]),None);self.commit(revision,state,actor=email,before=baseline);payload={'signedOut':True}
 
     else:
 
@@ -353,13 +353,13 @@ class Application:
       if method=='GET':payload={'ids':sorted(state.get('jobImports',{})),'count':len(state.get('jobImports',{}))}
       elif method=='POST':
        if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'The register changed. Review imported jobs again before removal.')
-       state=job_imports.remove_all(state,user,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True,'remaining':0}
+       state=job_imports.remove_all(state,user,self.body(environ));self.commit(revision,state,actor=email,before=baseline);payload={'saved':True,'remaining':0}
       else:raise Problem(405,'Unsupported method.')
      elif path=='/api/job-import-mappings' and method=='GET':payload=job_imports.mapping(state,user)
      elif path=='/api/job-import-mappings' and method=='POST':
       job_imports.require(user)
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Reload field mapping before saving.')
-      state=job_imports.save_mapping(state,user,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True}
+      state=job_imports.save_mapping(state,user,self.body(environ));self.commit(revision,state,actor=email,before=baseline);payload={'saved':True}
      elif path=='/api/job-imports' and method=='GET':payload=job_imports.read(state,user,parse_qs(environ.get('QUERY_STRING','')),self.objects)
      elif path=='/api/job-imports' and method=='POST':payload=self.job_import_request(revision,state,self.body(environ),auth[7:],email)
      elif path=='/api/my-day' and method=='GET':payload=my_day.read(state,user,parse_qs(environ.get('QUERY_STRING','')).get('date',[my_day.dt.datetime.now(my_day.ZONE).date().isoformat()])[0])
@@ -369,7 +369,7 @@ class Application:
      elif path=='/api/office-files/content' and method=='GET':payload=office_files.read(state,parse_qs(environ.get('QUERY_STRING','')).get('id',[''])[0],self.objects)
      elif path=='/api/office-files' and method=='POST':
       accounts.admin(user)
-      payload=office_files.action(state,self.body(environ),user,self.objects,lambda result:self.commit(revision,result,actor=email))
+      payload=office_files.action(state,self.body(environ),user,self.objects,lambda result:self.commit(revision,result,actor=email,before=baseline))
      elif path=='/api/stock' and method=='GET':
       payload=stock.read(state)
       headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',state_tag(state,'stock',STOCK_SCOPE)))
@@ -419,7 +419,7 @@ class Application:
 
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'The recycle bin changed. Refresh before trying again.')
 
-      state,garbage=recycle.action(state,self.body(environ),user);self.commit(revision,state,capture=False);payload={'saved':True}
+      state,garbage=recycle.action(state,self.body(environ),user);self.commit(revision,state,capture=False,before=baseline);payload={'saved':True}
 
       for key in garbage:
 
@@ -553,10 +553,10 @@ class Application:
 
      elif path=='/api/timesheet-delete' and method=='POST':
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh history before deleting.')
-      state=timesheets.delete_submission(state,self.body(environ));self.commit(revision,state,actor=email);payload={'saved':True,'message':'Time sheet moved to the Recycle bin. Labour payables now uses the remaining current submission.'};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      state=timesheets.delete_submission(state,self.body(environ));self.commit(revision,state,actor=email,before=baseline);payload={'saved':True,'message':'Time sheet moved to the Recycle bin. Labour payables now uses the remaining current submission.'};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
      elif path=='/api/mail-archive' and method=='POST':
       if environ.get('HTTP_IF_MATCH')!=f'"{revision}"':raise Problem(409,'Another change was saved. Refresh emails and try again.')
-      state=reminders.archive_mail(state,self.body(environ),email);self.commit(revision,state,actor=email);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
+      state=reminders.archive_mail(state,self.body(environ),email);self.commit(revision,state,actor=email,before=baseline);payload={'saved':True};headers=[h for h in headers if h[0]!='ETag'];headers.append(('ETag',f'"{revision+1}"'))
      elif path=='/api/mail-outbox' and method=='GET':payload={'messages':[{k:v for k,v in m.items() if k!='body' or self.local} for m in reversed(list(state.get('mailOutbox',{}).values()))]}
 
      elif path in ('/api/users','/api/user-invite','/api/reminder-settings','/api/send-reminder') and method=='POST':
@@ -589,7 +589,7 @@ class Application:
         row={**row,'recipient':recipient}
        reminders.enqueue_reminder(state,row);payload={'saved':True,'message':'Reminder queued.'}
 
-      self.commit(revision,state)
+      self.commit(revision,state,before=baseline)
 
       if path in ('/api/user-invite','/api/send-reminder'):
 
@@ -789,7 +789,7 @@ class Application:
 
        state,entry,upload,garbage=save_quote(state,p,self.objects,user);payload={'saved':True,'quote':entry}
 
-      mutation_before=self.read_state()[1] if path=='/api/quote-save' else baseline
+      mutation_before=baseline
       state=recycle.capture(mutation_before,state,email)
 
       try:committed=self.store.commit(revision,state)

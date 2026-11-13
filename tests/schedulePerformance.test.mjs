@@ -12,7 +12,7 @@ test('late route results cannot replace another date, a save, or newer bookings'
  assert.equal(canApplyRouteSnapshot({...result,data:{date:'2026-10-28'}},request,sync,'a'),false)
 })
 test('live sockets retain a minute safety check and fallback still polls',()=>{
- assert.equal(schedulePollInterval('live'),60000);assert.equal(schedulePollInterval('fallback'),10000)
+ assert.equal(schedulePollInterval('live'),60000);assert.equal(schedulePollInterval('fallback'),30000)
 })
 test('pending route is clear, with the missing-location warning taking priority',()=>{
  assert.equal(travelReview({routePending:true}),'pending');assert.match(travelSourceLabel({routePending:true}),/Calculating/)

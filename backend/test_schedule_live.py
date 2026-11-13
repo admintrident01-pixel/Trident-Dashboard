@@ -1,4 +1,4 @@
-import json,os,unittest
+import json,os,time,unittest
 from unittest.mock import patch
 import schedule_live,test_accounts
 
@@ -7,7 +7,7 @@ class ScheduleLiveTests(unittest.TestCase):
   with patch.dict(os.environ,{'SCHEDULE_LIVE_SECRET':'','FRONTEND_ORIGIN':'https://example.test'}):self.assertEqual(schedule_live.ticket(),{'enabled':False})
  def test_ticket_has_no_business_or_account_details(self):
   with patch.dict(os.environ,{'SCHEDULE_LIVE_SECRET':'x'*32,'FRONTEND_ORIGIN':'https://example.test'}):
-   value=schedule_live.ticket();self.assertTrue(value['enabled']);self.assertNotIn('@',json.dumps(value));self.assertEqual(len(value['ticket'].split('.')[1]),64)
+   value=schedule_live.ticket();self.assertTrue(value['enabled']);self.assertNotIn('@',json.dumps(value));self.assertEqual(len(value['ticket'].split('.')[1]),64);self.assertGreater(value['expires']-time.time(),1700);self.assertLessEqual(value['expires']-time.time(),1800)
  def test_ticket_endpoint_requires_existing_active_session(self):
   api=test_accounts.AccountsAPI();api.setUp()
   self.assertEqual(api.call('/api/schedule/live-ticket',token='')[0],401)

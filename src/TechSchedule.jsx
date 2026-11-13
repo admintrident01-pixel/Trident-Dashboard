@@ -68,6 +68,7 @@ export default function TechSchedule({request,isAdmin,active,draftOwner,incoming
  useEffect(()=>{const cancel=e=>{if(e.key==='Escape'){setSelected([]);setMarquee(null);selectionRef.current=null;gestureRef.current=null;setGesture(null)}};window.addEventListener('keydown',cancel);return()=>window.removeEventListener('keydown',cancel)},[])
  useLayoutEffect(()=>{syncRef.current.date=date;etagRef.current=etag;dataRef.current=data},[date,etag,data])
  const routeRead=useRef(null)
+ const routeSnapshot=useRef('')
  const renderTiming=useRef(null)
  useLayoutEffect(()=>{const metric=renderTiming.current;if(metric){performance.measure(metric.name,{start:metric.start,duration:performance.now()-metric.start});renderTiming.current=null}},[data])
  const [routeMessage,setRouteMessage]=useState('')
@@ -81,7 +82,7 @@ export default function TechSchedule({request,isAdmin,active,draftOwner,incoming
    if(result.etag!==etagRef.current){liveRefreshRef.current?.();return}
    // Route results cannot move a block under an active drag or selection.
    if(gestureRef.current||selectionRef.current||!canApplyRouteSnapshot(result,{target,generation},sync,etagRef.current))return
-   renderTiming.current={name:'trident.schedule.routes-render',start:performance.now()};dataRef.current=result.data;setData(result.data);setRouteMessage('')
+   renderTiming.current={name:'trident.schedule.routes-render',start:performance.now()};dataRef.current=result.data;setData(result.data);routeSnapshot.current=key;setRouteMessage('')
   }catch{const sync=syncRef.current;if(sync.date===target&&sync.generation===generation)setRouteMessage('Travel calculations are delayed. Bookings are available; automatic refresh will retry.')}
   finally{if(routeRead.current===ticket)routeRead.current=null}
  },[request])
@@ -93,7 +94,7 @@ export default function TechSchedule({request,isAdmin,active,draftOwner,incoming
    const result=await scheduleRequest(request,'/api/schedule?view=bookings&date='+target,{headers:conditional?{'If-None-Match':conditional}:{},cache:'no-store'})
    if(sync.generation!==generation||sync.date!==target)return
    if(!result.data.unchanged){renderTiming.current={name:'trident.schedule.bookings-render',start:performance.now()};dataRef.current=result.data;etagRef.current=result.etag;setData(result.data);setEtag(result.etag)}
-   setSyncState(navigator.onLine?'synced':'failed');setLastSynced(new Date());refreshRoutes(target,generation,result.etag);return true
+   setSyncState(navigator.onLine?'synced':'failed');setLastSynced(new Date());const routeKey=target+'|'+generation+'|'+result.etag;if(!result.data.unchanged||routeSnapshot.current!==routeKey)refreshRoutes(target,generation,result.etag);return true
   }catch(e){if(sync.generation===generation&&sync.date===target){setSyncState('failed');setError(e.message)}return false}
   finally{if(sync.reading===ticket)sync.reading=false}
  },[request,date,refreshRoutes])

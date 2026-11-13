@@ -1,7 +1,7 @@
 import {bookingControls} from './scheduleBooking.js'
 import {assignedTechs,timeMinutes,timeText} from './scheduleMath.js'
 
-export const schedulePollInterval=live=>live==='live'?60000:10000
+export const schedulePollInterval=live=>live==='live'?60000:30000
 export function canApplyRouteSnapshot(result,{target,generation},sync,etag){
  return !sync.writing&&sync.date===target&&sync.generation===generation&&result.data.date===target&&result.etag===etag
 }

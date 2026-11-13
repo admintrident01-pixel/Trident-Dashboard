@@ -16,6 +16,12 @@ class RacingStore(test_accounts.MemoryStore):
    self.state=copy.deepcopy(state);self.revision=revision+1
    return True
 
+class CountingStore(test_accounts.MemoryStore):
+ def __init__(self,state):
+  super().__init__(state);self.reads=0
+ def read(self):
+  self.reads+=1;return super().read()
+
 class ScopedWriteTests(unittest.TestCase):
  def setUp(self):
   self.api=test_accounts.AccountsAPI();self.api.setUp()
@@ -54,5 +60,14 @@ class ScopedWriteTests(unittest.TestCase):
   self.assertEqual(after['appointments'],{});self.assertIn('appointment:a',result['recycleBin'])
   unchanged={'appointments':{'a':{'id':'a','cancelled':False}}}
   self.assertIs(recycle.capture(unchanged,unchanged,'admin'),unchanged)
+ def test_direct_commit_reuses_request_snapshot(self):
+  api=test_accounts.AccountsAPI();api.setUp()
+  store=CountingStore(api.store.state);api.store=store;api.app.store=store
+  store.state['mailOutbox']={'mail':{'id':'mail','archived':False}}
+  before=store.reads
+  status,data,_=api.call('/api/mail-archive','POST',{'id':'mail','archived':True})
+  self.assertEqual(status,200,data)
+  self.assertEqual(store.reads-before,1)
+  self.assertTrue(store.state['mailOutbox']['mail']['archived'])
 
 if __name__=='__main__':unittest.main()

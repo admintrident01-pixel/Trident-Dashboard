@@ -76,7 +76,7 @@ class QuotePerformanceTests(unittest.TestCase):
  def test_preflight_can_be_reused_without_caching_business_data_or_allowing_other_origins(self):
   api=test_accounts.AccountsAPI();api.setUp()
   status,_,headers=api.call('/api/quote-dashboard',method='OPTIONS',token='')
-  self.assertEqual(status,200);self.assertEqual(headers['Access-Control-Max-Age'],'600');self.assertEqual(headers['Access-Control-Allow-Origin'],api.app.origin)
+  self.assertEqual(status,200);self.assertEqual(headers['Access-Control-Max-Age'],'7200');self.assertEqual(headers['Access-Control-Allow-Origin'],api.app.origin)
   self.assertEqual(api.call('/api/quote-dashboard',method='OPTIONS',origin='https://other.example')[0],403)
   api.store.state.update(self.state);self.assertEqual(api.call('/api/quote-dashboard')[2]['Cache-Control'],'no-store')
 

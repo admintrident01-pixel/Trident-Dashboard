@@ -10,7 +10,9 @@ def configuration():
 def ticket():
  secret,origin=configuration()
  if len(secret)<32 or not origin.startswith('https://'):return {'enabled':False}
- expires=int(time.time())+300
+ # The socket carries invalidations only, so a longer ticket lifetime reduces
+ # full-register session checks without exposing business data.
+ expires=int(time.time())+1800
  payload=base64.urlsafe_b64encode(json.dumps({'exp':expires,'room':'schedule','nonce':secrets.token_hex(12)},separators=(',',':')).encode()).decode().rstrip('=')
  signature=hmac.new(secret.encode(),payload.encode(),hashlib.sha256).hexdigest()
  return {'enabled':True,'ticket':payload+'.'+signature,'expires':expires}

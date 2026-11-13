@@ -100,7 +100,7 @@ export default function App(){
 
   if(!session||page!=='quotes'||document)return;let cancelled=false
 
-  fetch('/quote-builder.html?v=20261114c',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the quote builder.');return r.text()}).then(html=>{
+  fetch('/quote-builder.html?v=20261114d',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the quote builder.');return r.text()}).then(html=>{
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin}).replace(/</g,'\\u003c')
 

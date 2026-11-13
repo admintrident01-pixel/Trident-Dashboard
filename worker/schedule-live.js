@@ -10,7 +10,7 @@ export async function verifyTicket(secret,ticket,now=Date.now()){
   const [payload,mac,...extra]=ticket.split('.')
   if(extra.length||!same(mac,await signature(secret,payload)))return null
   const value=JSON.parse(atob(payload.replace(/-/g,'+').replace(/_/g,'/')))
-  return value.room==='schedule'&&Number.isInteger(value.exp)&&value.exp>now/1000&&value.exp<=now/1000+310?value:null
+  return value.room==='schedule'&&Number.isInteger(value.exp)&&value.exp>now/1000&&value.exp<=now/1000+1860?value:null
  }catch{return null}
 }
 export default {
