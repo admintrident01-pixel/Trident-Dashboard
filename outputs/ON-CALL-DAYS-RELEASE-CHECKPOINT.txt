@@ -1,6 +1,6 @@
-APPROVED FOR PUBLICATION - FINAL VALIDATION COMPLETE - COMMIT AND PUSH PENDING
+PUBLISHED AND VERIFIED - FRONTEND AND API LIVE
 14 November 2026 (Pacific/Auckland)
-Branch: codex/oncall-days, based on origin/main 1c371fb
+Branch: main, released from codex/oncall-days onto base 1c371fb
 
 RELEASE THEME
 On-call day cover, six-month roster planning, leave summary and the latest
@@ -68,13 +68,15 @@ VALIDATION
 
 PRE-RELEASE LIVE BACKUP
 - Status: complete and checksum-verified before any commit or deployment.
-- Register revision: 17551.
-- Canonical state SHA256: dbff3d70a0f1cef9337bca7a09665ae608ed0368e3ae6f3365ffb1370ba629c8.
-- BigQuery snapshot: trident-dashboard-511203.trident_quotes.app_state_before_oncall_days_20261114T041038Z.
-- Upload backup: gs://trident-dashboard-511203-quote-pdfs/release-backups/oncall-days_20261114T041038Z/
+- Latest register revision: 17555.
+- Canonical state SHA256: 947a97f7d71077fe9c2f98d958c2eb1c5fb5315e2b48ca96a1aa3e4cdd55eac8.
+- BigQuery snapshot: trident-dashboard-511203.trident_quotes.app_state_before_oncall_days_20261114T042223Z.
+- Upload backup: gs://trident-dashboard-511203-quote-pdfs/release-backups/oncall-days_20261114T042223Z/
 - 35 live upload objects covered; 34 referenced by the register; 0 missing.
 - Every copied upload matched stored GCS MD5 and CRC32C checksums.
-- Upload inventory SHA256: 1f4bdfb2fd09b81a31b3f89621a3971575bdab50b4cd114c6eafef9d57a2678f.
+- Upload inventory SHA256: 78f30968460eaa991c7ef35f61fc6fd7e47d5d86b4cd84d75fa7c765ce4fa3b.
+- An earlier complete snapshot at revision 17551 is also retained at
+  release-backups/oncall-days_20261114T041038Z/.
 - API before release: trident-quote-api-00087-rlx on 100% traffic.
 
 PREVIEW
@@ -84,12 +86,18 @@ Final evidence: outputs/on-call-days-preview/ (screenshots 27-30).
 
 PACKAGE AND APPROVAL
 - Cumulative ZIP rebuilt from the validated working tree: 570 entries,
-  1,470,379 bytes.
-- SHA256: B004860847AA296430EA670B57AD0766D5A1C9F1CEBB6965F049AF09FB690197.
+  1,471,033 bytes.
+- SHA256: B8FDFFE4A403818E84B5AE26D8123EBDC5257676473EDEB79F191ED389F5FFB5.
 - RELEASE-MANIFEST.json records all 570 entry hashes, the backup proof and the
-  approved pending-publication status.
+  published deployment status.
 - The user explicitly approved publication on 14 November 2026.
-- A push to main publishes both frontend and API. Commit, push and deployment
-  are the only remaining steps, followed by live reconciliation.
+- Application commit 35ffa928fd6b74ed24a89da03b194a521e523aea was pushed to main.
+- Live frontend JavaScript: assets/index-CcQA8kQe.js.
+- Live API: trident-quote-api-00088-n7k on 100% traffic, image-tagged with the
+  same application commit.
+- Post-release register revision 17561 differs from the latest backup only in
+  onCallRoster and reminderJob. All other canonical state sections are identical.
+- All 35 uploads still match the pre-release business inventory; 0 referenced
+  objects are missing.
 - Archived review packages remain in outputs/Release history/; the immediately
   previous package is Trident-dashboard-oncall-days-before-final-release.zip.

@@ -146,3 +146,33 @@ Approved for publication by the user on 14 November 2026. The final package,
 checkpoint and manifest are rebuilt from this working tree. A push to main
 publishes both frontend and API; deployment results are appended here and in
 the release checkpoint after verification.
+
+====================================================================
+PUBLISHED AND VERIFIED - 14 November 2026 (Pacific/Auckland)
+
+PUBLICATION
+- Application commit 35ffa928fd6b74ed24a89da03b194a521e523aea was committed,
+  fast-forwarded to main and pushed to GitHub.
+- Live frontend: assets/index-CcQA8kQe.js and assets/index-BRqUQ-L1.css.
+- Live API: trident-quote-api-00088-n7k on 100% traffic.
+- API image tag: 35ffa928fd6b74ed24a89da03b194a521e523aea.
+
+LIVE VERIFICATION
+- On call shows day-level cover controls and the 26-week "Plan next 6 months"
+  roster, with the mid-width action layout and hover styling intact.
+- Leave forms show the sticky request summary at desktop width, stack it below
+  the form on narrow screens, render a one-day breakdown, and label the primary
+  action Submit.
+- Frontend index and lazy assets return the production JavaScript/CSS; the live
+  page reloads into the new release without a stale cached bundle.
+
+DATA RECONCILIATION
+- Latest pre-release backup: revision 17555, state SHA256 947a97f7d71077fe9c2f98d958c2eb1c5fb5315e2b48ca96a1aa3e4cdd55eac8,
+  under release-backups/oncall-days_20261114T042223Z/.
+- Post-release register: revision 17561, state SHA256 b9735c3536ba7437c21f2ef6ab76dac355b6c34a4fdf9c2558a4dcb2dba465.
+- Only the expected onCallRoster and reminderJob state sections changed; all
+  other register sections are byte-identical in canonical JSON.
+- All 35 live upload objects still match the pre-release business inventory
+  checksums, and zero register-referenced uploads are missing.
+- No roster/leave/quote-changing action was performed during release
+  verification, so no notification email was sent by the checks.

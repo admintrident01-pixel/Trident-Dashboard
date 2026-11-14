@@ -1,0 +1,19 @@
+{
+  "phase": "before",
+  "project": "trident-dashboard-511203",
+  "tag": "oncall-days_20261114T042223Z",
+  "registerSnapshot": "trident-dashboard-511203.trident_quotes.app_state_before_oncall_days_20261114T042223Z",
+  "registerRevision": 17555,
+  "stateSha256": "947a97f7d71077fe9c2f98d958c2eb1c5fb5315e2b48ca96a1aa3e4cdd55eac8",
+  "canonicalStateUri": "gs://trident-dashboard-511203-quote-pdfs/release-backups/oncall-days_20261114T042223Z/register/app_state_canonical.json",
+  "liveUploadObjects": 35,
+  "referencedUploadObjects": 34,
+  "missingReferencedUploads": 0,
+  "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/oncall-days_20261114T042223Z/",
+  "uploadInventorySha256": "78f30968460eaa991c7ef35f61fc6fd7e47d5d86b4cd84d75fa7c765ce4fa3b",
+  "uploadsChecksumVerified": true,
+  "checksumMethod": "GCS stored MD5 and CRC32C source/destination match",
+  "apiRevision": "trident-quote-api-00087-rlx",
+  "trafficPercent": 100,
+  "commitSha": ""
+}

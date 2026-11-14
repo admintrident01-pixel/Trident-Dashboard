@@ -1,0 +1,24 @@
+{
+  "phase": "after",
+  "verifiedAt": "2026-11-14T04:38:35.417467+00:00",
+  "project": "trident-dashboard-511203",
+  "preReleaseTag": "oncall-days_20261114T042223Z",
+  "preRegisterRevision": 17555,
+  "preStateSha256": "947a97f7d71077fe9c2f98d958c2eb1c5fb5315e2b48ca96a1aa3e4cdd55eac8",
+  "liveRegisterRevision": 17561,
+  "liveStateSha256": "b9735c3536ba7437c21f2ef6ab76dac355b6c34a4fdf9c2558a4dcb2dba465",
+  "registerStateChanged": true,
+  "changedStateSections": [
+    "onCallRoster",
+    "reminderJob"
+  ],
+  "liveUploadObjects": 35,
+  "preProfileUploadObjects": 35,
+  "uploadBusinessInventoryMatches": true,
+  "uploadBusinessInventorySha256": "a70ff5e330a53a4500cbea90a24680d376297ad551e49633358b4c5a27e278",
+  "missingReferencedUploads": 0,
+  "apiRevision": "trident-quote-api-00088-n7k",
+  "trafficPercent": 100,
+  "apiImage": "australia-southeast1-docker.pkg.dev/trident-dashboard-511203/cloud-run-source-deploy/trident-dashboard/trident-quote-api:35ffa928fd6b74ed24a89da03b194a521e523aea",
+  "deployedCommitSha": "35ffa928fd6b74ed24a89da03b194a521e523aea"
+}
