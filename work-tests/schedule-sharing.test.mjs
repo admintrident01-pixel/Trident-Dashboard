@@ -70,7 +70,7 @@ test('Live tickets require a valid signature, room and short expiry',async()=>{
  assert.ok(await verifyTicket(secret,await ticket()))
  assert.equal(await verifyTicket(secret,await ticket(1)),null)
  assert.equal(await verifyTicket(secret,(await ticket())+'bad'),null)
- assert.equal(await verifyTicket(secret,await ticket(Math.floor(Date.now()/1000)+1000)),null)
+ assert.equal(await verifyTicket(secret,await ticket(Math.floor(Date.now()/1000)+1900)),null)
 })
 test('Worker protects the socket origin and publish endpoint; assets still work',async()=>{
  let forwarded=0

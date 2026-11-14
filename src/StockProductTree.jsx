@@ -1,5 +1,6 @@
 import {useState} from 'react'
 import SortableTable from './SortableTable'
+import Icon from './Icon.jsx'
 function Condition({value}){return value?<span className={'stock-badge stock-'+value.toLowerCase()}>{value}</span>:null}
 function Status({value}){return <span className={'stock-badge stock-'+value.toLowerCase().replaceAll(' ','-')}>{value}</span>}
 const date=(value,raw)=>value?new Date(value+'T12:00:00').toLocaleDateString('en-NZ'):raw?raw+' (year not recorded)':'Not recorded'
@@ -30,7 +31,7 @@ export default function StockProductTree({groups,tab,query,status,pool,open,onVi
    <thead><tr><th>Product code</th><th>Description</th>{(overview?['Incoming stock','Refurbishment','Stock on hand','Stock allocated to client','Stock delivered to client']:['Quantity in this section','Asset numbers / awaiting numbers']).map(label=><th key={label}>{label}</th>)}<th>Actions</th></tr></thead>
    <tbody>{groups.flatMap(g=>{const p=g.product,opened=isOpen(g),detailId='stock-tree-'+tab+'-'+p.id;return [
     <tr className={'stock-product-parent'+(opened?' is-expanded':'')} key={p.id} onClick={e=>{if(!e.target.closest('button,a,input,select'))toggle(g)}}>
-     <td data-sort-value={p.code+' '+(p.condition||'')}><button className="stock-product-toggle" aria-expanded={opened} aria-controls={detailId} aria-label={(opened?'Collapse':'Expand')+' product '+p.code+(p.condition?' '+p.condition:'')} onClick={()=>toggle(g)}><span className="stock-tree-chevron" aria-hidden="true">›</span><span className="stock-product-code">{p.code}<Condition value={p.condition}/></span></button></td>
+     <td data-sort-value={p.code+' '+(p.condition||'')}><button className="stock-product-toggle" aria-expanded={opened} aria-controls={detailId} aria-label={(opened?'Collapse':'Expand')+' product '+p.code+(p.condition?' '+p.condition:'')} onClick={()=>toggle(g)}><Icon className="stock-tree-chevron" name="chevron-right" size={14}/><span className="stock-product-code">{p.code}<Condition value={p.condition}/></span></button></td>
      <td data-sort-value={p.description}><button className="stock-product-name" aria-expanded={opened} aria-controls={detailId} onClick={()=>toggle(g)}>{p.description}</button></td>
      {overview?[p.incomingQuantity,p.refurbingQuantity+g.awaitingRefurbQuantity,g.known?p.onHandQuantity:'Not recorded',p.allocatedQuantity,p.deliveredQuantity].map((value,index)=><td key={index}>{value}</td>):[<td key="quantity">{g.quantity}</td>,<td key="numbers">{g.assets.length} numbered{g.pending.length>0&&<small>{g.quantity-g.assets.length} awaiting numbers</small>}</td>]}
      <td className="stock-tree-actions">{productActions(g)}</td>

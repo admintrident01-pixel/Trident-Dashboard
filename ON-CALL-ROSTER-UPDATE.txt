@@ -61,3 +61,88 @@ PUBLICATION AND VERIFICATION
   section and one scheduled reminderJob update are the only changed state sections.
 - No production roster-changing action was performed during verification, so no
   notification email was sent by this deployment check. Notifications run on changes.
+
+====================================================================
+APPROVED RELEASE - 14 November 2026 (Pacific/Auckland)
+On-call day cover, leave summary and schedule/settings polish
+
+SCOPE
+- Plan the next six months as 26 Monday-start weeks, grouped by month.
+- Allocate a technician to any individual day. Each day follows the weekly
+  technician by default, can choose another eligible technician, or be explicitly
+  left open. Approved leave remains blocked.
+- Confirm roster, day-cover, order and eligibility changes with emails enabled or
+  quietly using the "Email staff" checkbox.
+- Rotation order uses numbered position selectors instead of cramped arrows.
+- Day-cover and six-month dialogs fit 834x480 and 390x844 viewports; only their
+  internal day/week lists scroll. The current-week actions panel is slightly
+  wider so Day cover stays with the other actions at mid-width desktop sizes;
+  day-cover chips highlight without moving. The outer border around the
+  three-button week switcher is removed, and On call text actions keep their
+  border and remove the hover underline.
+- Leave requests use a separate summary card on the right at desktop widths and
+  below the form on narrow screens. The summary is sticky while scrolling and
+  appears for a single day or partial-hour request. The primary action is now
+  Submit rather than a two-step review action.
+- Email quote again downloads an Outlook .eml file containing the client email,
+  configured subject and body, and the generated PDF attachment.
+- Book appointment types use a real dropdown with Other / custom type.
+- Quick client entry has an icon-only copy button, centred on desktop and mobile.
+- The schedule block selection checkbox is borderless, top-left and centred in
+  the green rail.
+- Stock product expand/collapse uses the shared Feather chevron, inactive stock
+  flow counts have stronger contrast, and active flow buttons stay dark with
+  readable counts.
+- Schedule Settings keeps only Save schedule settings in the sticky bar; Add
+  appointment type sits in its card heading. Settings save/reload actions stay
+  visible while scrolling.
+
+CHANGED FILES
+backend/on_call_roster.py
+backend/test_on_call_roster.py
+src/OnCallRoster.jsx
+src/OnCallRoster.css
+src/TechSchedule.jsx
+src/TechSchedule.css
+src/ScheduleSettings.jsx
+src/SettingsLayout.css
+src/StockPage.css
+src/StockProductTree.jsx
+src/LeaveRequestEditor.jsx
+src/LeaveForms.css
+public/quote-builder.html
+ON-CALL-ROSTER-UPDATE.txt
+
+VALIDATION
+- Backend: 589 tests OK with the workbook fixture; focused API suite 15/15.
+- Frontend: 188 node tests OK.
+- ESLint clean for changed JSX; production Vite build successful.
+- Local browser: 1280x900 desktop, 834x480 short viewport and 390x844 mobile.
+- Copy button/icon centre delta: 0px on desktop and mobile.
+- Mobile appointment dialog bottom: 842.1px inside the 844px viewport.
+- Day-cover and six-month dialogs stay inside the viewport and scroll internally;
+  day-cover dialog bottom is 472px at 834x480 and 762.4px at 390x844.
+- Leave summary is 16px from the top while the desktop form scrolls; one-day
+  3.5-hour leave renders 3.50h with 0.50h lunch excluded; mobile has no overflow.
+- Quote test produced a valid .eml with the configured recipient, subject,
+  message and a PDF attachment; no real email was sent.
+- Settings sticky save bar remains visible at 834x480 and 390x844.
+- Stock counts and flow icons remain contained; no mobile horizontal overflow.
+- At the requested 1159x667 viewport, all four current-week actions remain on
+  one row with matching height; the hovered Day cover action keeps its border
+  and position without flicker or an underline.
+- Pre-release live backup: register revision 17551, 35 uploads checksum-verified
+  (MD5 and CRC32C), zero missing references, BigQuery snapshot and canonical
+  state stored under release-backups/oncall-days_20261114T041038Z/.
+- Verification only: no emails sent and no local or online business records changed.
+
+LOCAL PREVIEW
+http://127.0.0.1:18780/
+Frontend Vite port 18780; local API http://127.0.0.1:18782.
+Screenshots: outputs/on-call-days-preview/.
+
+STATUS
+Approved for publication by the user on 14 November 2026. The final package,
+checkpoint and manifest are rebuilt from this working tree. A push to main
+publishes both frontend and API; deployment results are appended here and in
+the release checkpoint after verification.

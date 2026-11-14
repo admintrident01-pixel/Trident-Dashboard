@@ -1,4 +1,4 @@
-"""Weekly on-call roster, public pool and change notifications."""
+"""Weekly on-call roster, day cover, public pool and change notifications."""
 import copy, datetime as dt, uuid
 from zoneinfo import ZoneInfo
 from core import Problem
@@ -6,8 +6,10 @@ import accounts, leave, timesheets
 
 NZ = ZoneInfo('Pacific/Auckland')
 LINK = 'https://trident-dashboard.admintrident01.workers.dev/#oncall'
-HORIZON = 14
+PLAN_MONTHS = 6
+HORIZON = 26  # Monday-start weeks; twenty-six weeks covers the next six months.
 STATUSES = ('scheduled', 'awaiting', 'accepted', 'open')
+WEEKDAYS = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
 
 
 def now_auckland():
@@ -69,6 +71,14 @@ def _deadline(start):
 def _deadline_label(start):
     day = start - dt.timedelta(days=1)
     return f"Sun {day.day} {day:%b}, 5 pm"
+
+
+def _day_label(day):
+    return f"{WEEKDAYS[day.weekday()]} {day.day} {day:%b}"
+
+
+def _month_label(day):
+    return f"{day:%B %Y}"
 
 
 def _initials(name):
@@ -182,6 +192,63 @@ def _open(record, at, actor, reason):
     _bump(record)
 
 
+def _clean_day_cover(record, week, eligible):
+    """Keep only valid day overrides. Missing keys inherit the weekly owner."""
+    canonical = {name.casefold(): name for name in eligible}
+    raw = record.get('days')
+    if not isinstance(raw, dict):
+        record['days'] = {}
+        return
+    cleaned = {}
+    for offset in range(7):
+        key = (week + dt.timedelta(days=offset)).isoformat()
+        if key not in raw:
+            continue
+        value = raw.get(key)
+        if not isinstance(value, str):
+            continue
+        name = value.strip()
+        if not name:
+            cleaned[key] = ''
+            continue
+        match = canonical.get(name.casefold())
+        if match:
+            cleaned[key] = match
+    if cleaned != raw:
+        record['days'] = cleaned
+
+
+def _day_name(record, day):
+    overrides = record.get('days') if isinstance(record.get('days'), dict) else {}
+    key = day.isoformat()
+    if key in overrides:
+        return overrides.get(key) or ''
+    return record.get('technician') or ''
+
+
+def _day_rows(record, week, today):
+    overrides = record.get('days') if isinstance(record.get('days'), dict) else {}
+    rows = []
+    for offset in range(7):
+        day = week + dt.timedelta(days=offset)
+        key = day.isoformat()
+        override = key in overrides
+        name = (overrides.get(key) or '') if override else (record.get('technician') or '')
+        rows.append({
+            'date': key,
+            'weekday': WEEKDAYS[day.weekday()],
+            'day': day.day,
+            'month': f"{day:%b}",
+            'label': _day_label(day),
+            'technician': name,
+            'initials': _initials(name),
+            'override': override,
+            'open': not name,
+            'isToday': day == today,
+        })
+    return rows
+
+
 def _manual_after_deadline(record, deadline):
     if not record.get('manual'):
         return False
@@ -215,6 +282,7 @@ def _base(state, at):
                 'status': 'scheduled', 'manual': False,
                 'acceptedAt': '', 'acceptedBy': '',
                 'releasedAt': '', 'releasedBy': '', 'releaseReason': '',
+                'days': {},
                 'updatedAt': at.isoformat(), 'revision': 1,
             }
             block['weeks'][key] = record
@@ -226,6 +294,7 @@ def _base(state, at):
         record.setdefault('releasedAt', '')
         record.setdefault('releasedBy', '')
         record.setdefault('releaseReason', '')
+        record.setdefault('days', {})
         record.setdefault('updatedAt', at.isoformat())
         record.setdefault('revision', 1)
         if record.get('status') not in STATUSES:
@@ -241,6 +310,7 @@ def _prepare(state, at, events=None):
     for offset in range(HORIZON):
         week = monday + dt.timedelta(days=7 * offset)
         record = block['weeks'][week.isoformat()]
+        _clean_day_cover(record, week, block['eligible'])
         if record['status'] in ('scheduled', 'awaiting') and record.get('technician') and record['technician'].casefold() not in order_keys:
             previous = record['technician']
             detail = f"Week {week.isocalendar()[1]} moved to the open pool because {previous} is no longer eligible for on call."
@@ -334,13 +404,35 @@ def _notify_order(state, block, detail, at):
 def _notify_plan(state, block, plan, detail, at):
     import reminders
     key = f"oncall:plan:{block.get('planRevision', 0)}"
-    subject = 'On-call roster planned for the next three months'
+    subject = 'On-call roster planned for the next six months'
     rows = []
     for week, name in plan:
         rows.append(f"Week {week.isocalendar()[1]} ({_short_dates(week)}): {name or 'Open to anyone'}")
     body = detail + "\n\n" + "\n".join(rows) + f"\n\nView the roster: {LINK}"
     for user in _recipients(state):
         reminders.queue(state, user['email'], subject, body, 'oncall', key + ':' + user['email'], {'event': 'plan'})
+
+
+def _notify_days(state, block, week, detail, at):
+    import reminders
+    record = block['weeks'][week.isoformat()]
+    number = week.isocalendar()[1]
+    key = f"oncall:days:{week.isoformat()}:{record.get('daysRevision', 0)}"
+    subject = f"On-call day cover updated — Week {number}"
+    lines = []
+    for offset in range(7):
+        day = week + dt.timedelta(days=offset)
+        name = _day_name(record, day)
+        lines.append(f"{_day_label(day)}: {name or 'Open to anyone'}")
+    body = (
+        f"{detail}\n\n"
+        f"Week {number}: {_long_dates(week)}\n"
+        f"Weekly cover: {record.get('technician') or 'Open to anyone'}\n"
+        + "\n".join(lines) +
+        f"\n\nView the roster: {LINK}"
+    )
+    for user in _recipients(state):
+        reminders.queue(state, user['email'], subject, body, 'oncall', key + ':' + user['email'], {'event': 'days'})
 
 
 def _notify_eligibility(state, block, detail, at):
@@ -376,20 +468,36 @@ def read(state, user, now=None):
     at = _now(now)
     snapshot = copy.deepcopy(state)
     block, monday = _prepare(snapshot, at)
+    today = at.date()
     technician = _my_technician(user)
     admin = user.get('role') == 'admin'
     eligible_keys = {name.casefold() for name in block['eligible']}
-    anchor = _anchor(block, monday)
+    leave_days = _leave_days(snapshot)
+    day_leave = {}
+    horizon_end = monday + dt.timedelta(days=7 * HORIZON)
+    for name in block['eligible']:
+        for value in leave_days.get(name.casefold(), ()):
+            if not isinstance(value, str):
+                continue
+            try:
+                leave_day = dt.date.fromisoformat(value)
+            except ValueError:
+                continue
+            if monday <= leave_day < horizon_end:
+                day_leave.setdefault(value, []).append(name)
     rows = []
     default_plan = []
     for offset in range(HORIZON):
         week = monday + dt.timedelta(days=7 * offset)
         record = block['weeks'][week.isoformat()]
+        days = _day_rows(record, week, today)
+        custom_days = [day for day in days if day['override']]
         default_plan.append({
             'weekStart': week.isoformat(),
             'weekNumber': week.isocalendar()[1],
             'dates': _short_dates(week),
-            'technician': _rotation_name(block['order'], anchor, week),
+            'monthLabel': _month_label(week),
+            'technician': record.get('technician') or '',
         })
         mine = bool(technician and record.get('technician') and technician.casefold() == record['technician'].casefold())
         status = record['status']
@@ -402,6 +510,7 @@ def read(state, user, now=None):
             'weekStart': week.isoformat(),
             'weekNumber': week.isocalendar()[1],
             'year': week.isocalendar()[0],
+            'monthLabel': _month_label(week),
             'dates': _short_dates(week),
             'datesLong': _long_dates(week),
             'status': status,
@@ -419,6 +528,9 @@ def read(state, user, now=None):
             'canRelease': (admin or mine) and status in ('awaiting', 'accepted'),
             'canGrab': status == 'open' and bool(technician) and technician.casefold() in eligible_keys,
             'canResend': (admin or mine) and status == 'awaiting',
+            'days': days,
+            'customDays': len(custom_days),
+            'dayNote': ', '.join(f"{day['weekday']} {day['day']} {day['technician'] or 'Open'}" for day in custom_days),
             'handoverOptions': options,
         })
     activity = []
@@ -434,6 +546,10 @@ def read(state, user, now=None):
         'eligible': block['eligible'],
         'staffOptions': _staff_options(snapshot),
         'defaultPlan': default_plan,
+        'dayLeave': day_leave,
+        'planMonths': PLAN_MONTHS,
+        'planWeeks': HORIZON,
+        'planRange': f"{_short_dates(monday)} – {_short_dates(monday + dt.timedelta(days=7 * (HORIZON - 1)))}",
         'openWeeks': sum(1 for row in rows if row['status'] == 'open'),
         'activity': activity,
         'myTechnician': technician,
@@ -453,7 +569,7 @@ def action(state, data, user, now=None):
     if not isinstance(data, dict):
         raise Problem(400, 'Invalid on-call change.')
     kind = data.get('action')
-    if kind not in ('accept', 'handover', 'release', 'grab', 'order', 'plan', 'eligibility', 'resend'):
+    if kind not in ('accept', 'handover', 'release', 'grab', 'order', 'plan', 'eligibility', 'days', 'resend'):
         raise Problem(400, 'Choose a valid on-call action.')
     at = _now(now)
     result = copy.deepcopy(state)
@@ -463,6 +579,7 @@ def action(state, data, user, now=None):
     actor_name = _actor(user)
     technician = _my_technician(user)
     admin = user.get('role') == 'admin'
+    quiet = data.get('notify') is False and admin
     if kind == 'order':
         accounts.admin(user)
         names = data.get('order')
@@ -498,7 +615,8 @@ def action(state, data, user, now=None):
             _bump(record)
         detail = f"{actor_name} updated the rotation order: {' → '.join(order)}."
         _log(block, at, user['email'], 'order', monday, detail)
-        _notify_order(result, block, detail, at)
+        if not quiet:
+            _notify_order(result, block, detail, at)
         return result
 
     if kind == 'eligibility':
@@ -550,7 +668,7 @@ def action(state, data, user, now=None):
                 _bump(record)
         detail = f"{actor_name} set on-call eligibility: {', '.join(eligible)}."
         _log(block, at, user['email'], 'eligibility', monday, detail)
-        if tuple(eligible) != before:
+        if tuple(eligible) != before and not quiet:
             _notify_eligibility(result, block, detail, at)
         return result
 
@@ -558,7 +676,7 @@ def action(state, data, user, now=None):
         accounts.admin(user)
         entries = data.get('plan')
         if not isinstance(entries, list) or not 1 <= len(entries) <= HORIZON:
-            raise Problem(400, 'Choose the weeks to plan for the next three months.')
+            raise Problem(400, 'Choose the weeks to plan for the next six months.')
         eligible = {name.casefold(): name for name in block['eligible']}
         horizon_end = monday + dt.timedelta(days=7 * (HORIZON - 1))
         plan, seen = [], set()
@@ -567,7 +685,7 @@ def action(state, data, user, now=None):
                 raise Problem(400, 'Choose a valid on-call plan.')
             week = _week(entry.get('weekStart'))
             if week < monday or week > horizon_end:
-                raise Problem(400, 'Choose a week from the next three months.')
+                raise Problem(400, 'Choose a week from the next six months.')
             if week in seen:
                 raise Problem(400, 'Choose each week only once.')
             name = entry.get('technician') or ''
@@ -605,10 +723,81 @@ def action(state, data, user, now=None):
             })
             _bump(record)
             changed += 1
-        detail = f"{actor_name} confirmed the next three months of the on-call roster."
+        detail = f"{actor_name} confirmed the next six months of the on-call roster."
         _log(block, at, user['email'], 'plan', monday, detail)
-        if changed:
+        if changed and not quiet:
             _notify_plan(result, block, plan, detail, at)
+        return result
+
+    if kind == 'days':
+        accounts.admin(user)
+        week = _week(data.get('weekStart'))
+        horizon_end = monday + dt.timedelta(days=7 * (HORIZON - 1))
+        if week < monday or week > horizon_end:
+            raise Problem(400, 'Choose a week from the current roster.')
+        record = _record_for(block, week)
+        entries = data.get('days')
+        if not isinstance(entries, list) or not 1 <= len(entries) <= 7:
+            raise Problem(400, 'Choose day cover for at least one day.')
+        eligible = {name.casefold(): name for name in block['eligible']}
+        approved = _leave_days(result)
+        current_days = record.get('days') if isinstance(record.get('days'), dict) else {}
+        next_days = dict(current_days)
+        changes, seen = [], set()
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise Problem(400, 'Choose valid day cover.')
+            value = entry.get('date')
+            if not isinstance(value, str) or len(value) != 10:
+                raise Problem(400, 'Choose a valid day.')
+            try:
+                day = dt.date.fromisoformat(value)
+            except ValueError:
+                raise Problem(400, 'Choose a valid day.')
+            if day < week or day > week + dt.timedelta(days=6):
+                raise Problem(400, 'Choose a day from the selected week.')
+            key = day.isoformat()
+            if key in seen:
+                raise Problem(400, 'Choose each day only once.')
+            seen.add(key)
+            choice = entry.get('technician')
+            if choice is None:
+                new_name = None
+            elif not isinstance(choice, str):
+                raise Problem(400, 'Choose a valid staff member for each day.')
+            else:
+                value = choice.strip()
+                if not value:
+                    new_name = ''
+                else:
+                    canonical = eligible.get(value.casefold())
+                    if not canonical:
+                        raise Problem(400, 'Choose only staff selected for the on-call roster.')
+                    if key in approved.get(canonical.casefold(), set()):
+                        raise Problem(409, f"{canonical} has approved leave on {_day_label(day)}. Choose another person or open the day.")
+                    new_name = canonical
+            previous = current_days.get(key) if key in current_days else None
+            if new_name != previous:
+                changes.append((day, previous, new_name))
+            if new_name is None:
+                next_days.pop(key, None)
+            else:
+                next_days[key] = new_name
+        if not changes:
+            return result
+        record['days'] = next_days
+        record['daysRevision'] = int(record.get('daysRevision') or 0) + 1
+        record['updatedAt'] = at.isoformat()
+        _bump(record)
+        number = week.isocalendar()[1]
+        labels = []
+        for day, _, new_name in changes:
+            shown = record.get('technician') or '' if new_name is None else new_name
+            labels.append(f"{_day_label(day)} {shown or 'Open'}")
+        detail = f"{actor_name} updated day cover for Week {number}: {', '.join(labels)}."
+        _log(block, at, user['email'], 'days', week, detail)
+        if not quiet:
+            _notify_days(result, block, week, detail, at)
         return result
 
     week = _week(data.get('weekStart'))
@@ -647,7 +836,8 @@ def action(state, data, user, now=None):
         if previous and previous.casefold() != (technician or '').casefold():
             detail = f"{actor_name} released {previous}'s Week {number} to the open pool."
         _log(block, at, user['email'], 'release', week, detail)
-        _notify(result, block, week, 'release', detail, at)
+        if not quiet:
+            _notify(result, block, week, 'release', detail, at)
         return result
 
     if kind == 'handover':
@@ -667,7 +857,8 @@ def action(state, data, user, now=None):
             if previous and previous.casefold() != (technician or '').casefold():
                 detail = f"{actor_name} released {previous}'s Week {number} to the open pool."
             _log(block, at, user['email'], 'release', week, detail)
-            _notify(result, block, week, 'release', detail, at)
+            if not quiet:
+                _notify(result, block, week, 'release', detail, at)
             return result
         staff = {name.casefold(): name for name in block['eligible']}
         canonical = staff.get(target.casefold())
@@ -685,7 +876,8 @@ def action(state, data, user, now=None):
         _bump(record)
         detail = f"{actor_name} handed Week {number} to {canonical}."
         _log(block, at, user['email'], 'handover', week, detail)
-        _notify(result, block, week, 'handover', detail, at)
+        if not quiet:
+            _notify(result, block, week, 'handover', detail, at)
         return result
 
     if kind == 'grab':

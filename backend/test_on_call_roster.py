@@ -35,23 +35,30 @@ class OnCallRosterTests(unittest.TestCase):
     def mails(self):
         return list(self.api.store.state.get('mailOutbox', {}).values())
 
-    def test_view_builds_three_month_rotation_and_does_not_mutate_state(self):
+    def test_view_builds_six_month_rotation_and_does_not_mutate_state(self):
         view = on_call_roster.read(self.state, self.admin, now=NOW)
         self.assertNotIn('onCallRoster', self.state)
         self.assertEqual(view['currentWeek'], MONDAY)
         self.assertEqual(view['weekNumber'], 46)
         self.assertEqual(view['headerDates'], 'Mon 9 – Sun 15 November 2026')
-        self.assertEqual(len(view['rows']), 14)
-        self.assertEqual(len(view['defaultPlan']), 14)
+        self.assertEqual(view['planMonths'], 6)
+        self.assertEqual(view['planWeeks'], 26)
+        self.assertEqual(len(view['rows']), 26)
+        self.assertEqual(len(view['defaultPlan']), 26)
         self.assertEqual([row['status'] for row in view['rows']][:3], ['awaiting', 'awaiting', 'scheduled'])
         self.assertEqual(view['rows'][0]['technician'], 'Scott Yearbury')
         self.assertEqual(view['rows'][1]['technician'], 'Daryll Anderson')
+        self.assertEqual(view['defaultPlan'][0]['technician'], 'Scott Yearbury')
         self.assertEqual(view['rows'][0]['deadlineLabel'], 'Sun 8 Nov, 5 pm')
         self.assertEqual(view['rows'][1]['deadlineLabel'], 'Sun 15 Nov, 5 pm')
         self.assertTrue(view['rows'][0]['canHandover'])
         self.assertFalse(view['rows'][0]['canAccept'])
+        self.assertEqual(len(view['rows'][0]['days']), 7)
+        self.assertEqual(view['rows'][0]['days'][0]['technician'], 'Scott Yearbury')
+        self.assertFalse(view['rows'][0]['days'][0]['override'])
+        self.assertEqual(view['rows'][0]['customDays'], 0)
 
-    def test_admin_can_choose_eligible_staff_and_plan_three_months(self):
+    def test_admin_can_choose_eligible_staff_and_plan_six_months(self):
         with self.at():
             self.assertEqual(self.api.call('/api/on-call')[0], 200)
             staff_rows = timesheets.settings(self.api.store.state)['technicians']
@@ -75,7 +82,9 @@ class OnCallRosterTests(unittest.TestCase):
         self.assertEqual(body['rows'][0]['technician'], 'Office Admin')
         self.assertEqual(body['rows'][1]['technician'], 'Bala Ganesh Venkatesan')
         self.assertTrue(self.api.store.state['onCallRoster']['weeks'][MONDAY]['manual'])
-        self.assertTrue(any('next three months' in mail['subject'].lower() for mail in self.mails()))
+        self.assertTrue(any('next six months' in mail['subject'].lower() for mail in self.mails()))
+        later = on_call_roster.read(self.api.store.state, self.admin, now=NOW)
+        self.assertEqual(later['defaultPlan'][0]['technician'], 'Office Admin')
 
     def test_plan_rejects_staff_who_are_not_eligible(self):
         with self.at():
@@ -84,6 +93,91 @@ class OnCallRosterTests(unittest.TestCase):
                 'action': 'eligibility', 'eligible': ['Scott Yearbury']})[0], 200)
             self.assertEqual(self.api.call('/api/on-call', 'POST', {
                 'action': 'plan', 'plan': [{'weekStart': MONDAY, 'technician': 'Daryll Anderson'}]})[0], 400)
+
+    def test_admin_can_set_day_cover_and_confirm_without_email(self):
+        with self.at():
+            self.assertEqual(self.api.call('/api/on-call')[0], 200)
+            before = len(self.mails())
+            days = [
+                {'date': '2026-11-09', 'technician': 'Daryll Anderson'},
+                {'date': '2026-11-10', 'technician': ''},
+                {'date': '2026-11-11', 'technician': None},
+                {'date': '2026-11-12', 'technician': None},
+                {'date': '2026-11-13', 'technician': None},
+                {'date': '2026-11-14', 'technician': None},
+                {'date': '2026-11-15', 'technician': None},
+            ]
+            code, body, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'days', 'weekStart': MONDAY, 'days': days, 'notify': False})
+        self.assertEqual(code, 200, body)
+        row = body['rows'][0]
+        self.assertEqual(row['days'][0]['technician'], 'Daryll Anderson')
+        self.assertTrue(row['days'][0]['override'])
+        self.assertEqual(row['days'][1]['technician'], '')
+        self.assertTrue(row['days'][1]['open'])
+        self.assertTrue(row['days'][1]['override'])
+        self.assertEqual(row['days'][2]['technician'], 'Scott Yearbury')
+        self.assertFalse(row['days'][2]['override'])
+        self.assertEqual(row['customDays'], 2)
+        self.assertIn('Mon 9 Daryll Anderson', row['dayNote'])
+        self.assertEqual(len(self.mails()), before)
+        self.assertTrue(any(item['action'] == 'days' for item in self.api.store.state['onCallRoster']['activity']))
+        with self.at():
+            code, body, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'days', 'weekStart': MONDAY,
+                'days': [
+                    {'date': '2026-11-09', 'technician': None},
+                    {'date': '2026-11-10', 'technician': None},
+                ], 'notify': False})
+        self.assertEqual(code, 200, body)
+        self.assertEqual(body['rows'][0]['customDays'], 0)
+        self.assertEqual(body['rows'][0]['days'][0]['technician'], 'Scott Yearbury')
+        self.assertEqual(len(self.mails()), before)
+
+    def test_day_cover_rejects_leave_ineligible_and_non_admin_changes(self):
+        self.state['leaveRequests'] = {'leave-1': {'id': 'leave-1', 'technician': 'Daryll Anderson', 'status': 'Approved', 'dates': ['2026-11-09']}}
+        with self.at():
+            self.assertEqual(self.api.call('/api/on-call')[0], 200)
+            code, _, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'days', 'weekStart': MONDAY,
+                'days': [{'date': '2026-11-09', 'technician': 'Daryll Anderson'}]})
+            self.assertEqual(code, 409)
+            code, _, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'days', 'weekStart': MONDAY,
+                'days': [{'date': '2026-11-09', 'technician': 'Not on the roster'}]})
+            self.assertEqual(code, 400)
+            code, _, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'days', 'weekStart': MONDAY,
+                'days': [{'date': '2026-11-16', 'technician': ''}]})
+            self.assertEqual(code, 400)
+            code, _, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'days', 'weekStart': MONDAY,
+                'days': [{'date': '2026-11-09', 'technician': ''}]}, token='tech')
+            self.assertEqual(code, 403)
+
+    def test_admin_quiet_confirmation_skips_emails_for_roster_changes(self):
+        with self.at():
+            self.assertEqual(self.api.call('/api/on-call')[0], 200)
+            before = len(self.mails())
+            code, body, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'handover', 'weekStart': MONDAY, 'technician': 'Daryll Anderson', 'notify': False})
+            self.assertEqual(code, 200, body)
+            self.assertEqual(len(self.mails()), before)
+            order = ['Daryll Anderson', 'Scott Yearbury']
+            for name in body['eligible']:
+                if name not in order:
+                    order.append(name)
+            code, body, _ = self.api.call('/api/on-call', 'POST', {'action': 'order', 'order': order, 'notify': False})
+            self.assertEqual(code, 200, body)
+            self.assertEqual(len(self.mails()), before)
+            code, body, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'plan', 'plan': [{'weekStart': '2026-11-23', 'technician': 'Daryll Anderson'}], 'notify': False})
+            self.assertEqual(code, 200, body)
+            self.assertEqual(len(self.mails()), before)
+            code, body, _ = self.api.call('/api/on-call', 'POST', {
+                'action': 'eligibility', 'eligible': [name for name in body['eligible'] if name != 'Daryll Anderson'], 'notify': False})
+            self.assertEqual(code, 200, body)
+            self.assertEqual(len(self.mails()), before)
 
     def test_technician_accepts_own_week_and_everyone_is_emailed(self):
         with self.at():

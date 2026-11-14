@@ -1,0 +1,262 @@
+{
+  "source": "Trident_2027_Technician_On_Call_Roster.docx",
+  "note": "Monday-start weeks mapped to the primary technician shown for that week. Rows with split dates (e.g. 2-5 Feb; 7 Feb) are assigned to the technician covering the majority of the week. The document starts on 3 Jan (Joby, one day) and 1 Jan/4 Jan fall outside a full week, so the first weekly entry is 4 Jan (Bala).",
+  "horizonNote": "The app plans 14 weeks from the current Monday. As at 14 Nov 2026 that is 9 Nov 2026 to 8 Feb 2027, so the weeks from 4 Jan 2027 to 8 Feb 2027 can be entered now; later weeks need the horizon/import extension.",
+  "weeks": [
+    {
+      "weekStart": "2027-01-04",
+      "technician": "Bala",
+      "documentDates": "5–10 Jan"
+    },
+    {
+      "weekStart": "2027-01-11",
+      "technician": "Andrew",
+      "documentDates": "11–17 Jan"
+    },
+    {
+      "weekStart": "2027-01-18",
+      "technician": "Daryll",
+      "documentDates": "18–24 Jan"
+    },
+    {
+      "weekStart": "2027-01-25",
+      "technician": "Allan",
+      "documentDates": "25–31 Jan"
+    },
+    {
+      "weekStart": "2027-02-01",
+      "technician": "Andrew",
+      "documentDates": "2–5 Feb; 7 Feb"
+    },
+    {
+      "weekStart": "2027-02-08",
+      "technician": "Joby",
+      "documentDates": "9–14 Feb"
+    },
+    {
+      "weekStart": "2027-02-15",
+      "technician": "Bala",
+      "documentDates": "15–21 Feb"
+    },
+    {
+      "weekStart": "2027-02-22",
+      "technician": "Daryll",
+      "documentDates": "22–28 Feb"
+    },
+    {
+      "weekStart": "2027-03-01",
+      "technician": "Allan",
+      "documentDates": "1–7 Mar"
+    },
+    {
+      "weekStart": "2027-03-08",
+      "technician": "Joby",
+      "documentDates": "8–14 Mar"
+    },
+    {
+      "weekStart": "2027-03-15",
+      "technician": "Daryll",
+      "documentDates": "15–21 Mar"
+    },
+    {
+      "weekStart": "2027-03-22",
+      "technician": "Andrew",
+      "documentDates": "22–25 Mar; 27–28 Mar"
+    },
+    {
+      "weekStart": "2027-03-29",
+      "technician": "Allan",
+      "documentDates": "30 Mar–4 Apr"
+    },
+    {
+      "weekStart": "2027-04-05",
+      "technician": "Bala",
+      "documentDates": "5–11 Apr"
+    },
+    {
+      "weekStart": "2027-04-12",
+      "technician": "Joby",
+      "documentDates": "12–18 Apr"
+    },
+    {
+      "weekStart": "2027-04-19",
+      "technician": "Andrew",
+      "documentDates": "19–24 Apr"
+    },
+    {
+      "weekStart": "2027-04-26",
+      "technician": "Daryll",
+      "documentDates": "27 Apr–2 May"
+    },
+    {
+      "weekStart": "2027-05-03",
+      "technician": "Allan",
+      "documentDates": "3–9 May"
+    },
+    {
+      "weekStart": "2027-05-10",
+      "technician": "Joby",
+      "documentDates": "10–16 May"
+    },
+    {
+      "weekStart": "2027-05-17",
+      "technician": "Bala",
+      "documentDates": "17–23 May"
+    },
+    {
+      "weekStart": "2027-05-24",
+      "technician": "Andrew",
+      "documentDates": "24–30 May"
+    },
+    {
+      "weekStart": "2027-05-31",
+      "technician": "Allan",
+      "documentDates": "31 May–6 Jun"
+    },
+    {
+      "weekStart": "2027-06-07",
+      "technician": "Joby",
+      "documentDates": "8–13 Jun"
+    },
+    {
+      "weekStart": "2027-06-14",
+      "technician": "Daryll",
+      "documentDates": "14–20 Jun"
+    },
+    {
+      "weekStart": "2027-06-21",
+      "technician": "Andrew",
+      "documentDates": "21–24 Jun; 26–27 Jun"
+    },
+    {
+      "weekStart": "2027-06-28",
+      "technician": "Bala",
+      "documentDates": "28 Jun–4 Jul"
+    },
+    {
+      "weekStart": "2027-07-05",
+      "technician": "Joby",
+      "documentDates": "5–11 Jul"
+    },
+    {
+      "weekStart": "2027-07-12",
+      "technician": "Allan",
+      "documentDates": "12–18 Jul"
+    },
+    {
+      "weekStart": "2027-07-19",
+      "technician": "Daryll",
+      "documentDates": "19–25 Jul"
+    },
+    {
+      "weekStart": "2027-07-26",
+      "technician": "Bala",
+      "documentDates": "26 Jul–1 Aug"
+    },
+    {
+      "weekStart": "2027-08-02",
+      "technician": "Andrew",
+      "documentDates": "2–8 Aug"
+    },
+    {
+      "weekStart": "2027-08-09",
+      "technician": "Joby",
+      "documentDates": "9–15 Aug"
+    },
+    {
+      "weekStart": "2027-08-16",
+      "technician": "Allan",
+      "documentDates": "16–22 Aug"
+    },
+    {
+      "weekStart": "2027-08-23",
+      "technician": "Daryll",
+      "documentDates": "23–29 Aug"
+    },
+    {
+      "weekStart": "2027-08-30",
+      "technician": "Bala",
+      "documentDates": "30 Aug–5 Sep"
+    },
+    {
+      "weekStart": "2027-09-06",
+      "technician": "Joby",
+      "documentDates": "6–12 Sep"
+    },
+    {
+      "weekStart": "2027-09-13",
+      "technician": "Andrew",
+      "documentDates": "13–19 Sep"
+    },
+    {
+      "weekStart": "2027-09-20",
+      "technician": "Allan",
+      "documentDates": "20–26 Sep"
+    },
+    {
+      "weekStart": "2027-09-27",
+      "technician": "Daryll",
+      "documentDates": "27 Sep–3 Oct"
+    },
+    {
+      "weekStart": "2027-10-04",
+      "technician": "Bala",
+      "documentDates": "4–10 Oct"
+    },
+    {
+      "weekStart": "2027-10-11",
+      "technician": "Joby",
+      "documentDates": "11–17 Oct"
+    },
+    {
+      "weekStart": "2027-10-18",
+      "technician": "Allan",
+      "documentDates": "18–24 Oct"
+    },
+    {
+      "weekStart": "2027-10-25",
+      "technician": "Andrew",
+      "documentDates": "26–31 Oct"
+    },
+    {
+      "weekStart": "2027-11-01",
+      "technician": "Daryll",
+      "documentDates": "1–7 Nov"
+    },
+    {
+      "weekStart": "2027-11-08",
+      "technician": "Bala",
+      "documentDates": "8–14 Nov"
+    },
+    {
+      "weekStart": "2027-11-15",
+      "technician": "Joby",
+      "documentDates": "15–21 Nov"
+    },
+    {
+      "weekStart": "2027-11-22",
+      "technician": "Andrew",
+      "documentDates": "22–28 Nov"
+    },
+    {
+      "weekStart": "2027-11-29",
+      "technician": "Allan",
+      "documentDates": "29 Nov–5 Dec"
+    },
+    {
+      "weekStart": "2027-12-06",
+      "technician": "Bala",
+      "documentDates": "6–12 Dec"
+    },
+    {
+      "weekStart": "2027-12-13",
+      "technician": "Daryll",
+      "documentDates": "13–19 Dec"
+    },
+    {
+      "weekStart": "2027-12-20",
+      "technician": "Andrew",
+      "documentDates": "20–24 Dec"
+    }
+  ]
+}

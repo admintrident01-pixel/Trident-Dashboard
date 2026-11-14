@@ -1,0 +1,95 @@
+APPROVED FOR PUBLICATION - FINAL VALIDATION COMPLETE - COMMIT AND PUSH PENDING
+14 November 2026 (Pacific/Auckland)
+Branch: codex/oncall-days, based on origin/main 1c371fb
+
+RELEASE THEME
+On-call day cover, six-month roster planning, leave summary and the latest
+schedule, settings and stock review fixes requested in browser comments.
+
+WHAT CHANGED
+- Day-level on-call allocations with weekly inheritance, alternate technician
+  and an explicit open-day option, while approved leave remains blocked.
+- Six-month planning across 26 Monday-start weeks grouped by month.
+- Quiet confirmation for roster, day cover and order changes via the Email staff
+  checkbox; changes are still recorded in Recent activity.
+- Numbered rotation-position selector replacing the previous arrow controls.
+- Day-cover and six-month dialogs fit 834x480 and 390x844. Only their internal
+  day/week lists scroll, and background scrolling is locked while open. The
+  current-week actions panel is kept wide enough for all four actions, and
+  day-cover chips no longer lift, flicker or underline on hover.
+- Book appointment type dropdown supports Other / custom type.
+- Icon-only Quick client entry copy button is centred on desktop and mobile.
+- Schedule block checkbox is borderless, top-left and centred in the green rail.
+- Stock expand/collapse uses the shared Feather chevron; stock flow count
+  contrast is fixed, active flow buttons stay dark, and icons stay inside buttons.
+- Schedule sticky bar contains only Save schedule settings; Add appointment type
+  is in its card heading. Settings save/reload bars remain visible while scrolling.
+- Leave requests use a sticky right-side summary card on desktop, stacking below
+  the form on narrow screens. Breakdowns work for one day or a partial hour, and
+  the primary action is Submit.
+- Email quote restores the Outlook .eml download with recipient, configured
+  subject/body and generated PDF attachment.
+
+CHANGED SOURCE
+backend/on_call_roster.py
+backend/test_on_call_roster.py
+src/OnCallRoster.jsx
+src/OnCallRoster.css
+src/TechSchedule.jsx
+src/TechSchedule.css
+src/ScheduleSettings.jsx
+src/SettingsLayout.css
+src/StockPage.css
+src/StockProductTree.jsx
+src/LeaveRequestEditor.jsx
+src/LeaveForms.css
+public/quote-builder.html
+ON-CALL-ROSTER-UPDATE.txt
+
+VALIDATION
+- Backend: 589 tests OK with the workbook fixture; focused API suite 15/15.
+- Frontend: 188 node tests OK.
+- Changed JSX: ESLint clean (0 errors).
+- Production Vite build: successful.
+- Browser: 1280x900 desktop, 1159x667 target viewport, 834x480 short viewport
+  and 390x844 mobile.
+- At 1159x667 all four current-week actions stay on one row with matching
+  geometry; hovered Day cover retains its border and position without underline.
+- Copy button/icon centre delta: 0px on desktop and mobile.
+- Mobile appointment dialog: bottom 842.1px inside the 844px viewport.
+- Day-cover and six-month dialogs stay inside their viewports and scroll internally.
+- Leave summary remains 16px from the top while the desktop form scrolls; the
+  one-day 3.5-hour case shows 3.50h with 0.50h lunch excluded and no mobile overflow.
+- Quote verification produced a 299,348-byte .eml with subject, recipient and PDF;
+  no real email was sent.
+- Settings sticky bars remain visible while scrolling.
+- Stock counts and flow icons remain contained; no mobile horizontal overflow.
+- No emails sent and no local or online business values changed by verification.
+
+PRE-RELEASE LIVE BACKUP
+- Status: complete and checksum-verified before any commit or deployment.
+- Register revision: 17551.
+- Canonical state SHA256: dbff3d70a0f1cef9337bca7a09665ae608ed0368e3ae6f3365ffb1370ba629c8.
+- BigQuery snapshot: trident-dashboard-511203.trident_quotes.app_state_before_oncall_days_20261114T041038Z.
+- Upload backup: gs://trident-dashboard-511203-quote-pdfs/release-backups/oncall-days_20261114T041038Z/
+- 35 live upload objects covered; 34 referenced by the register; 0 missing.
+- Every copied upload matched stored GCS MD5 and CRC32C checksums.
+- Upload inventory SHA256: 1f4bdfb2fd09b81a31b3f89621a3971575bdab50b4cd114c6eafef9d57a2678f.
+- API before release: trident-quote-api-00087-rlx on 100% traffic.
+
+PREVIEW
+http://127.0.0.1:18780/
+Local API: http://127.0.0.1:18782
+Final evidence: outputs/on-call-days-preview/ (screenshots 27-30).
+
+PACKAGE AND APPROVAL
+- Cumulative ZIP rebuilt from the validated working tree: 570 entries,
+  1,470,379 bytes.
+- SHA256: B004860847AA296430EA670B57AD0766D5A1C9F1CEBB6965F049AF09FB690197.
+- RELEASE-MANIFEST.json records all 570 entry hashes, the backup proof and the
+  approved pending-publication status.
+- The user explicitly approved publication on 14 November 2026.
+- A push to main publishes both frontend and API. Commit, push and deployment
+  are the only remaining steps, followed by live reconciliation.
+- Archived review packages remain in outputs/Release history/; the immediately
+  previous package is Trident-dashboard-oncall-days-before-final-release.zip.
