@@ -32,8 +32,7 @@ def workbook(tables):
 def pack(tables,filename):return {'filename':filename,'mime':MIME,'file':base64.b64encode(workbook(tables)).decode()}
 def day_annotations(day):
  labels=[]
- for kind,label in [('sick','Sick'),('annual','Annual'),('other','Other')]:
-  if day[kind]:labels.append(label+' '+weekly_report.number(day[kind])+'h')
+ if day.get('leaveHours'):labels.append(weekly_report.leave_label(day)+' '+weekly_report.number(day['leaveHours'])+'h')
  if day.get('otherDescription'):labels.append(day['otherDescription'])
  if day.get('leaveFrom'):labels.append('Leave '+day['leaveFrom']+'–'+day['leaveTo'])
  if day.get('workFrom'):labels.append('Work '+day['workFrom']+'–'+day['workTo'])
@@ -56,7 +55,7 @@ def weekly(state,data):
   summary.append(['Total',kind,*totals,sum(totals)])
  average=weekly_report.averages(state,week)
  averages=[[r['name'],r['allAverage'] if mode=='all' else r['paidAverage'],r['chargedAverage'],r['workWeeks'],r['chargedWeeks']] for r in average['rows']]
- info=[['Week starting',week],['Payable hours','Work, sick, annual and other approved leave' if mode=='all' else 'Work and sick leave; annual and other leave shown separately'],['Average period',average['start']+' to '+average['end']],['Average basis','13 completed weeks, including missing and zero weeks'],['Charged hours','Blank means not entered; zero means explicitly entered as zero'],['Report type','Saved register snapshot. Editing this file does not change the website.']]
+ info=[['Week starting',week],['Payable hours','Work and all approved leave' if mode=='all' else 'Work and paid leave; unpaid leave shown separately'],['Average period',average['start']+' to '+average['end']],['Average basis','13 completed weeks, including missing and zero weeks'],['Charged hours','Blank means not entered; zero means explicitly entered as zero'],['Report type','Saved register snapshot. Editing this file does not change the website.']]
  return weekly_template.create(state,week,rows,metric,[('Weekly hours',headers,summary),('Daily detail',['Staff member','Date','Work hours','Sick leave hours','Annual leave hours','Other leave hours','Payable hours','Charged hours','Submission','Daily notes','Other leave description'],detail),('13-week averages',['Staff member','Average payable / week','Average charged / week','Payable weeks recorded','Charged weeks recorded'],averages),('Report details',['Setting','Value'],info)],f'Trident-weekly-{mode}-hours-{week}.xlsx')
 def period_annotations(state,result):
  first=weekly_report.week_date(result['start']);details=[]
@@ -71,5 +70,5 @@ def period(state,data):
  mode=mode_of(data);result=weekly_report.selected_period(state,data);metric='all' if mode=='all' else 'paid'
  rows=[[r['name'],r[metric],r['charged'],r[metric+'Average'],r['chargedAverage'],r['workWeeks'],r['chargedWeeks']] for r in result['rows']]
  rows.append(['Total',*[sum(r[i] for r in rows) for i in range(1,5)],None,None])
- info=[['From Monday',result['start']],['Through Sunday',result['end']],['Weeks included',result['weeks']],['Average basis','Saved totals divided by all selected weeks, including missing and zero weeks'],['Payable hours','Work and all approved leave' if mode=='all' else 'Work and sick leave']]
+ info=[['From Monday',result['start']],['Through Sunday',result['end']],['Weeks included',result['weeks']],['Average basis','Saved totals divided by all selected weeks, including missing and zero weeks'],['Payable hours','Work and all approved leave' if mode=='all' else 'Work and paid leave']]
  return pack([('Selected week averages',['Technician','Payable total','Charged total','Average payable / week','Average charged / week','Payable weeks recorded','Charged weeks recorded'],rows),('Report details',['Setting','Value'],info),('Other leave details',['Staff member','Date','Other leave hours','Other leave description'],[[d['name'],d['date'],d['hours'],d['description']] for d in weekly_report.period_leave_details(state,result)]),('Daily notes and leave',['Staff member','Date','Leave / notes'],period_annotations(state,result))],f"Trident-week-averages-{result['start']}-{result['endWeek']}.xlsx")

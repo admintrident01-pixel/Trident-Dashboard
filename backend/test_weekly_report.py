@@ -48,7 +48,7 @@ class WeeklyReportTests(unittest.TestCase):
         pdf=weekly_report.pdf(state,{'week':self.week,'mode':'work'})
         reader=PdfReader(io.BytesIO(base64.b64decode(pdf['pdf'])))
         text='\n'.join(p.extract_text() for p in reader.pages)
-        for required in ['Weekly work and sick hours','Annual 4h','Sick 8h','Equipment repaired & tested','Page 1']:
+        for required in ['Weekly work and paid leave hours','Annual 4h','Sick 8h','Equipment repaired & tested','Page 1']:
             self.assertIn(required,text)
         self.assertNotIn('Private leave reason',text)
     def test_report_endpoints_are_admin_only_and_notes_require_revision(self):

@@ -1,0 +1,19 @@
+{
+  "phase": "before",
+  "project": "trident-dashboard-511203",
+  "tag": "leave-excel_20261115T215230Z",
+  "registerSnapshot": "trident-dashboard-511203.trident_quotes.app_state_before_leave_excel_20261115T215230Z",
+  "registerRevision": 18717,
+  "stateSha256": "c3359229925ae0e6e86f38d40281022aa5af9780a0c24f910d8d66262f453b64",
+  "canonicalStateUri": "gs://trident-dashboard-511203-quote-pdfs/release-backups/leave-excel_20261115T215230Z/register/app_state_canonical.json",
+  "liveUploadObjects": 35,
+  "referencedUploadObjects": 34,
+  "missingReferencedUploads": 0,
+  "uploadBackupPrefix": "gs://trident-dashboard-511203-quote-pdfs/release-backups/leave-excel_20261115T215230Z/",
+  "uploadInventorySha256": "ea0ea07630b862d0ea65fa433b1136045446303efd1bbce0163ee188c63650e6",
+  "uploadsChecksumVerified": true,
+  "checksumMethod": "GCS stored MD5 and CRC32C source/destination match",
+  "apiRevision": "trident-quote-api-00091-877",
+  "trafficPercent": 100,
+  "commitSha": ""
+}

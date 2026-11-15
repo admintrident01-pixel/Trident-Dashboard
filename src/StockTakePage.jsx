@@ -50,7 +50,7 @@ export default function StockTakePage({request,onBack}){
 
  {data?.stockChanged&&<p role="alert" className="stock-alert">Stock has changed since this count started. Your draft is kept, but you need a fresh count before applying it. <button disabled={busy} onClick={()=>{if(window.confirm('Keep this old draft in history and start a fresh count?'))act('refresh')}}>Start fresh count</button></p>}
 
- {!data&&!error&&<p role="status">Loading stocktake…</p>}
+ {!data&&!error&&<p className="module-loading" role="status">Loading stocktake…</p>}
 
  {data&&!draft&&!completed&&<button className="primary-action" disabled={busy} onClick={()=>act('start')}>Start stock take</button>}
 

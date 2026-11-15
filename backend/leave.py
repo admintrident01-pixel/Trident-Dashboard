@@ -1,7 +1,30 @@
 import copy,datetime,decimal,hashlib,json,re,uuid
 from core import Problem
 
-TYPES=('Annual leave','Sick leave','Other')
+LEAVE_TYPES=('Paid annual leave','Unpaid annual leave','Sick leave paid','Sick leave unpaid','Other paid','Other unpaid')
+TYPES=LEAVE_TYPES+('Annual leave','Sick leave','Other')
+
+TYPE_PAID={
+ 'Paid annual leave':True,
+ 'Unpaid annual leave':False,
+ 'Sick leave paid':True,
+ 'Sick leave unpaid':False,
+ 'Other paid':True,
+ 'Other unpaid':False,
+ 'Annual leave':False,
+ 'Sick leave':True,
+ 'Other':False,
+}
+
+def type_paid(value):
+ return TYPE_PAID.get(str(value),False)
+
+def type_category(value):
+ value=str(value).casefold()
+ return 'annual' if 'annual' in value else 'sick' if 'sick' in value else 'other'
+
+def legacy_type(value):
+ return {'annual':'Annual leave','sick':'Sick leave','other':'Other'}[type_category(value)]
 
 def operation_receipt(state,data,actor,submitted):
  """A durable receipt lets the same command recover an uncertain response.
@@ -54,15 +77,18 @@ def time_range(data):
  if end<=start:raise Problem(400,'Leave To time must be after From time on the same day.')
  return start,end
 
-def daily_breakdown(data,dates):
+def daily_breakdown(data,dates,default_type):
  rows=data.get('dailyBreakdown')
  if rows is None:return None
  if not isinstance(rows,list) or len(rows)!=len(dates):raise Problem(400,'Review the leave breakdown for every selected date.')
  cleaned=[]
  for date,row in zip(dates,rows):
   if not isinstance(row,dict) or row.get('date')!=date:raise Problem(400,'Leave breakdown dates must match the selected working dates.')
+  kind=row.get('leaveType',default_type)
+  if kind not in TYPES:raise Problem(400,f'{date}: choose a valid leave type.')
+  paid=type_paid(kind)
   duration=row.get('duration')
-  if duration=='full':cleaned.append({'date':date,'duration':'full','hoursPerDay':8.0,'lunchHours':0});continue
+  if duration=='full':cleaned.append({'date':date,'leaveType':kind,'paid':paid,'duration':'full','hoursPerDay':8.0,'lunchHours':0});continue
   if duration!='part':raise Problem(400,'Choose full day or part day for each date.')
   period=time_range(row)
   if not period:raise Problem(400,'Enter From and To times for hourly leave.')
@@ -78,7 +104,7 @@ def daily_breakdown(data,dates):
    overlap=max(0,min(period[1],last)-max(period[0],first))
   hours=(period[1]-period[0]-overlap)/60
   if hours<=0:raise Problem(400,f'{date}: the request must contain paid leave outside unpaid lunch.')
-  cleaned.append({'date':date,'duration':'part','startTime':row['startTime'],'endTime':row['endTime'],'hoursPerDay':hours,'lunchChoice':choice,'lunchStart':lunch_start,'lunchEnd':lunch_end,'lunchReason':reason,'lunchConfirmed':True,'lunchHours':overlap/60})
+  cleaned.append({'date':date,'leaveType':kind,'paid':paid,'duration':'part','startTime':row['startTime'],'endTime':row['endTime'],'hoursPerDay':hours,'lunchChoice':choice,'lunchStart':lunch_start,'lunchEnd':lunch_end,'lunchReason':reason,'lunchConfirmed':True,'lunchHours':overlap/60})
  return cleaned
 
 def expand_days(request):
@@ -96,7 +122,7 @@ def create(state,data):
  tech=names[tech.casefold()]
  kind=data.get('leaveType')
  if kind not in TYPES:raise Problem(400,'Choose a valid leave type.')
- other=value(data,'other','other leave description',200,kind=='Other')
+ other=value(data,'other','other leave description',200,type_category(kind)=='other')
  start=day(value(data,'startDate','start date',10,True));end=day(value(data,'endDate','end date',10,True))
  if end<start or (end-start).days>365:raise Problem(400,'Choose a date range of up to one year, with end after start.')
  try:
@@ -110,14 +136,19 @@ def create(state,data):
  if not isinstance(weekends,bool):raise Problem(400,'Choose whether to include weekends.')
  dates=[(start+datetime.timedelta(days=i)).isoformat() for i in range((end-start).days+1) if weekends or (start+datetime.timedelta(days=i)).weekday()<5]
  if not dates:raise Problem(400,'The request has no working days. Include weekends if needed.')
- breakdown=daily_breakdown(data,dates)
+ breakdown=daily_breakdown(data,dates,kind)
+ if any(type_category(row['leaveType'])=='other' for row in (breakdown or [])) and not other:
+  raise Problem(400,'Enter an other leave description for the selected leave type.')
  for r in state.get('leaveRequests',{}).values():
   if r['technician'].casefold()==tech.casefold() and r['status'] in ('Pending','Approved') and set(dates)&set(r['dates']):raise Problem(409,'A pending or approved request already covers one of these dates.')
  now=datetime.datetime.now(datetime.timezone.utc).isoformat()
- r={'id':str(uuid.uuid4()),'revision':1,'technician':tech,'leaveType':kind,'other':other,'startDate':start.isoformat(),'endDate':end.isoformat(),'dates':dates,'hoursPerDay':float(hours),'includeWeekends':weekends,'totalHours':float(hours*len(dates)),'reason':value(data,'reason','reason / notes',4000,True),'status':'Pending','submittedAt':now,'updatedAt':now,'decisionNotes':'','decidedBy':'','decidedAt':''}
+ request_paid=type_paid(kind)
+ r={'id':str(uuid.uuid4()),'revision':1,'technician':tech,'leaveType':kind,'paid':request_paid,'typeCategory':type_category(kind),'other':other,'startDate':start.isoformat(),'endDate':end.isoformat(),'dates':dates,'hoursPerDay':float(hours),'includeWeekends':weekends,'totalHours':float(hours*len(dates)),'paidHours':float(hours*len(dates)) if request_paid else 0,'unpaidHours':0 if request_paid else float(hours*len(dates)),'reason':value(data,'reason','reason / notes',4000,True),'status':'Pending','submittedAt':now,'updatedAt':now,'decisionNotes':'','decidedBy':'','decidedAt':''}
  if period:r.update(startTime=data['startTime'],endTime=data['endTime'])
  if breakdown:
   r['dailyBreakdown']=breakdown;r['totalHours']=sum(row['hoursPerDay'] for row in breakdown)
+  r['paidHours']=sum(row['hoursPerDay'] for row in breakdown if row['paid'])
+  r['unpaidHours']=sum(row['hoursPerDay'] for row in breakdown if not row['paid'])
  result=copy.deepcopy(state);result.setdefault('leaveRequests',{})[r['id']]=r
  return result,r
 def decide(state,data,email):
@@ -133,7 +164,7 @@ def decide(state,data,email):
  entry.update(status=action,revision=r['revision']+1,decisionNotes=notes,decidedBy=email,decidedAt=now,updatedAt=now)
  return result,entry
 def approved(state):
- return [{k:r[k] for k in ('id','technician','leaveType','other','dates','hoursPerDay','startTime','endTime','lunchHours','lunchChoice','lunchStart','lunchEnd','lunchReason') if k in r} for request in state.get('leaveRequests',{}).values() if request['status']=='Approved' for r in expand_days(request)]
+ return [{k:r[k] for k in ('id','technician','leaveType','paid','typeCategory','other','dates','hoursPerDay','startTime','endTime','lunchHours','lunchChoice','lunchStart','lunchEnd','lunchReason') if k in r} for request in state.get('leaveRequests',{}).values() if request['status']=='Approved' for r in expand_days(request)]
 def enforce_timesheet(state,entry):
  approved_days={date:r for r in approved(state) if r['technician'].casefold()==entry['technician'].casefold() for date in r['dates']}
  start=day(entry['weekStart'])
@@ -145,6 +176,6 @@ def enforce_timesheet(state,entry):
    row['leave']={k:r[k] for k in ('id','leaveType','other','hoursPerDay','startTime','endTime','lunchHours') if k in r}
    entry['total']=float(decimal.Decimal(str(entry['total']))+decimal.Decimal(str(r['hoursPerDay'])))
    continue
-  if r and (row['status']!=r['leaveType'] or row['hours']!=r['hoursPerDay'] or (row['status']=='Other' and row['other']!=r['other'])):raise Problem(400,f'{date}: use the approved leave type and hours. Refresh the time sheet.')
+  if r and (row['status']!=r['leaveType'] or row['hours']!=r['hoursPerDay'] or (type_category(r['leaveType'])=='other' and row.get('other','')!=r.get('other',''))):raise Problem(400,f'{date}: use the approved leave type and hours. Refresh the time sheet.')
   if not r and row['status']!='Work' and row['hours']>0:raise Problem(400,f'{date}: submit a leave request and have it approved before recording leave hours.')
  return [r['id'] for r in {r['id']:r for r in approved_days.values() if set(r['dates'])&{(start+datetime.timedelta(days=i)).isoformat() for i in range(7)}}.values()]

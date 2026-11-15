@@ -33,7 +33,7 @@ def save(state,data,user):
     if not isinstance(days,list) or len(days)!=7:raise Problem(400,'The draft must contain seven days.')
     cleaned=[];total=decimal.Decimal(0)
     for day in days:
-        if not isinstance(day,dict) or day.get('status') not in ('Work','Annual leave','Sick leave','Other') or day.get('method') not in ('direct','times'):raise Problem(400,'Choose valid day types and entry methods.')
+        if not isinstance(day,dict) or day.get('status') not in timesheets.TIME_SHEET_STATUSES or day.get('method') not in ('direct','times'):raise Problem(400,'Choose valid day types and entry methods.')
         row={k:timesheets.text(day.get(k,''),k,limit) for k,limit in [('other',200),('notes',2000),('start',5),('finish',5)]}
         for k in ('start','finish'):
             if row[k]:timesheets.minutes(row[k])

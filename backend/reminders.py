@@ -323,12 +323,12 @@ def queue_leave_notifications(state, entry, submitted=False):
     # Technician identity, never the admin submitting on their behalf, determines receipts.
     link='https://trident-dashboard.admintrident01.workers.dev/#leave'
     dates=f"{entry['startDate']} to {entry['endDate']}"
-    summary=f"Technician: {entry['technician']}\nDates: {dates}\nHours per day: {entry['hoursPerDay']:g}\nTotal hours: {entry['totalHours']:g}"
+    summary=f"Technician: {entry['technician']}\nLeave type: {entry.get('leaveType','Leave')}\nDates: {dates}\nHours per day: {entry['hoursPerDay']:g}\nTotal hours: {entry['totalHours']:g}"
     if entry.get('startTime'):summary+=f"\nTime each day: {entry['startTime']} to {entry['endTime']}"
     if entry.get('dailyBreakdown'):
         summary=f"Technician: {entry['technician']}\nDates: {dates}\nTotal hours: {entry['totalHours']:g}\nDaily breakdown:"
         for row in entry['dailyBreakdown']:
-            summary+=f"\n{row['date']}: {row.get('startTime','Full day')}"+(f"–{row['endTime']}" if row.get('endTime') else '')+f" · {row['hoursPerDay']:g}h"
+            summary+=f"\n{row['date']}: {row.get('leaveType',entry.get('leaveType','Leave'))} · {row.get('startTime','Full day')}"+(f"–{row['endTime']}" if row.get('endTime') else '')+f" · {row['hoursPerDay']:g}h"
             if row.get('startTime'):summary+=f" · unpaid lunch excluded {row['lunchHours']:g}h"
     event='submitted' if submitted else entry['status'].lower()
     key=f"leave:{entry['id']}:{entry['revision']}:{event}"

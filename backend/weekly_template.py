@@ -1,11 +1,14 @@
 """Fill the clean, authored workbook template using the live report snapshot."""
-import base64,copy,datetime as dt,io,zipfile,re,json,textwrap
+import base64,copy,datetime as dt,io,zipfile,re,json,textwrap,posixpath
 from pathlib import Path
 from xml.etree import ElementTree as ET
+from xml.sax.saxutils import quoteattr
 from functools import lru_cache
 import timesheets, weekly_report
 
 NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+CONTENT_TYPES_NS='http://schemas.openxmlformats.org/package/2006/content-types'
+WORKBOOK_MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml'
 tag=lambda name:'{'+NS+'}'+name
 @lru_cache(maxsize=1)
 def template():return (Path(__file__).parent/'weekly_hours_template.xlsx').read_bytes()
@@ -83,6 +86,7 @@ def labour_rows(state,week,rows,metric):
  for sheet in sorted(state.get('timesheets',{}).values(),key=lambda s:s.get('updatedAt') or s.get('submittedAt','')):
   if sheet.get('weekStart')==week:latest[sheet['technician'].casefold()]=sheet
  users=list(state.get('users',{}).values());result=[]
+ defaults=state.get('timeSettings') or {};default_start=defaults.get('start','07:30');default_finish=defaults.get('finish','16:00')
  for person in rows:
   name=person['name'];sheet=latest.get(name.casefold());owners=[u for u in users if (u.get('technician') or '').casefold()==name.casefold()]
   owner=next((u for u in owners if u.get('active')),owners[0] if owners else {})
@@ -90,20 +94,24 @@ def labour_rows(state,week,rows,metric):
   for i,day in enumerate(person['days']):
    entry=sheet['days'][i] if sheet else {};recorded=bool(sheet or day['approvedLeave']);start=finish=None
    notes=[]
-   for kind,label in [('sick','Sick'),('annual','Annual'),('other','Other')]:
-    if day[kind]:notes.append(label+' '+weekly_report.number(day[kind])+'h')
+   if day.get('leaveHours'):notes.append(weekly_report.leave_label(day)+' '+weekly_report.number(day['leaveHours'])+'h')
    if day.get('otherDescription'):notes.append(day['otherDescription'])
-   if day.get('leaveFrom'):notes.append(('Sick leave' if day['sick'] else 'Annual leave' if day['annual'] else 'Leave')+' '+day['leaveFrom']+'–'+day['leaveTo'])
+   if day.get('leaveFrom'):notes.append('Leave time '+day['leaveFrom']+'–'+day['leaveTo'])
    if day.get('leaveFrom') and day.get('leaveLunch') is not None:notes.append('Unpaid lunch excluded: '+weekly_report.number(day['leaveLunch'])+'h')
    work_start=day.get('workFrom') or entry.get('start')
    work_finish=day.get('workTo') or entry.get('finish')
    if work_start and work_finish and entry.get('status')=='Work':
     start=work_start;finish=work_finish
-   elif entry.get('status')=='Work' and entry.get('hours',0)>0:notes.append('Work start / finish not recorded in this historical entry')
+   elif day.get('leaveHours'):
+    if day.get('leaveFrom') and day.get('leaveTo'):start=day['leaveFrom'];finish=day['leaveTo']
+    else:start=default_start;finish=default_finish;notes.append('Default times from Time sheet settings')
+   elif entry.get('status')=='Work' and entry.get('hours',0)>0:
+    start=default_start;finish=default_finish;notes.append('Default times used; actual start / finish not recorded')
    if day['note']:notes.append(day['note'])
    if not recorded:notes.append('No submission')
    lunch=entry.get('lunchHours')
    if lunch is None and entry.get('status')=='Work' and isinstance(entry.get('unpaidLunch'),bool):lunch=.5 if entry['unpaidLunch'] else 0
+   if day.get('leaveHours') and lunch is None:lunch=day.get('leaveLunch') if day.get('leaveLunch') is not None else 0
    serial=(dt.date.fromisoformat(day['date'])-dt.date(1899,12,30)).days
    result.append([display,serial,person['chargedHours'][i],None,None,start,finish,day[metric] if recorded else None,lunch,'\n'.join(notes)])
   first=len(result)+2-7;last=len(result)+1
@@ -112,6 +120,41 @@ def labour_rows(state,week,rows,metric):
   result.extend([[None]*10,[None]*10])
  return result
 
+
+def normalise_content_types(content):
+ """Write a conventional OOXML content-type manifest for Excel."""
+ source=zipfile.ZipFile(io.BytesIO(content));output=io.BytesIO();names=set(source.namelist())
+ tree=ET.fromstring(source.read('[Content_Types].xml'));defaults={};overrides={}
+ for item in tree:
+  kind=item.tag.rsplit('}',1)[-1];extension=str(item.get('Extension') or '').lower();part=str(item.get('PartName') or '').lstrip('/')
+  if kind=='Default' and extension:defaults[extension]=item.get('ContentType') or 'application/octet-stream'
+  if kind=='Override' and part in names:overrides[part]=item.get('ContentType') or 'application/octet-stream'
+ defaults['rels']='application/vnd.openxmlformats-package.relationships+xml';defaults['xml']='application/xml'
+ overrides['xl/workbook.xml']=WORKBOOK_MIME
+ standard={
+  'xl/styles.xml':'application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml',
+  'xl/theme/theme1.xml':'application/vnd.openxmlformats-officedocument.theme+xml',
+  'xl/sharedStrings.xml':'application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml',
+  'xl/worksheets/sheet1.xml':'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml',
+ }
+ for part,mime in standard.items():
+  if part in names:overrides.setdefault(part,mime)
+ pieces=['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',f'<Types xmlns="{CONTENT_TYPES_NS}">']
+ for extension,mime in sorted(defaults.items()):pieces.append(f'<Default Extension={quoteattr(extension)} ContentType={quoteattr(mime)}/>')
+ for part,mime in sorted(overrides.items()):pieces.append(f'<Override PartName={quoteattr("/"+part)} ContentType={quoteattr(mime)}/>')
+ pieces.append('</Types>');manifest=''.join(pieces).encode('utf-8')
+ with source,zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as target:
+  for item in source.infolist():target.writestr(item,manifest if item.filename=='[Content_Types].xml' else source.read(item))
+ return output.getvalue()
+
+def normalise_relationship_targets(content,base):
+ """Use package-relative relationship targets so stricter Excel clients accept them."""
+ tree=ET.fromstring(content)
+ for relationship in tree:
+  target=relationship.get('Target') or ''
+  if target.startswith('/'):
+   relationship.set('Target',posixpath.relpath(target.lstrip('/'),base or '.'))
+ return ET.tostring(tree,encoding='utf-8',xml_declaration=True)
 
 def only_labour_report(content):
  """Remove the supporting worksheets while retaining the authored labour sheet."""
@@ -131,13 +174,16 @@ def only_labour_report(content):
      if relationship.get('Type','').endswith('/worksheet') and not relationship.get('Target','').endswith('/sheet1.xml'):
       tree.remove(relationship)
     data=ET.tostring(tree,encoding='utf-8',xml_declaration=True)
+    data=normalise_relationship_targets(data,'xl')
+   elif item.filename=='_rels/.rels':
+    data=normalise_relationship_targets(data,'')
    elif item.filename=='[Content_Types].xml':
     tree=ET.fromstring(data)
     for override in list(tree):
      if override.get('PartName','').lstrip('/') in removed:tree.remove(override)
     data=ET.tostring(tree,encoding='utf-8',xml_declaration=True)
    target.writestr(item,data)
- return output.getvalue()
+ return normalise_content_types(output.getvalue())
 
 def create(state,week,rows,metric,tables,filename):
  first=('Labour Report',['Name','Date','Charged hours',None,None,'Start','Finish','Payable hours','Lunch hours','Notes'],labour_rows(state,week,rows,metric))

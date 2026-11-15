@@ -61,15 +61,25 @@ def week_rows(state, week):
             if not request and entry.get('leave'):request=entry['leave']
             status=request['leaveType'] if request else entry['status']
             hours=float(request['hoursPerDay'] if request else entry['hours'])
+            leave_record=request if request else entry
+            category='' if status=='Work' else leave.type_category(status)
+            leave_hours=0 if status=='Work' else hours
+            leave_paid=(leave_record.get('paid') if isinstance(leave_record.get('paid'),bool) else leave.type_paid(status))
             work=hours if status=='Work' else 0
             if request and request.get('startTime') and entry['status']=='Work':work=float(entry['hours'])
-            sick=hours if status=='Sick leave' else 0
-            annual=hours if status=='Annual leave' else 0
-            other=hours if status=='Other' else 0
-            other_description=(request if request else entry).get('other','') if status=='Other' else ''
-            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'otherDescription':other_description,'workFrom':entry.get('start','') if entry['status']=='Work' else '','workTo':entry.get('finish','') if entry['status']=='Work' else '','workLunch':entry.get('lunchHours',0) if entry['status']=='Work' else 0,'leaveLunch':request.get('lunchHours') if request else None,'leaveFrom':request.get('startTime','') if request else '','leaveTo':request.get('endTime','') if request else '','paid':work+sick,'all':work+sick+annual+other,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
+            sick=leave_hours if category=='sick' else 0
+            annual=leave_hours if category=='annual' else 0
+            other=leave_hours if category=='other' else 0
+            other_description=leave_record.get('other','') if category=='other' else ''
+            days.append({'date':date,'work':work,'sick':sick,'annual':annual,'other':other,'otherDescription':other_description,'leaveLabel':status if leave_hours else '','leavePaid':bool(leave_paid) if leave_hours else False,'leaveCategory':category,'leaveHours':leave_hours,'workFrom':entry.get('start','') if entry['status']=='Work' else '','workTo':entry.get('finish','') if entry['status']=='Work' else '','workLunch':entry.get('lunchHours',0) if entry['status']=='Work' else 0,'leaveLunch':request.get('lunchHours') if request else None,'leaveFrom':request.get('startTime','') if request else '','leaveTo':request.get('endTime','') if request else '','paid':work+(leave_hours if leave_paid else 0),'all':work+leave_hours,'approvedLeave':bool(request),'note':notes.get(key,{}).get(date,entry.get('notes',''))})
         rows.append({'name':name,'submitted':bool(sheet),'days':days,'onCall':bool(sheet and sheet.get('onCall') is True),'weeklyNote':timesheets.weekly_note(sheet),'chargedHours':[charged.get(key,{}).get('days',{}).get(date) for date in dates]})
     return rows
+
+LEGACY_LEAVE_LABELS={'Annual leave':'Annual','Sick leave':'Sick','Other':'Other'}
+
+def leave_label(day):
+    value=str(day.get('leaveLabel') or '')
+    return LEGACY_LEAVE_LABELS.get(value,value)
 
 def read(state,week,comparison=None):
     start=week_date(week)
@@ -189,9 +199,9 @@ def pdf(state,data):
     styles['Normal'].fontSize=8;styles['Normal'].leading=10
     styles.add(ParagraphStyle(name='Cell',fontName='Helvetica',fontSize=8,leading=10))
     styles.add(ParagraphStyle(name='Hours',parent=styles['Cell'],alignment=TA_CENTER))
-    title='Weekly work and sick hours' if mode=='work' else 'Weekly work and leave hours'
+    title='Weekly work and paid leave hours' if mode=='work' else 'Weekly work and all leave hours'
     def para(text,style='Cell'): return Paragraph(escape(text).replace('\n','<br/>'),styles[style])
-    story=[Paragraph('Trident Community Equipment',styles['Title']),Paragraph(title,styles['Heading2']),Paragraph('Week starting '+day_label(week),styles['Normal']),Spacer(1,10),para('Work and sick hours count toward the total. Annual and other leave are shown separately.' if mode=='work' else 'Totals include work, sick, annual and other approved leave.'),Spacer(1,10)]
+    story=[Paragraph('Trident Community Equipment',styles['Title']),Paragraph(title,styles['Heading2']),Paragraph('Week starting '+day_label(week),styles['Normal']),Spacer(1,10),para('Work and paid leave count toward the total. Unpaid leave is shown separately.' if mode=='work' else 'Totals include work and all approved leave.'),Spacer(1,10)]
     dates=[(week_date(week)+dt.timedelta(days=i)).isoformat() for i in range(7)]
     header=[para('Staff member')]+[para(dt.date.fromisoformat(d).strftime('%a\n%d/%m'),'Hours') for d in dates]+[para('Total','Hours')]
     cells=[header]
@@ -199,13 +209,14 @@ def pdf(state,data):
         values=[para(row['name'])]
         for day in row['days']:
             text=number(day[metric])
-            for kind,label in [('sick','Sick'),('annual','Annual'),('other','Other')]:
-                if day[kind]: text+='\n'+label+' '+number(day[kind])+'h'
+            if day.get('leaveHours'):text+='\n'+leave_label(day)+' '+number(day['leaveHours'])+'h'
             values.append(para(text,'Hours'))
         total_text=number(sum(d[metric] for d in row['days']))
-        for kind,label in [('sick','Sick'),('annual','Annual'),('other','Other')]:
-            total=sum(d[kind] for d in row['days'])
-            if total: total_text+='\n'+label+' '+number(total)+'h'
+        leave_totals={}
+        for day in row['days']:
+            if day.get('leaveHours'):
+                key=leave_label(day);leave_totals[key]=leave_totals.get(key,0)+day['leaveHours']
+        for key,total in leave_totals.items():total_text+='\n'+key+' '+number(total)+'h'
         values.append(para(total_text,'Hours'));cells.append(values)
         charged=row['chargedHours'];cells.append([para(row['name']+' — Charged hours')]+[para(number(value) if value is not None else '—','Hours') for value in charged]+[para(number(sum(value or 0 for value in charged)),'Hours')])
     totals=[sum(r['days'][i][metric] for r in rows) for i in range(7)]
@@ -270,7 +281,7 @@ def period_pdf(state,data):
     if mode not in ('work','all'):raise Problem(400,'Choose a report type.')
     metric='all' if mode=='all' else 'paid';styles=getSampleStyleSheet();output=io.BytesIO();styles['Normal'].fontSize=8;styles['Normal'].leading=10
     def cell(text):return Paragraph(escape(str(text)),styles['Normal'])
-    story=[Paragraph('Trident - Selected week averages',styles['Title']),cell(day_label(result['start'])+' to '+day_label(result['end'])+' ('+str(result['weeks'])+' weeks)'),Spacer(1,10),cell('Payable hours: '+('work and all leave' if mode=='all' else 'work and sick hours')+'. Weekly averages divide saved totals by all '+str(result['weeks'])+' selected weeks, including weeks with no records.'),Spacer(1,12)]
+    story=[Paragraph('Trident - Selected week averages',styles['Title']),cell(day_label(result['start'])+' to '+day_label(result['end'])+' ('+str(result['weeks'])+' weeks)'),Spacer(1,10),cell('Payable hours: '+('work and all leave' if mode=='all' else 'work and paid leave')+'. Weekly averages divide saved totals by all '+str(result['weeks'])+' selected weeks, including weeks with no records.'),Spacer(1,12)]
     cells=[[cell(x) for x in ['Technician','Payable total','Charged total','Average payable / week','Average charged / week','Payable weeks recorded','Charged weeks recorded']]]
     totals=[0]*4
     for row in result['rows']:

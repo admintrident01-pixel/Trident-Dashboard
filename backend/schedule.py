@@ -13,7 +13,7 @@ def leave_blocks(state,date,include_pending=False):
 
     blocks=[]
 
-    start=state.get('timeSettings',{}).get('start','08:00')
+    start=state.get('timeSettings',{}).get('start','07:30')
 
     try: default_start=minutes(start)
 
@@ -31,11 +31,13 @@ def leave_blocks(state,date,include_pending=False):
 
         start_minute=leave.time_minutes(request['startTime']) if request.get('startTime') else min(default_start,1440-duration)
 
+        leave_type=request.get('leaveType') or 'Leave'
         blocks.append({'id':'leave:'+request['id']+':'+date,'source':'leave','date':date,'technician':request['technician'],
 
                        'start':f'{start_minute//60:02d}:{start_minute%60:02d}','duration':duration,'hoursPerDay':request['hoursPerDay'],
 
-                       'leaveStatus':request.get('leaveStatus','Approved'),'client':'Pending approval · Leave' if request.get('leaveStatus')=='Pending' else 'On leave','address':f"{request['hoursPerDay']:g} hours",'type':'Pending leave' if request.get('leaveStatus')=='Pending' else 'Approved leave','timing':'fixed','cancelled':False})
+                       'leaveStatus':request.get('leaveStatus','Approved'),'leaveType':leave_type,'otherDescription':request.get('other','') if leave.type_category(leave_type)=='other' else '',
+                       'client':'Pending approval · Leave' if request.get('leaveStatus')=='Pending' else 'On leave','address':f"{request['hoursPerDay']:g} hours",'type':leave_type,'timing':'fixed','cancelled':False})
 
     return blocks
 
@@ -242,7 +244,7 @@ def read(state,date,fast=False):
 
     names.sort(key=lambda name:types.get(name,'technician')=='office')
 
-    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date,cache_only=True) if fast else schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'lunchShading':{'start':settings(state)['lunchStart'],'duration':30},'publicHolidays':settings(state)['publicHolidays'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'columnWidths':settings(state)['columnWidths'],'workHours':copy.deepcopy(state.get('timeSettings',{'start':'08:00','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date,cache_only=True) if fast else travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
+    return {'date':date,'depotAddress':settings(state)['workshopAddress'],'routeTotals':schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date,cache_only=True) if fast else schedule_routes.itinerary_totals(appointments,names,settings(state)['workshopAddress'],state.get('travelBlocks',{}),date),'quickNotes':settings(state)['quickNotes'],'lunchStart':settings(state)['lunchStart'],'lunchShading':{'start':settings(state)['lunchStart'],'duration':30},'publicHolidays':settings(state)['publicHolidays'],'appointmentTypes':settings(state)['appointmentTypes'],'typeDefaults':settings(state).get('typeDefaults',{}),'clientSearchUrlTemplate':settings(state)['clientSearchUrlTemplate'],'noteBlocks':schedule_notes.blocks(state,date),'technicians':names,'staffTypes':types,'columnWidths':settings(state)['columnWidths'],'workHours':copy.deepcopy(state.get('timeSettings',{'start':'07:30','finish':'16:00'})),'travelBlocks':(travels:=travel_blocks(state,date,cache_only=True) if fast else travel_blocks(state,date)),'connections':schedule_links.connections(state,date,travels) if schedule_links.active(state) else [],'appointments':sorted(appointments,key=lambda a:(a['start'],a['client'])),'leaveBlocks':blocks,'lunchBlocks':lunch_blocks(state,date)}
 
 
 

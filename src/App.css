@@ -137,3 +137,13 @@
 .portal-account .portal-pin{gap:5px;padding:4px 7px;min-width:58px;font-size:12px;white-space:nowrap}
 .portal-pin[aria-pressed=true]{border-color:#e6bc64}
 .trident-portal .portal-account .portal-pin span{display:inline}
+.portal-mobile-modules{display:none}
+@media(max-width:760px){
+ .trident-portal .portal-header>.portal-desktop-nav{display:none}
+ .trident-portal .portal-header>.portal-mobile-modules{display:block;order:3;flex:0 0 100%;width:100%;position:relative}
+ .portal-mobile-modules>summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;list-style:none}
+ .portal-mobile-modules>summary>span{flex:1}
+ .portal-mobile-modules>summary::-webkit-details-marker{display:none}
+ .trident-portal .portal-header .portal-mobile-modules>nav{position:absolute;top:100%;left:0;right:0;display:grid;grid-template-columns:1fr 1fr;gap:4px;height:auto;max-height:calc(100dvh - 112px);overflow:auto;padding:8px;z-index:100;white-space:normal;mask-image:none;-webkit-mask-image:none}
+ .trident-portal .portal-header .portal-mobile-modules>nav>button{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;height:auto;text-align:left;white-space:normal;padding:9px 12px}
+}

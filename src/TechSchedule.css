@@ -351,3 +351,48 @@
 }
 .trident-portal .tech-schedule input.schedule-select-block:focus-visible{outline:2px solid #1669c1;outline-offset:1px}
 .trident-portal .tech-schedule .schedule-appointment:has(.schedule-select-block){padding-left:22px}
+
+/* Content clips independently of the expanding Deep Current card surface. */
+.schedule-appointment{container-type:size;container-name:booking}
+.schedule-card-content{height:100%;min-height:0;min-width:0;overflow:hidden;position:relative;z-index:1}
+.schedule-card-content>.schedule-client-line{line-height:13px}
+.schedule-card-content>.schedule-client-address{font-size:10px;line-height:13px}
+.schedule-card-content>.schedule-booking-tags{flex-wrap:nowrap;max-width:100%;height:16px}
+.schedule-card-content .schedule-contact-icons{min-width:0;overflow:hidden}
+.schedule-card-content>.schedule-client-notes,.schedule-card-content>.schedule-team-label{line-height:13px}
+@container booking (max-height:48px){
+ .schedule-card-content>.schedule-client-address,.schedule-card-content>.schedule-client-notes,.schedule-card-content>.schedule-team-label{display:none}
+}
+@container booking (max-height:28px){
+ .schedule-card-content>.schedule-booking-tags{display:none}
+}
+.trident-portal .tech-schedule .schedule-card-actions{
+ position:absolute;right:38px;top:0;display:grid;place-items:center;z-index:12;
+ width:18px;height:17px;min-height:0;padding:0;border:0;
+ border-radius:var(--td-radius-sm);background:var(--td-surface);color:var(--td-navy);
+ opacity:0
+}
+.schedule-appointment:is(:hover,:focus-within,.is-selected) .schedule-card-actions{opacity:1}
+.schedule-appointment:is(:hover,:focus-within,.is-selected) .schedule-card-content>.schedule-client-line{padding-right:56px}
+.schedule-card-actions:focus-visible{outline:2px solid var(--td-teal);outline-offset:1px}
+.schedule-detail-preview dl{display:grid;grid-template-columns:100px minmax(0,1fr);gap:10px 16px;font-size:13px;line-height:1.5}
+.schedule-detail-preview dt{font-weight:600;color:var(--td-muted)}
+.schedule-detail-preview dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.schedule-detail-preview>p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.5}
+.schedule-view-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 5px;font-size:11px;position:relative;z-index:30}
+.schedule-date-caption{margin:0 auto 0 0;color:var(--td-muted);font-weight:600}
+.trident-portal .tech-schedule .schedule-view-tools>button{display:inline-flex;align-items:center;gap:5px;min-height:26px;padding:3px 7px;font-size:11px}
+.schedule-view-help{position:relative}
+.schedule-view-help summary{display:flex;align-items:center;gap:5px;padding:5px 7px;list-style:none;color:var(--td-navy)}
+.schedule-view-help summary::-webkit-details-marker{display:none}
+.schedule-view-help>div{position:absolute;right:0;top:100%;width:min(370px,calc(100vw - 28px));max-height:55dvh;overflow:auto;padding:12px 14px;border:1px solid var(--td-line);border-radius:var(--td-radius);background:var(--td-surface);box-shadow:var(--td-shadow-2);color:var(--td-ink);font-size:12px;line-height:1.5}
+.schedule-view-help p{margin:0 0 10px}.schedule-view-help p:last-child{margin-bottom:0}
+.schedule-context-popup{overscroll-behavior:contain}
+.trident-portal .tech-schedule .schedule-context-popup button{white-space:normal}
+.trident-portal .tech-schedule .schedule-context-popup button>.app-icon{flex:none}
+@media(hover:none){.schedule-card-actions{opacity:1}.schedule-card-content>.schedule-client-line{padding-right:56px}}
+@media(max-width:650px){
+ .schedule-view-tools{gap:5px}.schedule-date-caption{flex-basis:100%}
+ .schedule-view-help{margin-left:auto}
+ .schedule-detail-preview dl{grid-template-columns:1fr;gap:3px}.schedule-detail-preview dd{margin-bottom:8px}
+}

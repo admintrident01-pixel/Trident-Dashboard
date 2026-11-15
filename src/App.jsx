@@ -30,6 +30,8 @@ const TechSchedule=lazy(()=>import('./TechSchedule'))
 const OfficeFiles=lazy(()=>import('./OfficeFiles'))
 const OnCallRoster=lazy(()=>import('./OnCallRoster'))
 
+const modules=[['my-day','My day'],['quotes','Quotes'],['schedule','Tech schedule'],['oncall','On call'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources'],['workspace','Reminders']]
+
 const localMode=import.meta.env.DEV&&import.meta.env.VITE_LOCAL_DEVELOPMENT==='true'
 
 const api=localMode?'http://127.0.0.1:18782':(import.meta.env.VITE_API_URL||'https://trident-quote-api-383423323438.australia-southeast1.run.app').replace(/\/$/,'')
@@ -44,6 +46,8 @@ export default function App(){
  const consumeIncoming=useCallback(()=>setIncomingJob(null),[])
  const [navigationMode,setNavigationMode]=useState(()=>{try{return localStorage.getItem('trident-navigation-mode')||'pinned'}catch{return 'pinned'}})
  const [navigationOpen,setNavigationOpen]=useState(false)
+ const mobileModules=useRef(null)
+ useEffect(()=>{const close=e=>{const menu=mobileModules.current;if(menu?.open&&!menu.contains(e.target))menu.open=false};window.addEventListener('pointerdown',close);return()=>window.removeEventListener('pointerdown',close)},[])
  const inFlightReads=useRef(new Map())
  const navigationVisible=navigationMode==='pinned'||navigationOpen
  function navigationPreference(mode){setNavigationMode(mode);setNavigationOpen(false);try{localStorage.setItem('trident-navigation-mode',mode)}catch{/* Keep this window's preference. */}}
@@ -100,7 +104,7 @@ export default function App(){
 
   if(!session||page!=='quotes'||document)return;let cancelled=false
 
-  fetch('/quote-builder.html?v=20261114d',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the quote builder.');return r.text()}).then(html=>{
+  fetch('/quote-builder.html?v=20261115a',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the quote builder.');return r.text()}).then(html=>{
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin}).replace(/</g,'\\u003c')
 
@@ -116,7 +120,7 @@ export default function App(){
 
   if(!session||page!=='timesheet'||timesheetDocument)return;let cancelled=false
 
-  fetch('/timesheet.html?v=20261114c',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
+  fetch('/timesheet.html?v=20261115a',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin,pilot:myDayEnabled(session)}).replace(/</g,'\\u003c')
 
@@ -152,7 +156,7 @@ export default function App(){
 
  const openLocal=async()=>{try{setError('');const r=await fetch(`${api}/api/dev-session`);const data=await r.json();if(!r.ok)throw Error(data.error||'Start the local development server first.');setSession(data)}catch(e){setError(e.message)}}
 
- const navigate=next=>{if(next===page)return;if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Save them before leaving. Leave anyway?'))return;if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?'))return;visitPage(next);window.scrollTo({top:0,behavior:'instant'})}
+ const navigate=next=>{if(mobileModules.current?.open){mobileModules.current.open=false;mobileModules.current.querySelector('summary')?.focus()}if(next===page)return;if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Save them before leaving. Leave anyway?'))return;if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?'))return;visitPage(next);window.scrollTo({top:0,behavior:'instant'})}
  useEffect(()=>{const warn=e=>{if(timesheetFrame.current?.contentWindow.tridentTimesheetHasUnsavedChanges?.()){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[])
  function importAppointment(job,notes,allocation={}){if(!canAccessPage('job-import',session))return;setIncomingJob({id:job.transferId,fields:{...appointmentImport(job,notes),jobImportId:allocation.jobImportId||''}});navigate('schedule')}
  function reviewImportedJob(id){if(!canAccessPage('job-import',session))return;window.open(location.pathname+'#job-import?job='+encodeURIComponent(id),'_blank','noopener')}
@@ -169,7 +173,11 @@ export default function App(){
 
    <button className="portal-brand" aria-label="Trident home" onClick={()=>navigate(homePage(session))}><img src="/trident-logo.png" alt="Trident Community Equipment"/></button>
 
-   <nav aria-label="Main navigation">{[['my-day','My day'],['quotes','Quotes'],['schedule','Tech schedule'],['oncall','On call'],['timesheet','Time sheet'],['leave','Leave forms'],['reports','Labour payables'],['vehicles','Vehicle checks'],['stock','Stock'],['settings','Settings'],['office','Shared resources'],['workspace','Reminders']].filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
+   <nav className="portal-desktop-nav" aria-label="Main navigation">{modules.filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}</button>)}</nav>
+   <details className="portal-mobile-modules" ref={mobileModules} onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();e.currentTarget.open=false;e.currentTarget.querySelector('summary')?.focus()}}}>
+    <summary aria-label={'Modules · '+(modules.find(([key])=>key===page)?.[1]||'My day')}><Icon name="grid" size={17}/><span>{modules.find(([key])=>key===page)?.[1]||'My day'}</span><Icon name="chevron-down" size={16}/></summary>
+    <nav aria-label="Choose module">{modules.filter(([key])=>allowed(key)).map(([key,name])=><button key={key} aria-current={page===key?'page':undefined} onClick={()=>navigate(key)}>{name}{page===key&&<Icon name="check" size={16}/>}</button>)}</nav>
+   </details>
 
    <div className="portal-account"><span>{session.email} · {isAdmin?'Admin':'Technician'}</span><button className="portal-pin" aria-label={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} aria-pressed={navigationMode==='pinned'} title={navigationMode==='pinned'?'Unpin navigation':'Pin navigation'} onClick={()=>navigationPreference(navigationMode==='pinned'?'hidden':'pinned')}><Icon name={navigationMode==='pinned'?'custom-pin-off':'custom-pin'} size={16}/><span>{navigationMode==='pinned'?'Unpin':'Pin'}</span></button><button className="portal-hide" aria-label="Hide navigation" title="Hide navigation" onClick={()=>navigationPreference('hidden')}><Icon name="chevron-up" size={14}/></button><button onClick={signOut}>Sign out</button></div>
 

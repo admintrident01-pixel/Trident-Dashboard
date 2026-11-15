@@ -37,7 +37,19 @@
   --td-schedule-shadow:0 1px 2px rgba(11,34,57,.10),inset 0 1px 0 rgba(255,255,255,.22);
   --td-schedule-hover-shadow:0 2px 3px rgba(11,34,57,.10),0 8px 18px rgba(11,34,57,.16),0 0 0 1px rgba(159,205,209,.48),0 0 16px rgba(14,124,134,.12),inset 0 1px 0 rgba(255,255,255,.82),inset 0 -1px 0 rgba(11,34,57,.04);
   --td-schedule-pressed-shadow:inset 0 2px 6px rgba(11,34,57,.14),inset 0 1px 0 rgba(255,255,255,.44),0 1px 2px rgba(11,34,57,.08);
-  --td-schedule-selection:#1669c1;
+  --td-schedule-selection:var(--td-teal);
+  --td-field-line:#c8d7e6;
+  --td-field-hover:#9fb9ce;
+  --td-touch:44px;
+  --td-space-1:4px;
+  --td-space-2:8px;
+  --td-space-3:12px;
+  --td-space-4:16px;
+  --td-space-5:24px;
+  --td-logo-black:#202020;
+  --td-amber-hover:#ffb867;
+  --td-amber-line:#c67a26;
+  --td-amber-ink:#20180c;
   --td-schedule-select-top:1.5px;
   --td-schedule-rail-width:18px;
   --td-schedule-zoom:2px;
@@ -59,7 +71,7 @@
 
   /* ---------- Shell ---------- */
   .trident-portal .portal-header{
-    background:linear-gradient(96deg,#000 0,#000 136px,#161616 190px,#060c13 250px,var(--td-ink) 360px,var(--td-navy) 64%,var(--td-navy-2) 100%);
+    background:linear-gradient(96deg,var(--td-logo-black) 0,var(--td-logo-black) 136px,#161616 190px,#060c13 250px,var(--td-ink) 360px,var(--td-navy) 64%,var(--td-navy-2) 100%);
     border-bottom:1px solid rgba(255,255,255,.10);
     box-shadow:0 6px 22px rgba(11,34,57,.22);
   }
@@ -114,7 +126,7 @@
   body.trident-portal .portal-header :is(button,a):focus-visible{outline:2px solid var(--td-amber);outline-offset:2px;box-shadow:0 0 0 4px rgba(224,138,52,.16)}
 
   /* ---------- Buttons ---------- */
-  body.trident-portal :is(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) button,
+  body.trident-portal :where(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) button,
   body.trident-quote button,
   body.trident-timesheet button{
     appearance:none;
@@ -132,7 +144,7 @@
     cursor:pointer;
     transition:background-color var(--td-fast) var(--td-ease),border-color var(--td-fast) var(--td-ease),box-shadow var(--td-fast) var(--td-ease),color var(--td-fast) var(--td-ease),transform var(--td-fast) var(--td-ease);
   }
-  body.trident-portal :is(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) button:hover:not(:disabled),
+  body.trident-portal :where(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) button:hover:not(:disabled),
   body.trident-quote button:hover:not(:disabled),
   body.trident-timesheet button:hover:not(:disabled){
     background:var(--td-surface-2);
@@ -141,10 +153,10 @@
     box-shadow:0 3px 10px rgba(11,34,57,.09);
     transform:translateY(-1px);
   }
-  body.trident-portal :is(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) button:active:not(:disabled),
+  body.trident-portal :where(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) button:active:not(:disabled),
   body.trident-quote button:active:not(:disabled),
   body.trident-timesheet button:active:not(:disabled){transform:translateY(0) scale(.985);box-shadow:inset 0 1px 2px rgba(11,34,57,.12)}
-  body.trident-portal :is(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) button:focus-visible,
+  body.trident-portal :where(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) button:focus-visible,
   body.trident-quote :is(button,input,select,textarea,summary,a):focus-visible,
   body.trident-timesheet :is(button,input,select,textarea,summary,a):focus-visible,
   body.trident-portal :is(input,select,textarea,summary,a):focus-visible{
@@ -152,7 +164,7 @@
     outline-offset:2px;
     box-shadow:var(--td-ring);
   }
-  body.trident-portal :is(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard) button:disabled,
+  body.trident-portal :where(.workspace-page,.portal-home,.my-day,.settings-page,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard) button:disabled,
   body.trident-quote button:disabled,
   body.trident-timesheet button:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
 
@@ -223,7 +235,7 @@
   body.trident-portal :is(.workspace-page,.settings-page,.my-day,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea),
   body.trident-quote :is(input:not([type=checkbox]):not([type=radio]),select,textarea),
   body.trident-timesheet :is(input:not([type=checkbox]):not([type=radio]),select,textarea){
-    border:1px solid #c8d7e6;
+    border:1px solid var(--td-field-line);
     border-radius:var(--td-radius);
     background-color:var(--td-surface);
     color:var(--td-ink);
@@ -236,7 +248,7 @@
   }
   body.trident-portal :is(.workspace-page,.settings-page,.my-day,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea):hover:not(:disabled):not(:focus),
   body.trident-quote :is(input:not([type=checkbox]):not([type=radio]),select,textarea):hover:not(:disabled):not(:focus),
-  body.trident-timesheet :is(input:not([type=checkbox]):not([type=radio]),select,textarea):hover:not(:disabled):not(:focus){border-color:#9fb9ce}
+  body.trident-timesheet :is(input:not([type=checkbox]):not([type=radio]),select,textarea):hover:not(:disabled):not(:focus){border-color:var(--td-field-hover)}
   body.trident-portal :is(.workspace-page,.settings-page,.my-day,.tech-schedule,.oncall-page,.stock-page,.office-page,.vehicle-page,.reminder-dashboard,.staff-setup-dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea):focus,
   body.trident-quote :is(input:not([type=checkbox]):not([type=radio]),select,textarea):focus,
   body.trident-timesheet :is(input:not([type=checkbox]):not([type=radio]),select,textarea):focus{
@@ -675,6 +687,8 @@
     border:2px solid rgba(14,124,134,.22);border-top-color:var(--td-teal);
     animation:td-spin .72s linear infinite
   }
+  .td-loading-inline{display:flex;align-items:center;gap:var(--td-space-2);color:var(--td-muted);font-size:12px}
+  .td-loading-inline::before{content:"";width:16px;height:16px;flex:0 0 auto;border:2px solid var(--td-teal-line);border-top-color:var(--td-teal);border-radius:50%;animation:td-spin .72s linear infinite}
   .td-boot{
     position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:15px;
@@ -730,4 +744,82 @@
     body.trident-timesheet.timesheet-form .actions .btn{flex:1 1 100%}
     body.trident-portal .my-day button{min-height:44px}
   }
+}
+
+/* Shared refinements: explicit variants and control families win over defaults.
+   This sheet follows head/module styles; component CSS owns layout geometry. */
+@media screen{
+  body.trident-portal button.td-accent,
+  body.trident-portal .workspace-page button.td-accent{
+    background:linear-gradient(180deg,var(--td-amber-2),var(--td-amber));color:var(--td-amber-ink);border-color:var(--td-amber-line);font-weight:700;
+  }
+  body.trident-portal button.td-accent:hover:not(:disabled),
+  body.trident-portal .workspace-page button.td-accent:hover:not(:disabled){background:linear-gradient(180deg,var(--td-amber-hover),var(--td-amber-2));color:var(--td-amber-ink);border-color:var(--td-amber-line)}
+  body.trident-portal :is(.workspace-page,.my-day,.reminder-dashboard) button:is(.table-sort,.history-sort),
+  body.trident-quote #homePage button.history-sort{
+    border:0;border-radius:0;background:transparent;box-shadow:none;padding:2px 0;min-height:0;color:var(--td-navy);transform:none;
+  }
+  body.trident-portal :is(.workspace-page,.my-day,.reminder-dashboard) button:is(.table-sort,.history-sort):hover:not(:disabled),
+  body.trident-quote #homePage button.history-sort:hover:not(:disabled){background:transparent;box-shadow:none;transform:none;color:var(--td-teal-deep)}
+  body.trident-portal :is(.workspace-page,.my-day,.reminder-dashboard) button:is(.table-sort,.history-sort):focus-visible{outline:2px solid var(--td-teal);outline-offset:2px;box-shadow:var(--td-ring)}
+  body.trident-portal :is(.staff-search,.schedule-search-input){border:1px solid var(--td-field-line);border-radius:999px;background:var(--td-surface);color:var(--td-muted);box-shadow:none;padding:0 var(--td-space-3);gap:var(--td-space-2)}
+  body.trident-portal :is(.staff-search,.schedule-search-input):hover{border-color:var(--td-field-hover)}
+  body.trident-portal :is(.staff-search,.schedule-search-input):focus-within{border-color:var(--td-teal);box-shadow:var(--td-ring)}
+  body.trident-portal :is(.staff-search,.schedule-search-input) input[type=search],
+  body.trident-portal :is(.staff-search,.schedule-search-input) input[type=search]:is(:hover,:focus){border:0;background:transparent;box-shadow:none;outline:0;border-radius:0;min-width:0}
+  body.trident-portal .stock-page input[type=search],body.trident-quote input[type=search]{border-radius:999px}
+  body.trident-portal .schedule-selection-box{border-color:var(--td-teal);background:color-mix(in srgb,var(--td-teal) 15%,transparent)}
+  body.trident-portal .tech-schedule .schedule-contact-mark.is-unmarked{opacity:1;color:var(--td-muted)}
+  body.trident-portal .tech-schedule .schedule-contact-mark.is-marked{opacity:1;color:var(--td-teal-deep)}
+  body.trident-portal .tech-schedule .schedule-zoom{opacity:1;background:var(--td-surface);border-color:var(--td-line-strong);border-radius:var(--td-radius);box-shadow:var(--td-shadow-2)}
+  body.trident-portal .tech-schedule .schedule-zoom button{color:var(--td-navy)}
+  body.trident-portal .tech-schedule .schedule-context-popup{border-color:var(--td-line);border-radius:var(--td-radius);background:var(--td-surface);box-shadow:var(--td-shadow-3);color:var(--td-ink)}
+  body.trident-portal .tech-schedule .schedule-context-popup button{border-radius:var(--td-radius-sm);color:var(--td-ink);box-shadow:none;transform:none}
+  body.trident-portal .tech-schedule .schedule-context-popup button:is(:hover,:focus-visible){background:var(--td-teal-soft);color:var(--td-teal-deep);transform:none;box-shadow:inset 3px 0 var(--td-teal)}
+  body.trident-portal .tech-schedule .schedule-context-popup button:focus-visible{outline:2px solid var(--td-teal);outline-offset:-2px}
+  body.trident-portal .tech-schedule .schedule-context-popup button.schedule-popup-delete{color:var(--td-danger)}
+  body.trident-portal .tech-schedule .schedule-context-popup button.schedule-popup-delete:is(:hover,:focus-visible){background:var(--td-danger-soft)}
+  body.trident-portal .tech-schedule .schedule-context-popup button:disabled{opacity:.55;box-shadow:none;transform:none}
+  body.trident-portal :is(.page-heading,.office-heading) h1{color:var(--td-navy);letter-spacing:-.02em}
+  body.trident-portal :is(.page-heading,.office-heading) p{color:var(--td-muted);line-height:1.5}
+  body.trident-portal :is(.table-scroll,.fleet-scroll,.history-table-wrap){scrollbar-gutter:stable;border-color:var(--td-line)}
+  body.trident-portal .portal-mobile-modules summary{display:flex;align-items:center;gap:var(--td-space-2);color:var(--td-surface);border:1px solid var(--td-line-strong);border-radius:var(--td-radius-sm);padding:var(--td-space-2) var(--td-space-3);cursor:pointer}
+  body.trident-portal .portal-mobile-modules summary:is(:hover,:focus-visible){background:var(--td-navy-2);outline:2px solid var(--td-amber);outline-offset:2px}
+  body.trident-portal .portal-mobile-modules[open] summary{background:var(--td-navy)}
+  body.trident-portal .portal-mobile-modules nav{background:var(--td-surface);border:1px solid var(--td-line);border-radius:var(--td-radius);box-shadow:var(--td-shadow-3);padding:var(--td-space-2)}
+  body.trident-portal .portal-mobile-modules nav button{color:var(--td-navy);background:transparent;border-radius:var(--td-radius-sm);border:0;text-align:left;min-height:var(--td-touch)}
+  body.trident-portal .portal-mobile-modules nav button:is(:hover,:focus-visible){background:var(--td-teal-soft);color:var(--td-teal-deep);outline:2px solid var(--td-teal);outline-offset:-2px}
+  body.trident-portal .portal-mobile-modules nav button[aria-current=page]{background:var(--td-teal-soft);color:var(--td-teal-deep);box-shadow:inset 3px 0 var(--td-teal)}
+  body.trident-portal .stock-flow-compact button[aria-pressed=true]{background:var(--td-navy);color:var(--td-surface);border-color:var(--td-navy);box-shadow:inset 0 -3px var(--td-amber)}
+  body.trident-portal .stock-flow-compact button{border-radius:999px}
+  body.trident-portal .stock-page button.stock-export-action{background:var(--td-surface);color:var(--td-navy);border-color:var(--td-line-strong);box-shadow:var(--td-shadow-1)}
+  @media(max-width:760px){
+    body.trident-portal .portal-header :is(.portal-brand,.portal-account button){min-height:var(--td-touch)}
+    body.trident-portal .portal-account button{min-width:var(--td-touch)}
+    body.trident-portal .portal-mobile-modules summary{min-height:var(--td-touch);box-sizing:border-box}
+    body.trident-portal .tech-schedule .schedule-toolbar :is(button,select,input:not([type=checkbox])),
+    body.trident-portal .tech-schedule .schedule-toolbar :is(.schedule-notices>summary,.schedule-history-actions button){min-height:var(--td-touch);height:var(--td-touch);max-height:none}
+    body.trident-portal .tech-schedule .schedule-toolbar :is(.schedule-search-button,.schedule-refresh,.schedule-date-controls button,.schedule-history-actions button){min-width:var(--td-touch);width:var(--td-touch);flex-basis:var(--td-touch);padding:0}
+    body.trident-portal .tech-schedule .schedule-toolbar .schedule-search-button{align-self:flex-start}
+    body.trident-portal .tech-schedule .schedule-cancelled-toggle{min-height:var(--td-touch)}
+    body.trident-portal .tech-schedule .schedule-column-headings .schedule-tech-name select{min-height:var(--td-touch);height:var(--td-touch)}
+    body.trident-portal .tech-schedule .schedule-zoom button{min-height:var(--td-touch);height:var(--td-touch);min-width:var(--td-touch)}
+    body.trident-portal .tech-schedule .schedule-context-popup button{min-height:var(--td-touch);white-space:normal}
+    body.trident-portal .tech-schedule .schedule-search-cancelled{min-height:var(--td-touch)}
+    body.trident-portal .tech-schedule :is(.schedule-dialog-heading,.schedule-search-heading) button{min-width:var(--td-touch);min-height:var(--td-touch)}
+    body.trident-portal .tech-schedule .schedule-form-actions button{min-height:var(--td-touch)}
+    body.trident-portal :is(.workspace-page,.my-day,.office-page) :is(.settings-actions,.history-pagination,.staff-list-footer) button{min-height:var(--td-touch)}
+  }
+  @media(max-width:600px){
+    body.trident-timesheet.timesheet-form .tablewrap table{min-width:0;width:100%}
+    body.trident-timesheet.timesheet-form .tablewrap{overflow:visible}
+    body.trident-timesheet.timesheet-form .tablewrap tr{border-color:var(--td-line);border-radius:var(--td-radius-lg);background:var(--td-surface);box-shadow:var(--td-shadow-1);padding:var(--td-space-3)}
+    body.trident-timesheet.timesheet-form .tablewrap td{border:0;min-width:0;padding:0}
+    body.trident-timesheet.timesheet-form .tablewrap td::before{color:var(--td-muted)}
+    body.trident-timesheet.timesheet-form .tablewrap td:nth-child(9){background:var(--td-teal-soft);border-radius:var(--td-radius-sm);color:var(--td-teal-deep);padding:var(--td-space-3)}
+    body.trident-timesheet.timesheet-form :is(input:not([type=radio]):not([type=checkbox]),select,textarea){min-height:var(--td-touch);font-size:16px}
+    body.trident-timesheet.timesheet-form .trident-time-entry .trident-time-period-button{min-height:var(--td-touch)!important;height:var(--td-touch)}
+    body.trident-timesheet.timesheet-form .timesheet-review-link{background:var(--td-surface-3);color:var(--td-navy);border-color:var(--td-line-strong);border-radius:var(--td-radius)}
+  }
+  @media(prefers-reduced-motion:reduce){.td-loading-inline::before{animation:none}}
 }

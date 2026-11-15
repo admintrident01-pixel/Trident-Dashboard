@@ -39,7 +39,7 @@ class LeaveDescriptions(unittest.TestCase):
  def test_sick_annual_and_zero_hour_notes_are_visible_in_main_excel_cells(self):
   self.days[1]={'status':'Annual leave','hours':8,'notes':'Annual note'};self.days[2]={'status':'Sick leave','hours':4,'notes':''};self.days[3]={'status':'Work','hours':0,'notes':'Zero hours note'}
   sheet=self.book(weekly_export.weekly(self.state,{'week':self.week}))['Labour Report']
-  self.assertIn('Annual 8h',sheet['H3'].value);self.assertIn('Annual note',sheet['H3'].value);self.assertEqual(sheet['H4'].value,'Sick 4h');self.assertEqual(sheet['H5'].value,'Zero hours note')
+  self.assertIn('Annual 8h',sheet['H3'].value);self.assertIn('Annual note',sheet['H3'].value);self.assertIn('Sick 4h',sheet['H4'].value);self.assertEqual(sheet['H5'].value,'Zero hours note')
  def test_weekly_and_selected_period_pdfs_keep_description_and_totals(self):
   for mode in ('all','work'):
    weekly=self.text(weekly_report.pdf(self.state,{'week':self.week,'mode':mode}));period=self.text(weekly_report.period_pdf(self.state,{'start':self.week,'end':self.week,'mode':mode}))

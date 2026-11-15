@@ -1,6 +1,9 @@
 import copy, datetime, decimal, re, uuid
 from zoneinfo import ZoneInfo
 from core import Problem
+from leave import TYPES as LEAVE_TYPES
+
+TIME_SHEET_STATUSES=('Work',)+LEAVE_TYPES
 
 DEFAULT_NAMES = ['Scott Yearbury', 'Daryll Anderson', 'Bala Ganesh Venkatesan', 'Andrew Thomas', 'Rick Leef', 'Allan Burney', 'Joby Shearing', 'Jackie Gough']
 
@@ -88,11 +91,11 @@ def save(state, data, user=None, exclude_submission=None, exclude_draft=None, ch
         if not isinstance(day, dict):
             raise Problem(400, 'Invalid day entry.')
         status, method = day.get('status'), day.get('method')
-        if status not in ('Work', 'Annual leave', 'Sick leave', 'Other') or method not in ('direct', 'times'):
+        if status not in TIME_SHEET_STATUSES or method not in ('direct', 'times'):
             raise Problem(400, 'Choose a valid work/leave type and entry method.')
         if status != 'Work' and method != 'direct':
             raise Problem(400, 'Enter leave using Direct hours.')
-        other = text(day.get('other', ''), 'other leave description', 200, status == 'Other')
+        other = text(day.get('other', ''), 'other leave description', 200, str(status).startswith('Other'))
         notes = text(day.get('notes', ''), 'daily notes', 2000)
         start, finish = day.get('start', ''), day.get('finish', '')
         if method == 'times':

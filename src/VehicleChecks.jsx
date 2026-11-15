@@ -76,7 +76,7 @@ export default function VehicleChecks({request,active,isAdmin,technician,onManag
  async function submit(e){e.preventDefault();if(readonly||step!==2)return;setBusy(true);setError('');try{const r=await request('/api/vehicle-checks',{method:'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(form)});setData({...data,checks:[...data.checks.filter(c=>c.id!==r.data.check.id),r.data.check]});setEtag(r.etag);setForm(r.data.check);setScreen('dashboard');setMessage(form.id?'Vehicle check updated.':'Vehicle check submitted.')}catch(e){if(e.status===409){try{const r=await request('/api/vehicles');setData(r.data);setEtag(r.etag);e.message+=' The latest fleet has loaded; check the details and submit again.'}catch{/* Keep the shown fleet. */}}setError(e.message)}finally{setBusy(false)}}
 
 
- if(!data)return <main className="workspace-page"><h1>Vehicle checks</h1>{error?<p role="alert">{error}</p>:<p role="status">Loading vehicles…</p>}</main>
+ if(!data)return <main className="workspace-page"><h1>Vehicle checks</h1>{error?<p role="alert">{error}</p>:<p className="module-loading" role="status">Loading vehicles…</p>}</main>
 
  const visibleVehicles=data.activeVehicles||data.vehicles.filter(vehicle=>vehicle.active)
  const availableVehicles=isAdmin?visibleVehicles:visibleVehicles.filter(vehicle=>vehicle.driver.toLowerCase()===technician?.toLowerCase())

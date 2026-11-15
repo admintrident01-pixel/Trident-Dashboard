@@ -31,7 +31,7 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(len(schedule.read(state,self.booking['date'])['appointments']),2)
         self.assertTrue(schedule.overlaps(first,second))
     def test_schedule_includes_normal_work_hours(self):
-        self.assertEqual(schedule.read(self.state,'2027-02-01')['workHours'],{'start':'08:00','finish':'16:00'})
+        self.assertEqual(schedule.read(self.state,'2027-02-01')['workHours'],{'start':'07:30','finish':'16:00'})
         self.state['timeSettings']={'start':'07:30','finish':'16:15'}
         result=schedule.read(self.state,'2027-02-01')
         self.assertEqual(result['workHours'],self.state['timeSettings'])
@@ -163,9 +163,9 @@ class ScheduleTests(unittest.TestCase):
         state,request=leave.decide(state,{'id':request['id'],'revision':request['revision'],'status':'Approved'},self.user['email'])
         for date in ['2027-02-01','2027-02-02']:
             block=schedule.read(state,date)['leaveBlocks'][0]
-            self.assertEqual((block['technician'],block['start'],block['duration']),('Scott','08:00',480))
-            self.assertNotIn('reason',block);self.assertNotIn('leaveType',block)
-            self.assertEqual(block['type'],'Approved leave')
+            self.assertEqual((block['technician'],block['start'],block['duration']),('Scott','07:30',480))
+            self.assertNotIn('reason',block);self.assertEqual(block['leaveType'],'Sick leave')
+            self.assertEqual(block['type'],'Sick leave');self.assertEqual(block['otherDescription'],'')
         state,_=leave.decide(state,{'id':request['id'],'revision':request['revision'],'status':'Cancelled'},self.user['email'])
         self.assertEqual(schedule.read(state,'2027-02-01')['leaveBlocks'],[])
 
@@ -182,6 +182,10 @@ class ScheduleTests(unittest.TestCase):
 
     def test_leave_uses_default_start_and_handles_full_days(self):
         import leave
+        state,request=leave.create(self.state,{'technician':'Scott','leaveType':'Paid annual leave','startDate':'2027-02-01','endDate':'2027-02-01','hoursPerDay':8,'reason':'Test'})
+        state,_=leave.decide(state,{'id':request['id'],'revision':request['revision'],'status':'Approved'},self.user['email'])
+        block=schedule.read(state,'2027-02-01')['leaveBlocks'][0]
+        self.assertEqual((block['start'],block['duration']),('07:30',480))
         state={**self.state,'timeSettings':{'start':'07:30','finish':'16:00'}}
         state,request=leave.create(state,{'technician':'Scott','leaveType':'Annual leave','startDate':'2027-02-01','endDate':'2027-02-01','hoursPerDay':24,'reason':'Test'})
         state,_=leave.decide(state,{'id':request['id'],'revision':request['revision'],'status':'Approved'},self.user['email'])

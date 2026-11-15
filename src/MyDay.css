@@ -4,3 +4,4 @@
 .my-day-pilot .portal-header nav{overflow-x:auto!important;overflow-y:hidden!important;min-width:0;max-width:100%}
 
 .my-day-pilot .mobile-my-day-return button{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:8px 12px;border:1px solid #cbd9e9;border-radius:6px;background:#fff;color:#193d67;font:inherit;font-size:14px;line-height:20px;cursor:pointer}.my-day-pilot .mobile-my-day-return button:hover{background:#e7eff9;border-color:#91accb}.mobile-my-day-return button svg{flex-shrink:0}
+@media(min-width:651px){.trident-portal .my-day .my-day-dates{max-width:470px;grid-template-columns:38px minmax(150px,1fr) 38px auto}.trident-portal .my-day .my-day-dates input{min-height:36px}.trident-portal .my-day .my-day-dates button{min-height:36px}}
