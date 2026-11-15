@@ -13,11 +13,21 @@ assert.equal(context.payableHours({status:'Work',method:'times',start:'08:00',fi
 assert.equal(context.payableHours({status:'Annual leave',method:'direct',hours:4,leaveHours:4}),4)
 const fields={'.status':{value:'Work'},'.mode':{value:'direct'},'.direct':{},'.start':{},'.finish':{}}
 const row={querySelector:s=>fields[s],querySelectorAll:()=>[fields['.start'],fields['.finish']]}
-context.calc=()=>{};vm.runInContext(fn('modeChange')+fn('timeEntry'),context)
+context.calc=()=>{};vm.runInContext(fn('modeChange')+fn('timeEntry')+fn('lunchChange'),context)
 fields['.mode'].closest=()=>row
 context.timeEntry({closest:()=>row});assert.equal(fields['.mode'].value,'direct')
 fields['.status'].value='Annual leave';fields['.mode'].value='direct';context.timeEntry({closest:()=>row});assert.equal(fields['.mode'].value,'direct')
 console.log('Lunch calculations and automatic time-entry switching passed.')
+
+const lunchFields={'.status':{value:'Work'},'.mode':{value:'direct'},'.direct':{value:'8'},'.start':{value:'07:30'},'.finish':{value:'16:00'}}
+const lunchRow={querySelector:s=>lunchFields[s]}
+context.lunchChange({value:'paid',closest:()=>lunchRow})
+assert.equal(Number(lunchFields['.direct'].value),8.5)
+context.lunchChange({value:'unpaid',closest:()=>lunchRow})
+assert.equal(Number(lunchFields['.direct'].value),8)
+lunchFields['.direct'].value='9';context.lunchChange({value:'paid',closest:()=>lunchRow});assert.equal(Number(lunchFields['.direct'].value),9)
+lunchFields['.mode'].value='times';lunchFields['.direct'].value='8';context.lunchChange({value:'unpaid',closest:()=>lunchRow});assert.equal(Number(lunchFields['.direct'].value),8)
+console.log('Changing lunch updates matching direct paid hours by exactly 0.5 without changing custom or timed entries.')
 
 const defaultValues=html.match(/defaults=\[([^\]]+)\]/)[1].split(',').map(Number)
 assert.deepEqual(defaultValues,[8,8,8,8,8,0,0])

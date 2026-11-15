@@ -12,20 +12,25 @@ class TemplateExport(unittest.TestCase):
   self.state['users']={'staff@example.invalid':{'email':'staff@example.invalid','technician':'Scott Yearbury','active':True}}
   before=copy.deepcopy(self.state);book,cached=self.books();sheet=book['Labour Report']
   self.assertEqual(sheet['A2'].value,'Scott Yearbury <staff@example.invalid>');self.assertEqual(sheet['B2'].value.date(),dt.date(2027,2,1))
-  for cell,value in {'C2':'08:00','D2':'17:00','E2':8.5,'F2':.5}.items():self.assertEqual(sheet[cell].value,value)
-  self.assertEqual(sheet.max_column,7);self.assertIsNone(sheet['C3'].value)
-  self.assertEqual(sheet['G2'].data_type,'s');self.assertEqual(self.state,before)
+  for cell,value in {'C2':'08:00','D2':'17:00','E2':8.5,'F2':.5,'G2':0}.items():self.assertEqual(sheet[cell].value,value)
+  self.assertEqual(sheet.max_column,8);self.assertIsNone(sheet['C3'].value)
+  self.assertEqual(sheet['H2'].data_type,'s');self.assertEqual(self.state,before)
+ def test_direct_hours_keep_saved_start_and_finish(self):
+  state=copy.deepcopy(self.state);entry=next(iter(state['timesheets'].values()));day=entry['days'][0]
+  day.update(method='direct',hours=8.5,enteredHours=8.5,netDirectHours=True,unpaidLunch=True,lunchHours=.5,start='08:00',finish='17:00')
+  sheet=self.books(state)[0]['Labour Report']
+  self.assertEqual([sheet[cell].value for cell in ('C2','D2','E2','F2')],['08:00','17:00',8.5,.5])
  def test_subtotals_have_valid_formulas_and_correct_cached_values(self):
   book,cached=self.books();self.assertEqual(book.active['E9'].value,'=SUM(E2:E8)')
   self.assertEqual(cached.active['E9'].value,8.5)
  def test_missing_submission_is_not_an_invented_shift(self):
   self.state['timesheets']={};book,_=self.books();row=book.active
   for cell in ('C2','D2','E2','F2'):self.assertIsNone(row[cell].value)
-  self.assertIn('No submission',row['G2'].value)
+  self.assertIn('No submission',row['H2'].value)
  def test_other_leave_and_notes_preserved_without_private_request_reason(self):
   fixture=test_labour_leave_descriptions.LeaveDescriptions();fixture.setUp();self.week=fixture.week
   book,_=self.books(fixture.approved());sheet=book.active
-  self.assertEqual(sheet['E2'].value,8);self.assertIn(fixture.description,sheet['G2'].value)
+  self.assertEqual(sheet['E2'].value,8);self.assertIn(fixture.description,sheet['H2'].value)
   self.assertNotIn('PRIVATE REQUEST REASON',' '.join(str(c.value) for row in sheet for c in row))
  def test_uploaded_column_sizes_font_colours_and_margins(self):
   book,_=self.books();sheet=book.active
@@ -42,18 +47,14 @@ class TemplateExport(unittest.TestCase):
   self.assertTrue(sheet['A1'].font.bold);self.assertFalse(sheet['A2'].font.bold)
   self.assertEqual(sheet['B2'].number_format,'mm-dd-yy')
   self.assertEqual(sheet['E2'].data_type,'n')
-  self.assertEqual([sheet.cell(1,i).value for i in range(1,8)],['Name','Date','Start','Finish','Payable hours','Lunch hours','Notes'])
- def test_extra_fields_and_supporting_sheets_keep_their_existing_layout(self):
+  self.assertEqual([sheet.cell(1,i).value for i in range(1,9)],['Name','Date','Start','Finish','Payable hours','Lunch hours','Charged hours','Notes'])
+ def test_extra_fields_and_single_sheet_layout(self):
   sheet=self.books()[0].active
-  self.assertEqual(sheet.column_dimensions['G'].width,55)
-  self.assertEqual(sheet['C1'].value,'Start');self.assertEqual(sheet['G1'].value,'Notes')
+  self.assertEqual(self.books()[0].sheetnames,['Labour Report'])
+  self.assertEqual(sheet.column_dimensions['G'].width,16);self.assertEqual(sheet.column_dimensions['H'].width,55)
+  self.assertEqual(sheet['C1'].value,'Start');self.assertEqual(sheet['G1'].value,'Charged hours');self.assertEqual(sheet['H1'].value,'Notes')
   self.assertEqual(weekly_template.row_height(['Short name']),15)
   self.assertGreater(weekly_template.row_height(['x'*100]),15)
-  reference=openpyxl.load_workbook(io.BytesIO(weekly_template.template()))
-  book,_=self.books()
-  for name in book.sheetnames[1:]:
-   self.assertEqual(copy.copy(book[name]['A1'].font),copy.copy(reference[name]['A1'].font))
-   self.assertEqual(copy.copy(book[name]['A1'].fill),copy.copy(reference[name]['A1'].fill))
  def test_format_is_packaged_and_contains_no_reference_workbook_records(self):
   root=Path(__file__).resolve().parent
   self.assertIn('COPY weekly_report_format.json ./',(root/'Dockerfile').read_text())

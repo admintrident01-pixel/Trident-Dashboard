@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Schedule block examples · Trident local preview</title>
+  <link rel="stylesheet" href="/trident-theme.css">
+  <link rel="stylesheet" href="/trident-ui-theme.css">
+  <link rel="stylesheet" href="/src/TechSchedule.css">
+  <style>
+    body.schedule-demo{min-height:100vh;margin:0;background:linear-gradient(160deg,#f2f7fb,#e8f0f7 55%,#edf3f8);color:var(--td-ink)}
+    .demo-shell{max-width:1240px;margin:0 auto;padding:26px 24px 34px}
+    .demo-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+    .demo-eyebrow{margin:0 0 5px;color:var(--td-teal-deep);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+    .demo-header h1{margin:0;color:var(--td-navy);font-size:28px;line-height:1.15}
+    .demo-header p{margin:7px 0 0;color:var(--td-muted);font-size:13px}
+    .demo-note{display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--td-teal-line);border-radius:999px;background:var(--td-teal-soft);color:var(--td-teal-deep);font-size:11px;font-weight:650;white-space:nowrap}
+    .demo-note::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--td-teal);box-shadow:0 0 0 3px rgba(14,124,134,.12)}
+    .demo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+    .demo-panel{border:1px solid var(--td-line);border-radius:var(--td-radius-lg);background:rgba(255,255,255,.94);padding:16px;box-shadow:var(--td-shadow-1)}
+    .demo-panel h2{margin:0;color:var(--td-navy);font-size:15px}
+    .demo-panel>p{margin:4px 0 14px;color:var(--td-muted);font-size:11px;line-height:1.45}
+    .demo-item{margin:0 0 13px}
+    .demo-item:last-child{margin-bottom:0}
+    .demo-caption{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 1px 10px;color:#526981;font-size:10px;font-weight:650;letter-spacing:.01em}
+    .demo-caption small{color:#7a8da1;font-size:9px;font-weight:500}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block{
+      position:relative;top:auto;left:auto;width:100%!important;height:auto!important;min-height:61px;
+      margin:0;overflow:hidden;box-sizing:border-box;cursor:pointer;z-index:1
+    }
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block strong{padding-right:8px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-booking-tags,
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-client-notes,
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-team-label{margin-top:2px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.travel{overflow:hidden}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.lunch{padding-left:6px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.recurring-note{padding-left:6px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.type-note{padding-left:7px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.leave{padding-left:7px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block:has(.schedule-select-block){padding-left:22px}
+    .demo-help{margin:16px 0 0;padding:12px 14px;border:1px solid var(--td-line);border-radius:var(--td-radius);background:rgba(255,255,255,.72);color:#526981;font-size:11px;line-height:1.55}
+    .demo-help strong{color:var(--td-navy)}
+    @media(max-width:960px){.demo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:650px){.demo-shell{padding:18px 12px 24px}.demo-grid{grid-template-columns:1fr}.demo-header{align-items:flex-start}.demo-header h1{font-size:23px}.demo-note{white-space:normal}}
+    @media(prefers-reduced-motion:reduce){body.schedule-demo .schedule-appointment{transition:none!important}}
+  </style>
+</head>
+<body class="trident-portal schedule-demo">
+  <main class="demo-shell tech-schedule">
+    <header class="demo-header">
+      <div>
+        <p class="demo-eyebrow">Local visual review</p>
+        <h1>Schedule block examples</h1>
+        <p>Mock-only examples using the live block styles. Nothing here is saved to the schedule.</p>
+      </div>
+      <span class="demo-note">Hover a booking for the card tilt and light sweep</span>
+    </header>
+
+    <div class="demo-grid">
+      <section class="demo-panel" aria-labelledby="bookingExamples">
+        <h2 id="bookingExamples">Bookings</h2>
+        <p>Booking status controls the outer colour rail. Appointment type controls the main card fill, and client notes appear underneath in italics.</p>
+
+        <div class="demo-item">
+          <div class="demo-caption">Booked · fixed <small>green rail</small></div>
+          <div class="schedule-appointment demo-block fixed booking-confirmed" style="--appointment-fill:#e5efff" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select Harbour View Care">
+            <strong class="schedule-client-line">10:15 am · Harbour View Care</strong>
+            <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency low">Low</span></span>
+            <span class="schedule-client-notes" title="Park in visitor bay 2 · call on arrival">Park in visitor bay 2 · call on arrival</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Booked · flexible <small>green rail</small></div>
+          <div class="schedule-appointment demo-block flexible booking-confirmed" style="--appointment-fill:#e1f3eb" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select Coastal Mobility">
+            <strong class="schedule-client-line">11:00 am · Coastal Mobility</strong>
+            <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency low">Low</span></span>
+            <span class="schedule-client-notes" title="Assess stair-lift clearance">Assess stair-lift clearance</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Not booked · fixed <small>amber rail</small></div>
+          <div class="schedule-appointment demo-block fixed booking-action-needed" style="--appointment-fill:#f1e7fa" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select Kauri Community Trust">
+            <strong class="schedule-client-line">1:30 pm · Kauri Community Trust</strong>
+            <span class="schedule-booking-tags"><span>Not booked</span><span class="schedule-urgency low">Low</span></span>
+            <span class="schedule-client-notes" title="Left voicemail — awaiting confirmation">Left voicemail — awaiting confirmation</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Optional · flexible <small>soft neutral rail</small></div>
+          <div class="schedule-appointment demo-block flexible booking-option" style="--appointment-fill:#fff0d5" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select Wairau Rest Home">
+            <strong class="schedule-client-line">2:15 pm · Wairau Rest Home</strong>
+            <span class="schedule-booking-tags"><span>Optional</span><span class="schedule-urgency low">Low</span></span>
+            <span class="schedule-client-notes" title="Client prefers an afternoon collection">Client prefers an afternoon collection</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">High priority <small>red priority pill</small></div>
+          <div class="schedule-appointment demo-block fixed booking-confirmed" style="--appointment-fill:#dff3f5" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select Tamaki Community Health">
+            <strong class="schedule-client-line">3:00 pm · Tamaki Community Health</strong>
+            <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency high">High</span></span>
+            <span class="schedule-client-notes" title="Confirm parts before departure">Confirm parts before departure</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Team booking <small>shared across technicians</small></div>
+          <div class="schedule-appointment demo-block fixed booking-confirmed" style="--appointment-fill:#f9e5ee" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select Onerahi Community Care">
+            <strong class="schedule-client-line">3:45 pm · Onerahi Community Care</strong>
+            <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency low">Low</span></span>
+            <span class="schedule-client-notes" title="Two-person lift required">Two-person lift required</span>
+            <span class="schedule-team-label">Team: Andrew, Scott</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="demo-panel" aria-labelledby="travelExamples">
+        <h2 id="travelExamples">Travel</h2>
+        <p>The status icon and label show how the travel time was created or whether it needs attention.</p>
+
+        <div class="demo-item">
+          <div class="demo-caption">Calculated travel <small>green check</small></div>
+          <div class="schedule-appointment demo-block travel" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select calculated travel">
+            <strong class="travel-label" title="Calculated with Google Maps">
+              <span class="schedule-travel-check calculated"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></span>
+              Travel 0.50h · Google Maps
+            </strong>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Manual travel <small>pencil</small></div>
+          <div class="schedule-appointment demo-block travel" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select manual travel">
+            <strong class="travel-label" title="Manual planned travel time">
+              <span class="schedule-travel-check manual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+              Travel 0.50h · Manual
+            </strong>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Needs review <small>red alert</small></div>
+          <div class="schedule-appointment demo-block travel travel-warning" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select travel needing review">
+            <strong class="travel-label" title="Travel needs review">
+              <span class="schedule-travel-check review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/></svg></span>
+              Travel 0.75h · Review
+            </strong>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Calculating <small>pending</small></div>
+          <div class="schedule-appointment demo-block travel" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select calculating travel">
+            <strong class="travel-label" title="Travel calculation in progress">
+              <span class="schedule-travel-check pending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg></span>
+              Travel 0.25h · Calculating
+            </strong>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Workshop leg <small>depot movement</small></div>
+          <div class="schedule-appointment demo-block travel" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select workshop travel">
+            <strong class="travel-label" title="Travel to or from the workshop">
+              <span class="schedule-travel-check manual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+              Travel 0.25h · Workshop
+            </strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="demo-panel" aria-labelledby="otherExamples">
+        <h2 id="otherExamples">Leave, notes &amp; states</h2>
+        <p>Non-booking states keep their own flat tint so they remain distinguishable without card motion.</p>
+
+        <div class="demo-item">
+          <div class="demo-caption">Approved leave <small>solid flat fill</small></div>
+          <div class="schedule-appointment demo-block leave" tabindex="0">
+            <strong>Annual leave · Approved</strong><span>Full day</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Pending leave <small>dashed amber</small></div>
+          <div class="schedule-appointment demo-block leave leave-pending" tabindex="0">
+            <strong>Personal leave · Pending</strong><span>Awaiting approval</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Leave conflict <small>red outline</small></div>
+          <div class="schedule-appointment demo-block leave leave-conflict" tabindex="0">
+            <strong>Annual leave · Conflict</strong><span>Clashes with booked work</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Recurring notes <small>lavender</small></div>
+          <div class="schedule-appointment demo-block recurring-note" tabindex="0">
+            <strong>Paperwork · Recurring notes</strong><span>Every Friday</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Notes block <small>notes appointment type</small></div>
+          <div class="schedule-appointment demo-block type-note" style="--appointment-fill:#e4f1ef" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select notes block">
+            <strong class="schedule-client-line">Job notes · Customer handover</strong>
+            <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency low">Low</span></span>
+            <span class="schedule-client-notes" title="Provide a copy of the handover checklist">Provide a copy of the handover checklist</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Lunch <small>grey block</small></div>
+          <div class="schedule-appointment demo-block lunch" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select lunch">
+            <strong>Lunch 12:00–12:30</strong><span>30 min</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">Selected <small>selection ring</small></div>
+          <div class="schedule-appointment demo-block fixed booking-confirmed is-selected" style="--appointment-fill:#e5efff" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select selected booking" checked>
+            <strong class="schedule-client-line">4:30 pm · Selected booking</strong>
+            <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency low">Low</span></span>
+            <span class="schedule-client-notes" title="Security code 4821 — use rear entrance">Security code 4821 — use rear entrance</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <p class="demo-help"><strong>Try the interaction states:</strong> hover or focus a booking for a 3° surface tilt, 2px rise and diagonal light sweep. The card surface moves on its own layer, leaving the text sharp and untinted. Travel, leave, lunch and note blocks stay flat with no gradient, lift, shadow, glow or filter. These are mock examples only; no appointment, travel, leave or note record is created.</p>
+  </main>
+</body>
+</html>

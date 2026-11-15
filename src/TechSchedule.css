@@ -32,7 +32,7 @@
 .schedule-note-field{display:block;font-size:13px;font-weight:bold;margin:18px 0 8px}.schedule-note-field textarea{display:block;width:100%;min-height:100px;margin-top:8px}
 .schedule-form-actions{flex-wrap:wrap}
 
-.schedule-appointment.travel{background:#e1e3e6;border-color:#adb3bb;color:#39434f;z-index:2;cursor:default;touch-action:auto;padding:1px 3px}
+.schedule-appointment.travel{background:var(--td-travel-fill,#e1e3e6);border-color:var(--td-travel-line,#adb3bb);color:var(--td-travel-ink,#39434f);z-index:2;cursor:default;touch-action:auto;padding:1px 3px}
 .schedule-appointment.travel .travel-label{max-width:calc(100% - 36px);line-height:13px;font-size:10px}
 .schedule-note-field select{display:block;width:100%;margin-top:8px}
 
@@ -88,7 +88,7 @@
 .trident-portal .tech-schedule .schedule-appointment.travel{padding-right:3px;overflow:visible}
 .trident-portal .tech-schedule .schedule-edge-link{position:absolute;left:auto;right:1px;transform:translateY(-50%);z-index:8;display:flex;align-items:center;justify-content:center;width:16px;height:16px;min-height:0;padding:0;border-radius:0;color:#325d89;border:0;background:transparent;box-shadow:none}
 .trident-portal .tech-schedule .schedule-edge-link.is-unlinked{color:#976028;background:transparent}
-.trident-portal .tech-schedule .schedule-appointment.travel-warning{border-color:#adb3bb;background:#e1e3e6;color:#39434f}
+.trident-portal .tech-schedule .schedule-appointment.travel-warning{border-color:var(--td-travel-line,#adb3bb);background:var(--td-travel-fill,#e1e3e6);color:var(--td-travel-ink,#39434f)}
 .schedule-route-warning{padding:7px 10px;margin:0 0 6px;font-size:12px;color:#79551d;background:#fff6e1;border:1px solid #e7cea0;border-radius:5px}
 
 .trident-portal .tech-schedule button.schedule-edge-link{opacity:0;transition:opacity .12s ease,background .12s ease}
@@ -109,6 +109,16 @@
 .trident-portal .tech-schedule button.schedule-edge-link:hover,.trident-portal .tech-schedule button.schedule-edge-link:focus-visible{opacity:1;background:transparent;border:0;box-shadow:none}
 .trident-portal .tech-schedule .schedule-edge-link .schedule-chain-symbol{width:12px;height:12px}
 .trident-portal .tech-schedule .schedule-appointment.travel .travel-label{max-width:100%}
+
+/* Travel, leave, lunch and notes are plans or states, not cards. */
+.trident-portal .tech-schedule .schedule-appointment.leave{background-color:var(--td-leave-fill,#e9edf5)}
+.trident-portal .tech-schedule .schedule-appointment:is(.travel,.leave,.lunch,.recurring-note,.type-note),
+.trident-portal .tech-schedule .schedule-appointment:is(.travel,.leave,.lunch,.recurring-note,.type-note):is(:hover,:focus-visible,:active,.is-selected){
+  transform:none!important;
+  box-shadow:none!important;
+  filter:none!important;
+  background-image:none!important;
+}
 
 .schedule-route-details{display:grid;grid-template-columns:45px 1fr;gap:8px 12px;font-size:13px;line-height:1.5}.schedule-route-details dt{color:#657b94}.schedule-route-details dd{margin:0;overflow-wrap:anywhere}
 
@@ -203,7 +213,7 @@
 .schedule-appointment-dialog .schedule-technicians input{width:auto;min-height:0}.schedule-appointment-dialog .schedule-technicians small{margin-top:5px;font-size:10px}
 .schedule-appointment-dialog .schedule-form-actions{margin-top:8px;padding-top:8px;border-top:1px solid #dce3ed;flex-shrink:0;flex-wrap:wrap;gap:6px}.schedule-appointment-dialog>form>p{margin:6px 0;padding:6px 8px;font-size:11px;flex-shrink:0}
 .schedule-appointment-dialog input:disabled{background:#eef1f5;color:#61718a;opacity:1}.schedule-appointment-dialog .schedule-form-actions button{min-height:30px}
-.trident-portal .tech-schedule .schedule-appointment.travel,.trident-portal .tech-schedule .schedule-appointment.travel.travel-warning{background:#e1e3e6;border:0;color:#39434f}
+.trident-portal .tech-schedule .schedule-appointment.travel,.trident-portal .tech-schedule .schedule-appointment.travel.travel-warning{background:var(--td-travel-fill,#e1e3e6);border:1px solid var(--td-travel-line,#adb3bb);color:var(--td-travel-ink,#39434f)}
 .schedule-vertical .schedule-resize.end{height:9px}.schedule-resize.end:after{content:'';position:absolute;background:#52657e;border-radius:2px;opacity:0}.schedule-vertical .schedule-resize.end:after{width:22px;height:2px;left:calc(50% - 11px);bottom:2px}.schedule-appointment:hover .schedule-resize.end:after,.schedule-resize.end:focus-visible:after{opacity:.65}
 @media(max-width:700px){.schedule-appointment-dialog .schedule-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.schedule-appointment-dialog .schedule-half{grid-column:span 1}.schedule-appointment-dialog .schedule-technicians>div{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
@@ -211,7 +221,7 @@
 .trident-portal .tech-schedule .schedule-help{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:auto;min-width:0;height:28px;min-height:28px;padding:4px 7px;border-radius:5px;font-size:11px;white-space:nowrap}
 .trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note){background:linear-gradient(to right,var(--booking-stroke,#99adc6) 0 18px,var(--appointment-fill,#e5efff) 18px);color:#17345f;border:1px solid #99adc6;padding-left:22px}
 .trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note)>input.schedule-select-block{left:1.5px;top:3px}
-.trident-portal .tech-schedule .schedule-appointment.travel{background:#edf0f3!important;color:#35465a;border:0}
+.trident-portal .tech-schedule .schedule-appointment.travel{background:var(--td-travel-fill,#e3ecef)!important;color:var(--td-travel-ink,#2d4a55);border:1px solid var(--td-travel-line,#a9c2c8)}
 .schedule-travel-check{display:inline-flex!important;vertical-align:middle;overflow:visible!important;align-items:center;margin-right:3px}
 .schedule-travel-check.calculated{color:#17844a}.schedule-travel-check.review{color:#c12e2e}.schedule-travel-check.manual{color:#60758b}
 .trident-portal .tech-schedule .schedule-appointment.is-selected{outline:2px solid #1669c1;outline-offset:-2px;box-shadow:inset 0 0 0 1px white,0 0 0 1px #1669c155;z-index:6}

@@ -47,7 +47,7 @@ class OnCallSubmissionTests(unittest.TestCase):
         self.assertTrue(all('On-call allowance needed' not in (day['notes'] or '') for day in entry['days']))
         self.assertEqual(entry['notes'],'')
         row=weekly_report.read(state,'2027-02-01')['rows'][0]
-        self.assertEqual(row['weeklyNote'],'On-call allowance needed')
+        self.assertEqual(row['weeklyNote'],'ON CALL ALLOWANCE NEEDED')
         self.assertTrue(row['onCall'])
         quiet=weekly_report.read(timesheets.save(self.state,sheet(False))[0],'2027-02-01')['rows'][0]
         self.assertEqual(quiet['weeklyNote'],'')
@@ -57,14 +57,20 @@ class OnCallSubmissionTests(unittest.TestCase):
     def test_excel_notes_column_marks_the_weekly_total_row(self):
         fixture=test_timesheet_release.ExcelExport();fixture.setUp();week=fixture.week
         quiet=openpyxl.load_workbook(io.BytesIO(base64.b64decode(weekly_export.weekly(fixture.state,{'week':week})['file'])))['Labour Report']
-        self.assertIsNone(quiet['G9'].value)
+        self.assertIsNone(quiet['H9'].value)
         state=copy.deepcopy(fixture.state)
         for record in state['timesheets'].values():record['onCall']=True
         book=openpyxl.load_workbook(io.BytesIO(base64.b64decode(weekly_export.weekly(state,{'week':week})['file'])))['Labour Report']
         self.assertEqual(book['A9'].value,'Weekly total')
-        self.assertEqual(book['G9'].value,'On-call allowance needed')
-        self.assertNotEqual(book['G2'].value,'On-call allowance needed')
+        self.assertEqual(book['H9'].value,'ON CALL ALLOWANCE NEEDED')
+        self.assertNotEqual(book['H2'].value,'ON CALL ALLOWANCE NEEDED')
         self.assertIsNone(fixture.state['timesheets'][next(iter(fixture.state['timesheets']))].get('onCall'))
+
+    def test_weekly_notes_join_the_on_call_marker_and_show_without_on_call(self):
+        state,entry=timesheets.save(self.state,{**sheet(True),'notes':'Bala finished the van checks.'})
+        self.assertEqual(weekly_report.read(state,'2027-02-01')['rows'][0]['weeklyNote'],'ON CALL ALLOWANCE NEEDED / Bala finished the van checks.')
+        quiet=timesheets.save(self.state,{**sheet(False),'notes':'Parts ordered.'})[0]
+        self.assertEqual(weekly_report.read(quiet,'2027-02-01')['rows'][0]['weeklyNote'],'Parts ordered.')
 
 if __name__=='__main__':
     unittest.main()

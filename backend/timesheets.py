@@ -4,11 +4,18 @@ from core import Problem
 
 DEFAULT_NAMES = ['Scott Yearbury', 'Daryll Anderson', 'Bala Ganesh Venkatesan', 'Andrew Thomas', 'Rick Leef', 'Allan Burney', 'Joby Shearing', 'Jackie Gough']
 
-ON_CALL_NOTE = 'On-call allowance needed'
+ON_CALL_NOTE = 'ON CALL ALLOWANCE NEEDED'
 
 def on_call_note(sheet):
     """Weekly note derived from the sign-off on-call choice; never stored twice."""
     return ON_CALL_NOTE if isinstance(sheet, dict) and sheet.get('onCall') is True else ''
+
+def weekly_note(sheet):
+    """Combine the derived on-call marker and any saved weekly note."""
+    if not isinstance(sheet,dict):return ''
+    notes=sheet.get('notes')
+    notes=notes.strip() if isinstance(notes,str) else ''
+    return ' / '.join(part for part in (on_call_note(sheet),notes) if part)
 
 def settings(state):
     rows=state.get('staffSettings', {'technicians': [{'name': name, 'rego': ''} for name in DEFAULT_NAMES]})['technicians']

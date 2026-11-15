@@ -61,8 +61,8 @@ def row_height(row):
                      for value,width in zip(row,widths) if isinstance(value,str)]))
 
 def compact_labour_columns(tree):
- """Remove the two obsolete sum columns and their spacer, retaining cell styles."""
- mapping={'A':'A','B':'B','F':'C','G':'D','H':'E','I':'F','J':'G'}
+ """Remove the two obsolete sum columns and spacer; put charged hours before notes."""
+ mapping={'A':'A','B':'B','F':'C','G':'D','H':'E','I':'F','C':'G','J':'H'}
  for row in tree.find(tag('sheetData')):
   for cell in list(row):
    match=re.fullmatch(r'([A-Z]+)(\d+)',cell.get('r',''))
@@ -73,10 +73,10 @@ def compact_labour_columns(tree):
    if formula is not None:
     formula.text=re.sub(r'([A-Z]+)(\d+)',lambda m:mapping.get(m[1],m[1])+m[2],formula.text or '')
  columns=tree.find(tag('cols'));columns.clear()
- for index,width in enumerate((41,12,16,16,16,16,55),1):
+ for index,width in enumerate((41,12,16,16,16,16,16,55),1):
   ET.SubElement(columns,tag('col'),{'min':str(index),'max':str(index),'width':str(width),'customWidth':'1'})
  dimension=tree.find(tag('dimension'))
- if dimension is not None:dimension.set('ref','A1:G'+str(len(tree.find(tag('sheetData')))))
+ if dimension is not None:dimension.set('ref','A1:H'+str(len(tree.find(tag('sheetData')))))
 
 def labour_rows(state,week,rows,metric):
  latest={}
@@ -95,11 +95,10 @@ def labour_rows(state,week,rows,metric):
    if day.get('otherDescription'):notes.append(day['otherDescription'])
    if day.get('leaveFrom'):notes.append(('Sick leave' if day['sick'] else 'Annual leave' if day['annual'] else 'Leave')+' '+day['leaveFrom']+'–'+day['leaveTo'])
    if day.get('leaveFrom') and day.get('leaveLunch') is not None:notes.append('Unpaid lunch excluded: '+weekly_report.number(day['leaveLunch'])+'h')
-   if entry.get('start') and entry.get('finish') and entry.get('status')=='Work':
-    def clock(value):
-     if not value:return None
-     return value
-    start=clock(entry.get('start'));finish=clock(entry.get('finish'))
+   work_start=day.get('workFrom') or entry.get('start')
+   work_finish=day.get('workTo') or entry.get('finish')
+   if work_start and work_finish and entry.get('status')=='Work':
+    start=work_start;finish=work_finish
    elif entry.get('status')=='Work' and entry.get('hours',0)>0:notes.append('Work start / finish not recorded in this historical entry')
    if day['note']:notes.append(day['note'])
    if not recorded:notes.append('No submission')
@@ -109,12 +108,39 @@ def labour_rows(state,week,rows,metric):
    result.append([display,serial,person['chargedHours'][i],None,None,start,finish,day[metric] if recorded else None,lunch,'\n'.join(notes)])
   first=len(result)+2-7;last=len(result)+1
   # The two totals have a single transparent SUM, with cached source totals.
-  result.append(['Weekly total',None,('SUM(C'+str(first)+':C'+str(last)+')',sum(v or 0 for v in person['chargedHours'])),None,None,None,None,('SUM(H'+str(first)+':H'+str(last)+')',sum(d[metric] for d in person['days'])),None,timesheets.on_call_note(sheet) or None])
+  result.append(['Weekly total',None,('SUM(C'+str(first)+':C'+str(last)+')',sum(v or 0 for v in person['chargedHours'])),None,None,None,None,('SUM(H'+str(first)+':H'+str(last)+')',sum(d[metric] for d in person['days'])),None,timesheets.weekly_note(sheet) or None])
   result.extend([[None]*10,[None]*10])
  return result
 
+
+def only_labour_report(content):
+ """Remove the supporting worksheets while retaining the authored labour sheet."""
+ removed={f'xl/worksheets/sheet{index}.xml' for index in range(2,6)}
+ source=zipfile.ZipFile(io.BytesIO(content));output=io.BytesIO()
+ with source,zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as target:
+  for item in source.infolist():
+   if item.filename in removed:continue
+   data=source.read(item)
+   if item.filename=='xl/workbook.xml':
+    tree=ET.fromstring(data);sheets=tree.find(tag('sheets'))
+    for sheet in list(sheets)[1:]:sheets.remove(sheet)
+    data=ET.tostring(tree,encoding='utf-8',xml_declaration=True)
+   elif item.filename=='xl/_rels/workbook.xml.rels':
+    tree=ET.fromstring(data)
+    for relationship in list(tree):
+     if relationship.get('Type','').endswith('/worksheet') and not relationship.get('Target','').endswith('/sheet1.xml'):
+      tree.remove(relationship)
+    data=ET.tostring(tree,encoding='utf-8',xml_declaration=True)
+   elif item.filename=='[Content_Types].xml':
+    tree=ET.fromstring(data)
+    for override in list(tree):
+     if override.get('PartName','').lstrip('/') in removed:tree.remove(override)
+    data=ET.tostring(tree,encoding='utf-8',xml_declaration=True)
+   target.writestr(item,data)
+ return output.getvalue()
+
 def create(state,week,rows,metric,tables,filename):
- first=('Labour Report',['Name','Date','Hours (sum)','Total (sum)','','Start','Finish','Payable hours','Lunch hours','Notes'],labour_rows(state,week,rows,metric))
+ first=('Labour Report',['Name','Date','Charged hours',None,None,'Start','Finish','Payable hours','Lunch hours','Notes'],labour_rows(state,week,rows,metric))
  tables=[first,*tables];output=io.BytesIO()
  with zipfile.ZipFile(io.BytesIO(template())) as source,zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as target:
   style_content,reference_styles=add_reference_styles(source.read('xl/styles.xml'))
@@ -154,4 +180,4 @@ def create(state,week,rows,metric,tables,filename):
      compact_labour_columns(tree)
     content=ET.tostring(tree,encoding='utf-8',xml_declaration=True)
    target.writestr(item,content)
- return {'filename':filename,'mime':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','file':base64.b64encode(output.getvalue()).decode()}
+ return {'filename':filename,'mime':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','file':base64.b64encode(only_labour_report(output.getvalue())).decode()}

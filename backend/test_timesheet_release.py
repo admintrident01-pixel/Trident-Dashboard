@@ -13,10 +13,10 @@ class ExcelExport(unittest.TestCase):
  def book(self,data):return openpyxl.load_workbook(io.BytesIO(base64.b64decode(data['file'])))
  def test_weekly_numbers_blanks_notes_and_no_mutation(self):
   before=copy.deepcopy(self.state);book=self.book(weekly_export.weekly(self.state,{'week':self.week}))
-  self.assertEqual(book.sheetnames,['Labour Report','Weekly hours','Daily detail','13-week averages','Report details'])
-  self.assertEqual(book['Weekly hours']['C2'].value,8.5);self.assertEqual(book['Weekly hours']['C3'].value,0);self.assertIsNone(book['Weekly hours']['D3'].value)
-  self.assertEqual(book['Daily detail']['J2'].data_type,'s');self.assertTrue(book['Daily detail']['J2'].value.startswith('='))
-  self.assertEqual(book['Weekly hours'].freeze_panes,'B2');self.assertEqual(book['Weekly hours'].page_setup.orientation,'landscape')
+  self.assertEqual(book.sheetnames,['Labour Report'])
+  sheet=book['Labour Report'];self.assertEqual(sheet['E2'].value,8.5);self.assertEqual(sheet['G2'].value,0);self.assertIsNone(sheet['G3'].value)
+  self.assertEqual(sheet['H2'].data_type,'s');self.assertTrue(sheet['H2'].value.startswith('='))
+  self.assertEqual(sheet.freeze_panes,'B2');self.assertEqual(sheet.page_margins.left,.7)
   self.assertEqual(self.state,before)
  def test_selected_period_and_corrected_week(self):
   change={**self.sheet,'weekStart':'2027-02-08','revision':1,'editReason':'Wrong week','days':[{'status':'Work','method':'direct','hours':9}]+[{'status':'Work','method':'direct','hours':0} for _ in range(6)]}
