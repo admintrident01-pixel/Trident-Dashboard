@@ -349,21 +349,6 @@ def save(state,data,user):
 
             raise Problem(409,'This technician has approved leave during that time. Choose another time or technician.')
 
-        start_minute=minutes(appointment['start']);end=start_minute+appointment['duration']
-
-        for other in rows.values():
-
-            if is_lunch(appointment) or is_lunch(other): continue
-
-            if old and old['start']!=appointment['start'] and other['id'] in schedule_links.connected_ids(state,old):continue
-            if other['id']==appointment['id'] or other.get('cancelled') or other['date']!=appointment['date'] or not set(assigned(other)) & set(assigned(appointment)): continue
-
-            other_start=minutes(other['start'])
-
-            if start_minute<other_start+other['duration'] and other_start<end:
-
-                raise Problem(409,f"This time overlaps {other['client']}'s appointment. Choose another time or technician.")
-
     now=dt.datetime.now(dt.timezone.utc).isoformat()
 
     appointment.update(version=(old['version'] if old else 0)+1,createdAt=old['createdAt'] if old else now,updatedAt=now,updatedBy=user['email'])

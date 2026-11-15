@@ -23,6 +23,13 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(schedule.read(result,'2027-02-02')['appointments'],[])
         self.assertEqual(result['quotes'],self.state['quotes'])
         self.assertNotIn('appointments',self.state)
+    def test_booked_appointments_can_overlap_for_the_same_technician(self):
+        state,first=schedule.save(self.state,{**self.booking,'bookingStatus':'confirmed'},self.user)
+        state,second=schedule.save(state,{**self.booking,'start':'09:15','duration':30,'client':'Overlapping Client','bookingStatus':'confirmed'},self.user)
+        self.assertEqual(first['bookingStatus'],'confirmed')
+        self.assertEqual(second['bookingStatus'],'confirmed')
+        self.assertEqual(len(schedule.read(state,self.booking['date'])['appointments']),2)
+        self.assertTrue(schedule.overlaps(first,second))
     def test_schedule_includes_normal_work_hours(self):
         self.assertEqual(schedule.read(self.state,'2027-02-01')['workHours'],{'start':'08:00','finish':'16:00'})
         self.state['timeSettings']={'start':'07:30','finish':'16:15'}
@@ -35,7 +42,6 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(booking['technicians'],['Scott','Bala'])
         self.assertEqual(len(state['appointments']),1)
         self.assertEqual(len(schedule.read(state,self.booking['date'])['appointments']),1)
-        with self.assertRaises(Problem):schedule.save(state,{**self.booking,'technician':'Bala'},self.user)
         state,updated=schedule.save(state,{**booking,'start':'10:30'},self.user)
         self.assertEqual(updated['technicians'],['Scott','Bala'])
         state,cancelled=schedule.save(state,{**updated,'action':'cancel'},self.user)
@@ -103,9 +109,10 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(self.state['staffSettings']['technicians'][0],{'name':'Scott','rego':''})
         for changes in [{'staffType':'other'},{'hasVehicle':'false'}]:
             with self.assertRaises(Problem):timesheets.save_settings(self.state,{'technicians':[{**row,**changes}]})
-    def test_overlap_blocked_but_adjacent_and_other_technicians_allowed(self):
+    def test_overlap_adjacent_and_other_technicians_allowed(self):
         state,_=schedule.save(self.state,self.booking,self.user)
-        with self.assertRaises(Problem):schedule.save(state,{**self.booking,'start':'09:45'},self.user)
+        state,_=schedule.save(state,{**self.booking,'start':'09:45'},self.user)
+        self.assertEqual(len(schedule.read(state,self.booking['date'])['appointments']),2)
         state,_=schedule.save(state,{**self.booking,'start':'10:00'},self.user)
         schedule.save(state,{**self.booking,'technician':'Bala'},self.user)
     def test_cancel_restore_and_restore_overlap(self):
@@ -116,7 +123,8 @@ class ScheduleTests(unittest.TestCase):
         self.assertFalse(restored['cancelled'])
         state,cancelled=schedule.save(state,{**restored,'action':'cancel'},self.user)
         state,_=schedule.save(state,self.booking,self.user)
-        with self.assertRaises(Problem):schedule.save(state,{**cancelled,'action':'restore'},self.user)
+        state,restored=schedule.save(state,{**cancelled,'action':'restore'},self.user)
+        self.assertFalse(restored['cancelled'])
     def test_invalid_input_and_removed_technician_history(self):
         for key,value in [('date','2027-02-30'),('start','09:10'),('duration',20),('duration',True),('duration',1500),('technician','Unknown'),('client',''),('address',''),('timing','maybe')]:
             with self.assertRaises(Problem,msg=key):schedule.save(self.state,{**self.booking,key:value},self.user)
@@ -136,6 +144,16 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(api.call('/api/schedule','POST',booking,match=False)[0],409)
         self.assertEqual(api.call('/api/schedule','POST',booking)[0],200)
         self.assertEqual(api.call('/api/schedule',token='')[0],401)
+    def test_api_saves_an_overlapping_booking_for_the_same_technician(self):
+        api=test_accounts.AccountsAPI();api.setUp()
+        booking={**self.booking,'technician':'Scott Yearbury','bookingStatus':'confirmed'}
+        first_status,first,_=api.call('/api/schedule','POST',booking)
+        second_status,second,_=api.call('/api/schedule','POST',{**booking,'start':'09:15','client':'Overlapping Client'})
+        self.assertEqual((first_status,second_status),(200,200))
+        rows=[row for row in second['schedule']['appointments'] if row['id'] in (first['appointment']['id'],second['appointment']['id'])]
+        self.assertEqual(len(rows),2)
+        self.assertEqual({row['technician'] for row in rows},{'Scott Yearbury'})
+        self.assertTrue(schedule.overlaps(*rows))
 
     def test_approved_leave_syncs_pending_does_not_and_cancellation_removes_it(self):
         import leave

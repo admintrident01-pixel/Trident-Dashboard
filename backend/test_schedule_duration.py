@@ -21,8 +21,10 @@ class DurationTests(unittest.TestCase):
   result,b=schedule.save(state,{**a,'notes':'Updated notes'},self.user)
   self.assertEqual(b['timeBasis'],'end');self.assertEqual(result['stock'],self.base['stock'])
   with self.assertRaises(Problem):schedule.save(state,{**a,'timeBasis':'invalid'},self.user)
- def test_resizing_still_checks_overlaps_and_retains_original_on_failure(self):
+ def test_overlapping_resize_is_allowed_and_source_state_is_unchanged(self):
   state,a=schedule.save(self.base,self.booking,self.user)
   state,_=schedule.save(state,{**self.booking,'start':'10:00','client':'Next booking'},self.user);before=copy.deepcopy(state)
-  with self.assertRaises(Problem):schedule.save(state,{**a,'duration':90},self.user)
+  result,resized=schedule.save(state,{**a,'duration':90},self.user)
   self.assertEqual(state,before)
+  self.assertEqual(resized['duration'],90)
+  self.assertEqual(len(schedule.read(result,self.booking['date'])['appointments']),2)

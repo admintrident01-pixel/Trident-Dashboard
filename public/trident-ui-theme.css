@@ -37,9 +37,11 @@
   --td-schedule-shadow:0 1px 2px rgba(11,34,57,.10),inset 0 1px 0 rgba(255,255,255,.22);
   --td-schedule-hover-shadow:0 2px 3px rgba(11,34,57,.10),0 8px 18px rgba(11,34,57,.16),0 0 0 1px rgba(159,205,209,.48),0 0 16px rgba(14,124,134,.12),inset 0 1px 0 rgba(255,255,255,.82),inset 0 -1px 0 rgba(11,34,57,.04);
   --td-schedule-pressed-shadow:inset 0 2px 6px rgba(11,34,57,.14),inset 0 1px 0 rgba(255,255,255,.44),0 1px 2px rgba(11,34,57,.08);
-  --td-schedule-tilt:3deg;
-  --td-schedule-rise:-2px;
-  --td-schedule-tilt-time:350ms;
+  --td-schedule-selection:#1669c1;
+  --td-schedule-select-top:1.5px;
+  --td-schedule-rail-width:18px;
+  --td-schedule-zoom:2px;
+  --td-schedule-zoom-time:140ms;
   --td-schedule-sheen-time:650ms;
   --td-schedule-sheen-ease:cubic-bezier(.18,.9,.58,1);
   --td-schedule-sheen:linear-gradient(226deg,rgba(255,255,255,.40) 0%,rgba(255,255,255,.40) 35%,rgba(255,255,255,.20) 42%,rgba(255,255,255,0) 60%);
@@ -505,18 +507,19 @@
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)::before{
     content:"";position:absolute;inset:-1px;box-sizing:border-box;
     border:1px solid #99adc6;border-radius:inherit;
-    background:linear-gradient(to right,var(--booking-stroke,#99adc6) 0 18px,var(--appointment-fill,#e5efff) 18px);
+    background-color:var(--appointment-fill,#e5efff);
+    background-image:linear-gradient(var(--booking-stroke,#99adc6),var(--booking-stroke,#99adc6));
+    background-position:left center;background-repeat:no-repeat;
+    background-size:var(--td-schedule-rail-width) 100%;
     box-shadow:var(--td-schedule-shadow);
-    transform-origin:top center;
-    transition:transform var(--td-schedule-tilt-time) var(--td-ease),box-shadow var(--td-fast) var(--td-ease);
+    transition:top var(--td-schedule-zoom-time) var(--td-ease),bottom var(--td-schedule-zoom-time) var(--td-ease),background-size var(--td-schedule-zoom-time) var(--td-ease),border-color var(--td-fast) var(--td-ease),box-shadow var(--td-fast) var(--td-ease);
     pointer-events:none;z-index:-2
   }
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)::after{
     content:"";position:absolute;inset:-1px;border-radius:inherit;
     background-color:transparent;background-image:var(--td-schedule-sheen);
     background-position:0 100%;background-size:100% 120%;background-repeat:no-repeat;
-    transform-origin:top center;
-    transition:background-position var(--td-schedule-sheen-time) var(--td-schedule-sheen-ease),transform var(--td-schedule-tilt-time) var(--td-ease);
+    transition:top var(--td-schedule-zoom-time) var(--td-ease),bottom var(--td-schedule-zoom-time) var(--td-ease),background-position var(--td-schedule-sheen-time) var(--td-schedule-sheen-ease);
     pointer-events:none;z-index:-1
   }
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-visible,:active){
@@ -524,14 +527,18 @@
     filter:none!important;
     box-shadow:none!important
   }
-  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-visible)::before{transform:perspective(1000px) rotateX(var(--td-schedule-tilt)) translateY(var(--td-schedule-rise));box-shadow:var(--td-schedule-hover-shadow)}
-  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-visible)::after{transform:perspective(1000px) rotateX(var(--td-schedule-tilt)) translateY(var(--td-schedule-rise));background-position:0 0}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-visible)::before{top:calc(-1px - var(--td-schedule-zoom));bottom:calc(-1px - var(--td-schedule-zoom));background-size:calc(var(--td-schedule-rail-width) + var(--td-schedule-zoom)) 100%;box-shadow:var(--td-schedule-hover-shadow)}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-visible)::after{top:calc(-1px - var(--td-schedule-zoom));bottom:calc(-1px - var(--td-schedule-zoom));background-position:0 0}
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)>:is(strong,span,small,em){position:relative;z-index:1}
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):active::before,
-  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):active::after{transform:perspective(1000px) rotateX(0) translateY(0) scale(.997)}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):active::after{top:-1px;bottom:-1px}
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):active::before{box-shadow:var(--td-schedule-pressed-shadow)}
   body.trident-portal .schedule-appointment.is-selected{outline:2px solid var(--td-teal);outline-offset:-2px;box-shadow:inset 0 0 0 1px #fff,0 4px 12px rgba(14,124,134,.22)}
   body.trident-portal .schedule-appointment.is-selected:is(:hover,:focus-visible){box-shadow:inset 0 0 0 1px #fff,inset 0 1px 0 rgba(255,255,255,.78),0 7px 18px rgba(14,124,134,.22),0 0 14px rgba(14,124,134,.14)}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note).is-selected{outline:none;box-shadow:none}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note).is-selected::before{border-color:var(--td-schedule-selection);box-shadow:inset 0 0 0 1px var(--td-schedule-selection),0 4px 12px rgba(22,105,193,.18)}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note).is-selected:is(:hover,:focus-visible)::before{box-shadow:inset 0 0 0 1px var(--td-schedule-selection),var(--td-schedule-hover-shadow)}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note).is-selected:active::before{box-shadow:inset 0 0 0 1px var(--td-schedule-selection),var(--td-schedule-pressed-shadow)}
   body.trident-portal .schedule-appointment.moving{opacity:.82;box-shadow:0 10px 26px rgba(11,34,57,.30);transform:rotate(.4deg) scale(1.01)}
   body.trident-portal .schedule-appointment.drag-preview{outline:2px dashed var(--td-teal);box-shadow:0 8px 22px rgba(14,124,134,.25)}
   body.trident-portal .schedule-appointment.drag-source{opacity:.22}
@@ -698,7 +705,8 @@
     body.trident-portal .schedule-appointment:hover,
     body.trident-portal .stock-metric:hover{transform:none}
     body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)::before,
-    body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)::after{transform:none!important}
+    body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)::before{background-size:var(--td-schedule-rail-width) 100%!important}
+    body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)::after{top:-1px!important;bottom:-1px!important}
     body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)::after{display:none}
   }
   @media (max-width:800px){

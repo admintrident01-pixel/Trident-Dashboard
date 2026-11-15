@@ -33,11 +33,14 @@
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-client-notes,
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-team-label{margin-top:2px}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block.travel{overflow:hidden}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note){overflow:visible}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block.lunch{padding-left:6px}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block.recurring-note{padding-left:6px}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block.type-note{padding-left:7px}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block.leave{padding-left:7px}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block:has(.schedule-select-block){padding-left:22px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.demo-compact{height:18px!important;min-height:18px!important;padding-top:0;padding-bottom:0}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.demo-compact>strong{padding-top:0;line-height:16px}
     .demo-help{margin:16px 0 0;padding:12px 14px;border:1px solid var(--td-line);border-radius:var(--td-radius);background:rgba(255,255,255,.72);color:#526981;font-size:11px;line-height:1.55}
     .demo-help strong{color:var(--td-navy)}
     @media(max-width:960px){.demo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -53,7 +56,7 @@
         <h1>Schedule block examples</h1>
         <p>Mock-only examples using the live block styles. Nothing here is saved to the schedule.</p>
       </div>
-      <span class="demo-note">Hover a booking for the card tilt and light sweep</span>
+      <span class="demo-note">Hover a booking for a quick 2px vertical card zoom</span>
     </header>
 
     <div class="demo-grid">
@@ -68,6 +71,14 @@
             <strong class="schedule-client-line">10:15 am · Harbour View Care</strong>
             <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency low">Low</span></span>
             <span class="schedule-client-notes" title="Park in visitor bay 2 · call on arrival">Park in visitor bay 2 · call on arrival</span>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <div class="demo-caption">15-minute booking <small>centred selector</small></div>
+          <div class="schedule-appointment demo-block fixed booking-confirmed demo-compact" style="--appointment-fill:#e5efff" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select 15-minute booking">
+            <strong class="schedule-client-line">2:00 pm · Eugenia Adams-71 South Road, Kaitaia</strong>
           </div>
         </div>
 
@@ -245,7 +256,7 @@
       </section>
     </div>
 
-    <p class="demo-help"><strong>Try the interaction states:</strong> hover or focus a booking for a 3° surface tilt, 2px rise and diagonal light sweep. The card surface moves on its own layer, leaving the text sharp and untinted. Travel, leave, lunch and note blocks stay flat with no gradient, lift, shadow, glow or filter. These are mock examples only; no appointment, travel, leave or note record is created.</p>
+    <p class="demo-help"><strong>Try the interaction states:</strong> hover or focus a booking for a quick 2px card zoom at both the top and bottom edges, with no tilt or upward shift, plus the diagonal light sweep. The left status rail shares that expansion and widens by 2px, the selected ring follows the card edge without an inset gap, and selector boxes use the 15-minute-block centre position on every duration. The text stays sharp and untinted. Travel, leave, lunch and note blocks stay flat with no gradient, lift, shadow, glow or filter. These are mock examples only; no appointment, travel, leave or note record is created.</p>
   </main>
 </body>
 </html>

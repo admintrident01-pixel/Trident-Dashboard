@@ -96,11 +96,19 @@ Motion: `140ms` colour/press, `220ms` transform/dialog, ease
 - Cards use `14px` radius, resting shadow, and a 2–3px hover lift.
 - Clickable rows use a teal inset bar on hover/focus, not a full colour fill.
 - Booking blocks keep their status fills and gain a `7px` radius, a resting
-  shadow, and the shared card-hover effect: a `3deg` top-origin tilt, `2px` rise,
-  diagonal light sweep, inset top light, soft inner depth and a teal halo. Paint
-  the surface, border and sweep on a pseudo-layer so the card moves without
-  transforming or blurring its text. Keep a teal selected ring and clear drag/drop
-  states.
+  shadow, and the shared card-hover effect: a quick `140ms`, `2px` vertical zoom
+  at both the top and bottom edges, no tilt or upward shift, diagonal light
+  sweep, inset top light, soft inner depth and a teal halo. Paint the surface,
+  border and sweep on a pseudo-layer so the card moves without transforming or
+  blurring its text. Keep a teal selected ring and clear drag/drop states.
+- Paint the booking status rail, card fill and selected ring on that same
+  expanding surface, so the rail and selection edge zoom with the card and the
+  ring sits flush against the card edge without an inset gap.
+- Widen the status rail by the same `2px` during the hover/focus zoom so its
+  movement remains legible against the card edge, then return it to `18px` at
+  rest and under reduced-motion preferences.
+- Position block-select checkboxes at the vertical centre of a 15-minute block
+  and keep that fixed top offset for every longer duration.
 - Travel, leave, lunch and note blocks stay completely flat in every interaction
   state: no tilt, lift, shadow, glow, filter or internal gradient.
 - Resize handles turn teal on hover; the office splitter uses a pale tint plus a
