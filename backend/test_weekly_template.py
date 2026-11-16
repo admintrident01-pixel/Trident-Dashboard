@@ -1,6 +1,7 @@
-import base64,copy,datetime as dt,io,unittest
+import base64,copy,datetime as dt,io,re,unittest,zipfile
 import openpyxl,weekly_export,weekly_template,test_timesheet_release,test_labour_leave_descriptions
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 class TemplateExport(unittest.TestCase):
  def setUp(self):
@@ -62,6 +63,13 @@ class TemplateExport(unittest.TestCase):
   self.assertEqual(sheet['C1'].value,'Start');self.assertEqual(sheet['G1'].value,'Charged hours');self.assertEqual(sheet['H1'].value,'Notes')
   self.assertEqual(weekly_template.row_height(['Short name']),15)
   self.assertGreater(weekly_template.row_height(['x'*100]),15)
+ def test_worksheet_cells_increase_within_each_row(self):
+  raw=base64.b64decode(weekly_export.weekly(self.state,{'week':self.week})['file'])
+  with zipfile.ZipFile(io.BytesIO(raw)) as archive:tree=ET.fromstring(archive.read('xl/worksheets/sheet1.xml'))
+  ns={'m':weekly_template.NS};column=lambda ref:sum((ord(letter)-64)*26**index for index,letter in enumerate(reversed(re.match(r'[A-Z]+',ref).group(0))))
+  for row in tree.findall('.//m:row',ns):
+   columns=[column(cell.get('r','')) for cell in row.findall('m:c',ns)]
+   self.assertEqual(columns,sorted(columns),f"Row {row.get('r')} cells are out of order")
  def test_format_is_packaged_and_contains_no_reference_workbook_records(self):
   root=Path(__file__).resolve().parent
   self.assertIn('COPY weekly_report_format.json ./',(root/'Dockerfile').read_text())

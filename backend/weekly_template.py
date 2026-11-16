@@ -67,6 +67,7 @@ def compact_labour_columns(tree):
  """Remove the two obsolete sum columns and spacer; put charged hours before notes."""
  mapping={'A':'A','B':'B','F':'C','G':'D','H':'E','I':'F','C':'G','J':'H'}
  for row in tree.find(tag('sheetData')):
+  cells=[]
   for cell in list(row):
    match=re.fullmatch(r'([A-Z]+)(\d+)',cell.get('r',''))
    if not match or match[1] not in mapping:
@@ -75,6 +76,8 @@ def compact_labour_columns(tree):
    formula=cell.find(tag('f'))
    if formula is not None:
     formula.text=re.sub(r'([A-Z]+)(\d+)',lambda m:mapping.get(m[1],m[1])+m[2],formula.text or '')
+   cells.append(cell)
+  row[:]=sorted(cells,key=lambda cell:cell.get('r',''))
  columns=tree.find(tag('cols'));columns.clear()
  for index,width in enumerate((41,12,16,16,16,16,16,55),1):
   ET.SubElement(columns,tag('col'),{'min':str(index),'max':str(index),'width':str(width),'customWidth':'1'})
