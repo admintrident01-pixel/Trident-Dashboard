@@ -459,9 +459,20 @@
   body.trident-portal .tech-schedule{padding:10px 12px 14px}
   body.trident-portal .tech-schedule button{min-height:32px;padding:6px 10px;font-size:12px;border-radius:var(--td-radius-sm)}
   body.trident-portal .tech-schedule button.schedule-help{min-height:28px;height:28px;padding:0;border-radius:50%}
-  body.trident-portal .tech-schedule button:is(.schedule-hours-view,.schedule-zoom-reset){border-color:transparent;background:transparent;box-shadow:none;color:#3f5770}
-  body.trident-portal .tech-schedule button:is(.schedule-hours-view,.schedule-zoom-reset):hover:not(:disabled){background:var(--td-surface-3);border-color:transparent;box-shadow:none}
-  body.trident-portal .tech-schedule .schedule-hours-view{width:132px;min-width:132px;justify-content:center}
+  body.trident-portal .tech-schedule .schedule-zoom-reset{border-color:transparent;background:transparent;box-shadow:none;color:#3f5770}
+  body.trident-portal .tech-schedule .schedule-zoom-reset:hover:not(:disabled){background:var(--td-surface-3);border-color:transparent;box-shadow:none}
+  body.trident-portal .tech-schedule .schedule-hours-view{
+    width:132px;min-width:132px;justify-content:center;
+    border-color:var(--td-line-strong);background:var(--td-surface);color:var(--td-navy);
+    box-shadow:var(--td-shadow-1);font-weight:600
+  }
+  body.trident-portal .tech-schedule .schedule-hours-view svg{color:var(--td-teal)}
+  body.trident-portal .tech-schedule .schedule-hours-view:hover:not(:disabled){
+    border-color:var(--td-teal-line);background:var(--td-surface-2);color:var(--td-navy);box-shadow:var(--td-shadow-2)
+  }
+  body.trident-portal .tech-schedule .schedule-hours-view:active:not(:disabled){
+    transform:none;box-shadow:inset 0 1px 2px rgba(11,34,57,.12)
+  }
   body.trident-portal .tech-schedule .schedule-search-button{
     width:32px;min-width:32px;height:32px;min-height:32px;max-height:32px;padding:0;
     display:inline-grid;place-items:center;border-radius:var(--td-radius-sm)
@@ -486,6 +497,55 @@
   }
   body.trident-portal .tech-schedule :is(input:not([type=checkbox]):not([type=radio]),select,textarea){border-radius:var(--td-radius-sm);min-height:32px;padding:5px 8px;font-size:12px}
   body.trident-portal .tech-schedule select:not([multiple]){padding-right:28px;background-position:right 8px center}
+
+  /* Compact toolbar controls: one calm surface and a clear state for each action. */
+  body.trident-portal .tech-schedule .schedule-notices>summary{
+    min-width:32px;min-height:32px;height:32px;padding:0 8px;gap:4px;
+    border:1px solid var(--td-amber);border-radius:var(--td-radius-sm);
+    background:var(--td-amber-soft);color:var(--td-amber-ink);box-shadow:var(--td-shadow-1);
+    transition:background-color var(--td-fast) var(--td-ease),border-color var(--td-fast) var(--td-ease),box-shadow var(--td-fast) var(--td-ease)
+  }
+  body.trident-portal .tech-schedule .schedule-notices>summary:hover{border-color:var(--td-amber-hover);background:var(--td-amber-soft);box-shadow:var(--td-shadow-2)}
+  body.trident-portal .tech-schedule .schedule-notices>summary:focus-visible{outline:2px solid var(--td-amber);outline-offset:2px;box-shadow:var(--td-shadow-1)}
+  body.trident-portal .tech-schedule .schedule-notices>summary span{
+    display:inline-grid;place-items:center;min-width:14px;height:14px;padding:0 3px;
+    border-radius:999px;background:var(--td-amber);color:var(--td-amber-ink);
+    font-size:9px;font-weight:700;line-height:1
+  }
+  body.trident-portal .tech-schedule .schedule-cancelled-toggle{
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+    height:32px;min-height:32px;padding:0 10px;
+    border:1px solid var(--td-line-strong);border-radius:999px;
+    background:var(--td-surface);color:var(--td-navy);
+    font-size:12px;font-weight:550;line-height:1;box-shadow:var(--td-shadow-1);cursor:pointer;
+    transition:background-color var(--td-fast) var(--td-ease),border-color var(--td-fast) var(--td-ease),color var(--td-fast) var(--td-ease),box-shadow var(--td-fast) var(--td-ease)
+  }
+  body.trident-portal .tech-schedule .schedule-cancelled-toggle:hover{border-color:var(--td-teal-line);background:var(--td-surface-2);box-shadow:var(--td-shadow-2)}
+  body.trident-portal .tech-schedule .schedule-cancelled-toggle:has(input:checked){
+    border-color:var(--td-teal-line);background:var(--td-teal-soft);color:var(--td-teal-deep);font-weight:650;
+    box-shadow:inset 0 0 0 1px rgba(14,124,134,.10)
+  }
+  body.trident-portal .tech-schedule .schedule-cancelled-toggle:has(input:focus-visible){outline:2px solid var(--td-teal);outline-offset:2px;box-shadow:var(--td-ring)}
+  body.trident-portal .tech-schedule .schedule-cancelled-toggle input{margin:0;width:14px;height:14px;accent-color:var(--td-teal)}
+  body.trident-portal .tech-schedule .schedule-date-controls{
+    gap:4px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible
+  }
+  body.trident-portal .tech-schedule .schedule-date-controls>:is(button,input){
+    height:32px;min-height:32px;border:1px solid var(--td-line-strong)!important;
+    border-radius:var(--td-radius-sm)!important;background:var(--td-surface)!important;
+    box-shadow:var(--td-shadow-1)!important
+  }
+  body.trident-portal .tech-schedule .schedule-date-controls>button:hover:not(:disabled){
+    border-color:var(--td-teal-line)!important;background:var(--td-surface-2)!important;
+    color:var(--td-teal-deep);box-shadow:var(--td-shadow-2)!important
+  }
+  body.trident-portal .tech-schedule .schedule-date-controls>:is(button,input):focus-visible{
+    outline:2px solid var(--td-teal);outline-offset:2px;box-shadow:var(--td-ring)!important
+  }
+  body.trident-portal .tech-schedule .schedule-toolbar .schedule-refresh{
+    width:28px;height:28px;min-width:28px;min-height:28px;flex-basis:28px;padding:3px
+  }
+  body.trident-portal .tech-schedule .schedule-refresh svg{width:16px;height:16px}
   body.trident-portal .tech-schedule .schedule-column-headings .schedule-tech-name select{
     min-height:22px;height:22px;padding:1px 14px 1px 0!important;border:0;border-radius:0;
     background-color:transparent;box-shadow:none;
