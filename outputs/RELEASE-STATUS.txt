@@ -1,35 +1,41 @@
-PUBLISHED AND VERIFIED - Schedule block edges and checkbox shadows
+PUBLISHED AND VERIFIED - Recurring note day deletion and schedule card expansion
 18 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Commit: 9e28b7937eb4de227e11df801e0aa56ae2e594d8
-- Base commit: 448cc7b92049c097205b96192171ac112a4da4e4
-- Recurring-note and notes-type schedule blocks now have a thin 1px border in
-  their matching lavender and mint colour families, with border-box sizing.
-- Schedule selection checkboxes now carry a darker inset shadow along the top,
-  left and right inner edges.
-- The cumulative package includes the previously published timesheet validation,
-  leave detail, schedule toolbar, travel deletion and Excel fixes.
+- Commit: 1fd17085779458d89ca556e2ca28471752ab6368
+- Base commit: 37ddbb3
+- Recurring notes can now be removed for one technician and one date without
+  changing the series or other technicians' occurrences.
+- The schedule block actions menu exposes "Delete this day only" on recurring
+  notes and writes history with the technician and date.
+- Schedule cards now expand in place on hover or keyboard focus to reveal the
+  full details, with the address retained beside the client name.
+- The block preview includes the approved size and width examples and the
+  shared Deep Current animation variables.
+- The package includes the previously published timesheet validation, leave
+  detail, schedule toolbar, travel deletion and Excel fixes.
 
 LOCAL VALIDATION
+- Focused backend tests: 25 passed.
+- Frontend/work tests: 192 passed.
 - ESLint passed.
 - Production build passed.
-- Local browser checks confirmed the 1px note borders and the darker checkbox
-  inset shadow on all 15 preview checkboxes.
-- The previous full release baseline remains 192 frontend tests and 89 focused
-  backend tests passed.
+- Local browser checks confirmed one-technician occurrence deletion, untouched
+  later weeks, the schedule action menu, and history labels.
 
 DEPLOYMENT
-- Push: 448cc7b..9e28b79 main -> main.
+- Push: 37ddbb3..1fd1708 main -> main.
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live core JavaScript: assets/index-UPNggYWo.js
+- Live core JavaScript: assets/index-B1DNQlou.js
 - Live core CSS: assets/index-DGleuqip.css
-- Live schedule CSS: assets/TechSchedule-Bvckfe2Y.css
-- Live compiled CSS contains the recurring-note border, notes-type border and
-  checkbox inset-shadow rules.
-- Live theme contains the matching lavender/mint border tokens and checkbox
-  shadow token.
+- Live schedule JavaScript: assets/TechSchedule-B_1SJF7-.js
+- Live schedule CSS: assets/TechSchedule-BZdDXqQW.css
+- Live leave JavaScript: assets/LeaveForms-DGOw_HHC.js
+- Live theme and scheduling CSS contain the expansion tokens and rules.
+- Live schedule JavaScript contains the delete_occurrence action and the
+  "Delete this day only" label.
+- Live timesheet validation script and preview page are served.
 - Live API health: HTTP 200, {"ok": true, "version": "C"}.
 
 PRE-RELEASE BACKUP LIMITATION
@@ -38,22 +44,22 @@ PRE-RELEASE BACKUP LIMITATION
 - Latest recoverable verified recovery point remains tag
   excel-parse_20261115T235638Z at register revision 18782, with 35 uploads and
   0 missing referenced uploads.
-- This release changed frontend styling only and made no production business
-  writes.
+- This release changed source code and deploy assets only; it made no production
+  business writes.
 
 OPEN ONLINE CHECKS
-- The saved browser session was not signed in to production, so authenticated
-  schedule screens were not rechecked online.
-- The live compiled stylesheet and theme were verified directly.
+- An authenticated production browser session was not available, so live
+  business screens were not rechecked interactively.
+- Live compiled assets, theme, schedule action text, preview, timesheet script
+  and API health were verified directly.
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 575 entries, 1,483,111 bytes.
-- SHA256: 6A83F4D76E4B78A542FA911AB6BF10739533F2B9549A42CCDCCA0898828A266C.
+- 575 entries, 1,486,553 bytes.
+- SHA256: 7CD571E417E14F0702F5748E29A028D39891C456A12982476336A5BB54A13234.
 - Previous package archived as
-  outputs/Release history/Trident-dashboard-before-schedule-edge-2026-11-18.zip.
-- Previous package SHA256:
-  840CC8E3331EDABABF812382FC50B7F87EA50BE08562A66A04392F26CB1D692C.
+  outputs/Release history/Trident-dashboard-before-recurring-note-day-2026-11-18.zip.
+- Previous package SHA256: 6A83F4D76E4B78A542FA911AB6BF10739533F2B9549A42CCDCCA0898828A266C.
 - The package excludes environment files, runtime data, outputs, tests,
   work-tests and local preview/helper files. `.env.example` is intentionally
   included because it contains no credentials.
