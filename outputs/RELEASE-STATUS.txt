@@ -1,67 +1,70 @@
-PUBLISHED AND VERIFIED - Schedule toolbar polish and travel deletion
-16 November 2026 (Pacific/Auckland)
+PUBLISHED AND VERIFIED - Timesheet validation, draft deletion and leave detail popup
+17 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Commit: f1466c26370c40ee50708924560d1938e01e6f27
-- Base commit: b42dd978519439665fae183492ca03006231e519
-- Removed the duplicate date / Equal columns / Schedule help header block.
-- Themed the compact schedule toolbar, Normal workday fit control, Cancelled pill,
-  refresh control and individually bordered date buttons.
-- Added the right-click Delete travel block action while retaining Delete block
-  for appointments.
+- Commit: 9307bab39c880cf2baf7202fecc063c3b594c37b
+- Base commit: dce51fa
+- Direct-hours entries default to 07:30-16:00; a custom time requires matching
+  Start and Finish values, and submissions are blocked while a discrepancy
+  remains.
+- Admins can delete every timesheet draft; technicians can delete only their own
+  draft.
+- Leave history separates the leave type, mixed-type detail and Other
+  description, with separate total and Paid/Unpaid badges.
+- Leave request details now open in a modal with close, Escape and backdrop
+  dismissal.
+- The cumulative package also carries the previously published schedule toolbar,
+  travel-block deletion and Excel cell-order fixes.
 
 LOCAL VALIDATION
 - npm run lint passed.
 - npm run build passed.
-- Frontend tests: 191 passed.
-- Focused backend tests: 74 passed across leave types, timed leave, Labour leave
-  descriptions, weekly reports/templates, timesheet release, schedule actions,
-  schedule refinements and travel.
-- Travel deletion was previously verified against a throwaway database: only the
-  travel record was deleted, the linked appointment remained intact, and Undo
-  restored the travel block.
+- Frontend tests: 192 passed.
+- Focused backend tests: 89 passed across direct-hours validation, timesheet
+  drafts, weekly template/report generation, leave types and schedule actions.
+- Local week 2026-11-09 Labour workbook: valid ZIP, 81 rows, 8 columns, zero
+  out-of-order or duplicate cell rows, and openpyxl opens it without repair.
+- Columns C-F are populated for submitted technicians. The retained local data
+  had one submitted technician for this week; technicians without a submission
+  intentionally remain blank.
 
 DEPLOYMENT
-- Push: b42dd97..f1466c2 main -> main.
+- Push: dce51fa..9307bab main -> main.
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live HTML serves assets/index-DNhNfncw.js and assets/index-DGleuqip.css.
-- Live schedule chunk: assets/TechSchedule-Co5RH0dK.js.
-- Live schedule CSS: assets/TechSchedule-0LV2l48C.css.
-- Live API health endpoint: HTTP 200, {"ok": true, "version": "C"}.
-- Cloud Run revision lookup was unavailable because gcloud/google.cloud is not
-  installed locally; the previous verified API revision was
-  trident-quote-api-00093-bbj on 100% traffic.
-
-ONLINE FUNCTION CHECKS
-- Live schedule chunk contains Delete travel block and Delete block.
-- Live schedule chunk does not contain Equal columns or Schedule help.
-- Live theme CSS contains the new toolbar, date-control, Cancelled and fit-control rules.
-- Live frontend core asset contains all six leave labels:
-  Paid annual leave, Unpaid annual leave, Sick leave paid, Sick leave unpaid,
-  Other paid and Other unpaid.
-
-ONLINE EXCEL CHECK
-- Source: latest downloaded online Labour Report for week starting 2026-11-09.
-- File: Trident-weekly-all-hours-2026-11-09 (7).xlsx
-- Bytes: 7,131
-- SHA256: 61777AC0C794940FF20431EEDB38345E90627B980BFA2DF18F6C4FD0D40067F5
-- Worksheet: Labour Report; 81 rows; 648 cells.
-- Out-of-order rows: 0; duplicate cell rows: 0.
-- Workbook opens with openpyxl without correction.
-- Columns C-F are populated for every technician with a submission; technicians
-  without a submission intentionally remain blank.
+- Live core JavaScript: assets/index-tgPhISTV.js
+- Live core CSS: assets/index-DGleuqip.css
+- Live leave chunk: assets/LeaveForms-CDtnHgIA.js; live leave CSS:
+  assets/LeaveForms-G0RxNzTI.css
+- Live validation helper: timesheet-direct-validation.js
+- Live API health endpoint: https://trident-quote-api-383423323438.australia-southeast1.run.app/api/health
+- API health response: HTTP 200, {"ok": true, "version": "C"}.
+- Live HTML, frontend assets, leave chunk, validation helper and theme stylesheet
+  returned HTTP 200.
 
 PRE-RELEASE BACKUP LIMITATION
-- A fresh BigQuery/GCS snapshot could not be created from this machine.
+- A fresh BigQuery/GCS snapshot could not be created from this machine because
+  gcloud and google.cloud are unavailable.
 - Latest recoverable verified recovery point remains tag
-  excel-parse_20261115T235638Z at register revision 18782, with all 35 uploads
-  and 0 missing referenced uploads.
-- This release changed frontend files only and made no business writes.
+  excel-parse_20261115T235638Z at register revision 18782, with 35 uploads and
+  0 missing referenced uploads.
+- This release is schema-neutral and made no production business writes.
+
+OPEN ONLINE CHECKS
+- The saved browser session was not signed in to production, so authenticated
+  Labour payables, draft-deletion and leave screens were not rechecked online.
+- Bala's online weekend reconciliation could not be independently confirmed
+  locally because the retained local submission set has no Bala record for the
+  week beginning 2026-11-09.
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 573 entries, 1477696 bytes.
-- SHA256: 7B08F35464A091158FE89FE0250414960AF0A31FC95F0D5E8373FED4923B1C10
+- 575 entries, 1,483,006 bytes.
+- SHA256: 840CC8E3331EDABABF812382FC50B7F87EA50BE08562A66A04392F26CB1D692C.
 - Previous package archived as
-  outputs/Release history/Trident-dashboard-before-schedule-ui-2026-11-16.zip.
+  outputs/Release history/Trident-dashboard-before-timesheet-validation-2026-11-17.zip.
+- Previous package SHA256:
+  7B08F35464A091158FE89FE0250414960AF0A31FC95F0D5E8373FED4923B1C10.
+- The package excludes environment files, runtime data, outputs, tests,
+  work-tests and local preview/helper files. `.env.example` is intentionally
+  included because it contains no credentials.
