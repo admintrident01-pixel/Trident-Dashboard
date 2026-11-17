@@ -19,6 +19,23 @@ class LunchTests(unittest.TestCase):
         self.assertEqual(self.save(hours=0,unpaidLunch=True)['total'],0)
         self.assertEqual(self.save(hours=0.25,unpaidLunch=True)['total'],0)
         self.assertEqual(self.save(hours=8)['total'],8)
+    def test_net_direct_defaults_fill_actual_times(self):
+        row=self.save(hours=8,unpaidLunch=True,netDirectHours=True)
+        self.assertEqual(row['days'][0]['start'],'07:30')
+        self.assertEqual(row['days'][0]['finish'],'16:00')
+        self.assertEqual(row['total'],8)
+    def test_net_direct_custom_hours_require_matching_times(self):
+        with self.assertRaisesRegex(Problem,'actual start and finish'):
+            self.save(hours=7,unpaidLunch=True,netDirectHours=True)
+        matching=self.save(hours=7,start='07:00',finish='14:30',unpaidLunch=True,netDirectHours=True)
+        self.assertEqual(matching['total'],7)
+        self.assertEqual(matching['days'][0]['start'],'07:00')
+        with self.assertRaisesRegex(Problem,'do not match'):
+            self.save(hours=7,start='07:30',finish='16:00',unpaidLunch=True,netDirectHours=True,notes='Separate periods')
+    def test_zero_direct_day_does_not_export_default_times(self):
+        row=self.save(hours=0,start='07:30',finish='16:00',unpaidLunch=True,netDirectHours=True)
+        self.assertEqual(row['days'][0]['start'],'')
+        self.assertEqual(row['days'][0]['finish'],'')
     def test_invalid_lunch_and_leave(self):
         with self.assertRaises(Problem):self.save(hours=8,unpaidLunch='true')
         with self.assertRaises(Problem):self.save(status='Annual leave',hours=0,unpaidLunch=True)

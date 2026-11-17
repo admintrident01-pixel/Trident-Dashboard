@@ -89,7 +89,7 @@ function applyApprovedLeave(){
 
   var backup=leaveBackups.get(i);if(backup){r.querySelector('.status').value=backup.status;r.querySelector('.other').value=backup.other;r.querySelector('.mode').value=backup.mode;r.querySelector('.direct').value=backup.hours;r.querySelector('.status').disabled=false;r.querySelector('.other').disabled=false;statusChange(r.querySelector('.status'));leaveBackups.delete(i)}
 
-  var badge=r.querySelector('.approved-leave-badge');if(badge)badge.remove();delete r.dataset.leaveHours;delete r.dataset.leaveLabel;r.querySelector('.status').disabled=false;
+  var badge=r.querySelector('.approved-leave-badge');if(badge)badge.remove();delete r.dataset.leaveHours;delete r.dataset.leaveLabel;delete r.dataset.leaveStart;delete r.dataset.leaveEnd;delete r.dataset.leaveLunchStart;delete r.dataset.leaveLunchEnd;r.querySelector('.status').disabled=false;
 
   var leave=approvedLeave.find(function(l){return l.technician.trim().toLowerCase()===tech&&l.dates.includes(sheetDay(week,i))});
 
@@ -98,7 +98,7 @@ function applyApprovedLeave(){
     var gross=(qmins(currentDefaultTimes.finish)-qmins(currentDefaultTimes.start))/60-0.5,direct=r.querySelector('.direct');
     if(r.querySelector('.status').value==='Work'&&r.querySelector('.mode').value==='direct'&&Number(direct.value)===gross)direct.value=Math.max(0,gross-Number(leave.hoursPerDay));
    }
-   r.querySelector('.status').value='Work';r.querySelector('.status').disabled=true;r.querySelector('.other').hidden=true;statusChange(r.querySelector('.status'));r.dataset.timedLeaveId=leave.id+':'+tech+':'+week;r.dataset.leaveHours=leave.hoursPerDay;r.dataset.leaveLabel=leave.leaveType+' '+leave.startTime+'–'+leave.endTime;
+   r.querySelector('.status').value='Work';r.querySelector('.status').disabled=true;r.querySelector('.other').hidden=true;statusChange(r.querySelector('.status'));r.dataset.timedLeaveId=leave.id+':'+tech+':'+week;r.dataset.leaveHours=leave.hoursPerDay;r.dataset.leaveLabel=leave.leaveType+' '+leave.startTime+'–'+leave.endTime;r.dataset.leaveStart=leave.startTime||'';r.dataset.leaveEnd=leave.endTime||'';r.dataset.leaveLunchStart=leave.lunchStart||'';r.dataset.leaveLunchEnd=leave.lunchEnd||'';
    badge=document.createElement('small');badge.className='approved-leave-badge';badge.textContent=leave.leaveType+' · '+leave.startTime+'–'+leave.endTime+' · '+Number(leave.hoursPerDay).toFixed(2)+'h approved. Enter work only; leave is added automatically.';r.querySelector('.status').parentNode.append(badge);
   }else{delete r.dataset.timedLeaveId;
   if(leave){leaveBackups.set(i,{status:r.querySelector('.status').value,other:r.querySelector('.other').value,mode:r.querySelector('.mode').value,hours:r.querySelector('.direct').value});r.querySelector('.status').value=leave.leaveType;r.querySelector('.other').value=leave.other||'';r.querySelector('.mode').value='direct';r.querySelector('.direct').value=leave.hoursPerDay;statusChange(r.querySelector('.status'));r.querySelector('.status').disabled=true;r.querySelector('.direct').disabled=true;r.querySelector('.other').disabled=true;badge=document.createElement('small');badge.className='approved-leave-badge';badge.textContent=leave.leaveType+' · '+Number(leave.hoursPerDay).toFixed(2)+' hours approved';r.querySelector('.status').parentNode.append(badge)}
@@ -123,7 +123,7 @@ document.querySelector('.card').addEventListener('input',function(){sheetDirty=t
 function selectLastWeek(){var field=document.getElementById('week');if(field.readOnly||field.disabled||document.getElementById('last-week').disabled)return;var week=window.TridentWeekDates.lastWeekMonday();if(field.value===week)return;field.value=week;field.dispatchEvent(new Event('change',{bubbles:true}))}
 document.getElementById('week').addEventListener('change',function(){updateDates();applyApprovedLeave()});document.getElementById('tech').addEventListener('input',applyApprovedLeave);document.getElementById('tech').addEventListener('change',applyApprovedLeave);window.addEventListener('focus',function(){reloadConfig(true)});setInterval(function(){if(!document.hidden&&(!window.frameElement||window.frameElement.offsetParent!==null))reloadConfig(true)},60000);render();initialConfigReady=loadConfig(false).catch(function(e){message('Unable to load time sheet settings: '+e.message,true)});
 
-</script><script>
+</script><script src="/timesheet-direct-validation.js"></script><script>
 const sheetWrap=document.querySelector('.wrap');
 const reportSheetHeight=()=>{const rect=sheetWrap.getBoundingClientRect();if(rect.height>0)parent.postMessage({type:'trident-timesheet-height',height:Math.ceil(rect.bottom+12)},parent.location.origin)};
 new ResizeObserver(reportSheetHeight).observe(sheetWrap);

@@ -15,13 +15,18 @@ class TimedLeaveTests(unittest.TestCase):
   block=schedule.leave_blocks(self.approved(hoursPerDay=3.5),'2027-02-01')[0]
   self.assertEqual((block['start'],block['duration'],block['hoursPerDay']),('12:00',240,3.5))
  def test_work_and_leave_are_added_once_in_submission_and_payables(self):
-  state,entry=timesheets.save(self.approved(),self.sheet());day=entry['days'][0]
+  state,entry=timesheets.save(self.approved(),self.sheet(netDirectHours=True,start='08:00',finish='16:00'));day=entry['days'][0]
   self.assertEqual(day['hours'],4);self.assertEqual(day['leave']['hoursPerDay'],4);self.assertEqual(entry['total'],8)
   report=weekly_report.week_rows(state,'2027-02-01')[0]['days'][0]
   self.assertEqual((report['work'],report['annual'],report['all']),(4,4,8));self.assertEqual(report['leaveFrom'],'12:00')
   payload={**self.sheet(),'id':entry['id'],'revision':1,'editReason':'Sample correction'}
   corrected,new=timesheets.edit_submission(state,payload,self.actor);self.assertEqual(new['total'],8)
   self.assertEqual(weekly_report.week_rows(corrected,'2027-02-01')[0]['days'][0]['all'],8)
+ def test_timed_leave_direct_hours_only_need_the_leave_inside_the_actual_window(self):
+  state,entry=timesheets.save(self.approved(),self.sheet(netDirectHours=True,hours=2.5,start='07:00',finish='09:30',unpaidLunch=False))
+  self.assertEqual(entry['days'][0]['hours'],2.5);self.assertEqual(entry['total'],6.5)
+  with self.assertRaisesRegex(Problem,'do not match'):
+   timesheets.save(self.approved(),self.sheet(netDirectHours=True,hours=2,start='07:00',finish='09:30',unpaidLunch=False))
  def test_sick_leave_and_work_both_count_in_paid_metric(self):
   state,_=timesheets.save(self.approved(leaveType='Sick leave'),self.sheet())
   report=weekly_report.week_rows(state,'2027-02-01')[0]['days'][0];self.assertEqual(report['paid'],8)

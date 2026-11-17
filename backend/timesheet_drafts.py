@@ -66,3 +66,18 @@ def submit(state,data,user):
     result,entry=timesheets.save(state,data,user=user,exclude_draft=old['id'] if old else None,require_on_call=True)
     if old:del result['timesheetDrafts'][old['id']]
     return result,entry
+
+def delete(state,data,user):
+    if not isinstance(data,dict):raise Problem(400,'Invalid draft request.')
+    if data.get('confirmed') is not True:raise Problem(400,'Confirm that you want to delete this draft.')
+    key=timesheets.text(data.get('id'),'draft id',80,True)
+    row=state.get('timesheetDrafts',{}).get(key)
+    if not row:raise Problem(404,'This draft no longer exists. Refresh history.')
+    if user['role']!='admin' and (row.get('owner')!=user.get('email') or row.get('technician')!=user.get('technician')):
+        raise Problem(403,'You can only delete your own drafts.')
+    revision=data.get('revision')
+    if type(revision) is not int or revision!=row.get('revision'):
+        raise Problem(409,'This draft changed. Refresh history before deleting.')
+    result=copy.deepcopy(state)
+    del result['timesheetDrafts'][key]
+    return result,row

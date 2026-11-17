@@ -1,0 +1,18 @@
+Time sheet validation, draft deletion and leave detail popup - 17 November 2026
+
+Direct-hours entries now carry the normal 07:30-16:00 start and finish when the
+default eight-hour day is used. Entering custom hours requires matching actual
+start and finish times, and a mismatch blocks submission with the discrepancy
+shown in the form.
+
+Draft handling now lets admins delete every draft while technicians can delete
+only their own. Submitted time sheets and historical records remain unchanged.
+
+Leave history separates the leave type, mixed-type detail and Other description,
+and shows the total hours separately from Paid and Unpaid amounts. Selecting a
+request opens its details in a modal with close, Escape and backdrop dismissal.
+
+Checks passed: ESLint, production Vite build, 192 frontend tests and 89 focused
+backend tests covering direct hours, weekly Excel defaults, discrepancies, draft
+permissions, leave breakdowns, payables descriptions and concurrency. No stored
+data schema or business record was changed by this update.

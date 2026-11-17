@@ -21,13 +21,24 @@ class TemplateExport(unittest.TestCase):
   day.update(method='direct',hours=8.5,enteredHours=8.5,netDirectHours=True,unpaidLunch=True,lunchHours=.5,start='08:00',finish='17:00')
   sheet=self.books(state)[0]['Labour Report']
   self.assertEqual([sheet[cell].value for cell in ('C2','D2','E2','F2')],['08:00','17:00',8.5,.5])
- def test_work_entry_without_saved_times_uses_time_settings_defaults(self):
+ def test_default_direct_hours_without_saved_times_use_time_settings_defaults(self):
   state=copy.deepcopy(self.state);state['timeSettings']={'start':'08:00','finish':'16:30'}
   entry=next(iter(state['timesheets'].values()));day=entry['days'][0]
-  day.update(method='direct',hours=8.5,enteredHours=8.5,netDirectHours=True,unpaidLunch=True,lunchHours=.5,start='',finish='')
+  day.update(method='direct',hours=8,enteredHours=8,netDirectHours=True,unpaidLunch=True,lunchHours=.5,start='',finish='')
   sheet=self.books(state)[0]['Labour Report']
-  self.assertEqual([sheet[cell].value for cell in ('C2','D2','E2','F2')],['08:00','16:30',8.5,.5])
+  self.assertEqual([sheet[cell].value for cell in ('C2','D2','E2','F2')],['08:00','16:30',8,.5])
   self.assertIn('Default times used',sheet['H2'].value)
+ def test_custom_direct_hours_never_invent_default_times(self):
+  state=copy.deepcopy(self.state);state['timeSettings']={'start':'07:30','finish':'16:00'}
+  entry=next(iter(state['timesheets'].values()));day=entry['days'][0]
+  day.update(method='direct',hours=7,enteredHours=7,netDirectHours=True,unpaidLunch=True,lunchHours=.5,start='',finish='')
+  sheet=self.books(state)[0]['Labour Report']
+  self.assertIsNone(sheet['C2'].value);self.assertIsNone(sheet['D2'].value);self.assertEqual(sheet['E2'].value,7)
+  self.assertIn('Actual start / finish not recorded',sheet['H2'].value)
+  day.update(start='07:30',finish='16:00')
+  sheet=self.books(state)[0]['Labour Report']
+  self.assertIsNone(sheet['C2'].value);self.assertIsNone(sheet['D2'].value)
+  self.assertIn('Actual start / finish not recorded',sheet['H2'].value)
  def test_subtotals_have_valid_formulas_and_correct_cached_values(self):
   book,cached=self.books();self.assertEqual(book.active['E9'].value,'=SUM(E2:E8)')
   self.assertEqual(cached.active['E9'].value,8.5)

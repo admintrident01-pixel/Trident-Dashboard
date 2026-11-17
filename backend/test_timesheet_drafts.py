@@ -7,6 +7,8 @@ class TimesheetDraftTests(unittest.TestCase):
   self.payload={'technician':'Scott Yearbury','weekStart':'2026-10-12','signature':'','onCall':False,'notes':'unfinished notes','days':[{'status':'Work','method':'direct','hours':'8.5','start':'07:30','finish':'16:00','unpaidLunch':True,'notes':''} for _ in range(7)]}
  def save(self,payload=None,token='tech'):
   return self.api.call('/api/timesheet-drafts','POST',payload or self.payload,token=token)
+ def remove(self,draft,**kwargs):
+  return self.api.call('/api/timesheet-draft-delete','POST',{'id':draft['id'],'revision':draft['revision'],'confirmed':True},**kwargs)
  def test_partial_draft_persists_without_submission_and_is_private(self):
   self.payload['days'][0].update(hours='',status='Other',other='')
   report_before=weekly_report.read(self.api.store.state,'2026-10-12')
@@ -43,3 +45,30 @@ class TimesheetDraftTests(unittest.TestCase):
   bad={**self.payload,'draftId':draft['id'],'draftRevision':1,'weekStart':'2026-10-19'};self.assertEqual(self.save(bad)[0],400)
   p={**self.payload,'draftId':draft['id'],'draftRevision':0,'signature':'Scott'}
   self.assertEqual(self.api.call('/api/timesheets','POST',p,token='tech')[0],409)
+ def test_technician_can_delete_own_draft_without_touching_submissions(self):
+  submitted={**self.payload,'weekStart':'2026-10-19','signature':'Scott'}
+  status,data,_=self.api.call('/api/timesheets','POST',submitted,token='tech');self.assertEqual(status,200)
+  submitted_id=data['id'];draft=self.save()[1]['draft']
+  status,data,_=self.remove(draft);self.assertEqual(status,200)
+  self.assertEqual(data['id'],draft['id']);self.assertEqual(self.api.store.state['timesheetDrafts'],{})
+  self.assertIn(submitted_id,self.api.store.state['timesheets'])
+  self.assertEqual(self.save()[0],200)
+ def test_admin_can_delete_any_draft_but_technician_cannot_delete_another_owner(self):
+  tech_draft=self.save()[1]['draft']
+  other={**self.payload,'technician':'Andrew','signature':'Andrew'}
+  status,data,_=self.api.call('/api/timesheet-drafts','POST',other);self.assertEqual(status,200)
+  other_draft=data['draft']
+  self.assertEqual(self.remove(other_draft,token='tech')[0],403)
+  self.assertEqual(self.remove(other_draft)[0],200)
+  same_tech={**self.payload,'weekStart':'2026-10-19'}
+  status,data,_=self.api.call('/api/timesheet-drafts','POST',same_tech);self.assertEqual(status,200)
+  self.assertEqual(self.remove(data['draft'],token='tech')[0],403)
+  self.assertEqual(self.remove(tech_draft)[0],200)
+ def test_draft_delete_requires_confirmation_current_revision_and_existing_draft(self):
+  draft=self.save()[1]['draft']
+  self.assertEqual(self.remove(draft,token='')[0],401)
+  self.assertEqual(self.remove(draft,match=False)[0],409)
+  self.assertEqual(self.api.call('/api/timesheet-draft-delete','POST',{'id':draft['id'],'revision':draft['revision'],'confirmed':False},token='tech')[0],400)
+  self.assertEqual(self.api.call('/api/timesheet-draft-delete','POST',{'id':draft['id'],'revision':99,'confirmed':True},token='tech')[0],409)
+  self.assertEqual(self.api.call('/api/timesheet-draft-delete','POST',{'id':'missing','revision':1,'confirmed':True},token='tech')[0],404)
+  self.assertIn(draft['id'],self.api.store.state['timesheetDrafts'])

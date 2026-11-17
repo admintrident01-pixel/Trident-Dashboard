@@ -1,11 +1,12 @@
 import copy, datetime, decimal, re, uuid
 from zoneinfo import ZoneInfo
 from core import Problem
-from leave import TYPES as LEAVE_TYPES
+from leave import TYPES as LEAVE_TYPES, approved as approved_leave
 
 TIME_SHEET_STATUSES=('Work',)+LEAVE_TYPES
 
 DEFAULT_NAMES = ['Scott Yearbury', 'Daryll Anderson', 'Bala Ganesh Venkatesan', 'Andrew Thomas', 'Rick Leef', 'Allan Burney', 'Joby Shearing', 'Jackie Gough']
+DAY_NAMES = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
 
 ON_CALL_NOTE = 'ON CALL ALLOWANCE NEEDED'
 
@@ -63,6 +64,71 @@ def minutes(value):
     hour, minute = map(int, value.split(':'))
     return hour * 60 + minute
 
+def default_work_times(state):
+    """Return the configured workday window, falling back safely if it is unavailable."""
+    if not isinstance(state, dict):
+        state = {}
+    settings = state.get('timeSettings') if isinstance(state.get('timeSettings'), dict) else {}
+    start = settings.get('start', '07:30')
+    finish = settings.get('finish', '16:00')
+    try:
+        span = minutes(finish) - minutes(start)
+    except Problem:
+        span = 0
+    if span <= 0:
+        return '07:30', '16:00'
+    return start, finish
+
+def clock_minutes(value):
+    if value == '24:00':
+        return 1440
+    try:
+        return minutes(value)
+    except Problem:
+        return None
+
+def timed_leave_for_week(state, technician, week):
+    """Map timed approved leave to each date in the time sheet week."""
+    try:
+        start = datetime.date.fromisoformat(week)
+    except (TypeError, ValueError):
+        return {}
+    dates = {(start + datetime.timedelta(days=index)).isoformat() for index in range(7)}
+    result = {}
+    for row in approved_leave(state):
+        if str(row.get('technician', '')).casefold() != technician.casefold():
+            continue
+        if not row.get('startTime') or not row.get('endTime'):
+            continue
+        for date in row.get('dates', []):
+            if date in dates:
+                result[date] = row
+    return result
+
+def paid_leave_hours(row, start, finish):
+    """Return approved paid leave minutes inside a work start/finish window."""
+    if not row or start is None or finish is None:
+        return decimal.Decimal(0)
+    leave_start = clock_minutes(row.get('startTime'))
+    leave_end = clock_minutes(row.get('endTime'))
+    if leave_start is None or leave_end is None or leave_end <= leave_start:
+        return decimal.Decimal(0)
+    overlap = max(0, min(finish, leave_end) - max(start, leave_start))
+    if not overlap:
+        return decimal.Decimal(0)
+    lunch_start = clock_minutes(row.get('lunchStart'))
+    lunch_end = clock_minutes(row.get('lunchEnd'))
+    lunch_overlap = max(0, min(finish, lunch_end) - max(start, lunch_start)) if lunch_start is not None and lunch_end is not None else 0
+    try:
+        approved_hours = decimal.Decimal(str(row.get('hoursPerDay') or 0))
+    except decimal.InvalidOperation:
+        approved_hours = decimal.Decimal(0)
+    leave_span = leave_end - leave_start
+    if lunch_start is None or lunch_end is None:
+        if leave_span > 0 and approved_hours > 0 and abs(decimal.Decimal(leave_span) / 60 - approved_hours) > decimal.Decimal('0.001'):
+            return approved_hours * decimal.Decimal(overlap) / decimal.Decimal(leave_span)
+    return decimal.Decimal(max(0, overlap - lunch_overlap)) / 60
+
 def save(state, data, user=None, exclude_submission=None, exclude_draft=None, check_period=True, require_on_call=False):
     if not isinstance(data, dict):
         raise Problem(400, 'Invalid time sheet.')
@@ -87,9 +153,13 @@ def save(state, data, user=None, exclude_submission=None, exclude_draft=None, ch
     if not isinstance(days, list) or len(days) != 7:
         raise Problem(400, 'The time sheet must contain seven days.')
     cleaned, total = [], decimal.Decimal(0)
-    for day in days:
+    default_start, default_finish = default_work_times(state)
+    default_direct_hours = decimal.Decimal(minutes(default_finish) - minutes(default_start)) / 60
+    timed_leave = timed_leave_for_week(state, technician, week)
+    for index, day in enumerate(days):
         if not isinstance(day, dict):
             raise Problem(400, 'Invalid day entry.')
+        day_name = DAY_NAMES[index]
         status, method = day.get('status'), day.get('method')
         if status not in TIME_SHEET_STATUSES or method not in ('direct', 'times'):
             raise Problem(400, 'Choose a valid work/leave type and entry method.')
@@ -118,19 +188,33 @@ def save(state, data, user=None, exclude_submission=None, exclude_draft=None, ch
             raise Problem(400, 'Unpaid lunch applies only to work hours.')
         entered_hours = hours
         lunch_hours = min(hours, decimal.Decimal('0.5')) if unpaid_lunch else decimal.Decimal(0)
+        leave_row = timed_leave.get((date + datetime.timedelta(days=index)).isoformat())
+        leave_hours = paid_leave_hours(leave_row, minutes(default_start), minutes(default_finish)) if leave_row else decimal.Decimal(0)
         net_direct=day.get('netDirectHours',False)
         if not isinstance(net_direct,bool):raise Problem(400,'Invalid direct hours format.')
         if status=='Work' and method=='direct' and net_direct and hours>0:
+            if not start and not finish:
+                default_paid_hours = default_direct_hours - lunch_hours - leave_hours
+                if hours != default_paid_hours:
+                    suffix = ' after approved leave' if leave_hours else ''
+                    raise Problem(400, f'{day_name}: enter both actual start and finish times for custom Direct hours{suffix}.')
+                start, finish = default_start, default_finish
+            elif not (start and finish):
+                raise Problem(400, f'{day_name}: enter both actual start and finish times for Direct hours.')
             duration=minutes(finish)-minutes(start)
-            if duration<=0:raise Problem(400,'Enter actual start and finish times for Direct hours.')
-            expected=decimal.Decimal(duration)/60-lunch_hours
-            if hours>decimal.Decimal(duration)/60:raise Problem(400,'Paid hours cannot exceed the actual start–finish period.')
-            if expected!=hours and not notes:raise Problem(400,'Direct paid hours do not match start, finish and lunch. Review them or explain separate work periods in daily notes.')
+            if duration<=0:raise Problem(400,f'{day_name}: finish time must be after start time.')
+            leave_hours = paid_leave_hours(leave_row, minutes(start), minutes(finish)) if leave_row else decimal.Decimal(0)
+            expected=decimal.Decimal(duration)/60-lunch_hours-leave_hours
+            if hours>decimal.Decimal(duration)/60-leave_hours:raise Problem(400,f'{day_name}: paid hours cannot exceed the actual start–finish period after approved leave.')
+            if expected!=hours:
+                label = 'start, finish, lunch and approved leave' if leave_hours else 'start, finish and lunch'
+                raise Problem(400, f'{day_name}: {label} do not match {hours:.2f} Direct paid hours. Enter actual start and finish times.')
         elif status=='Work' and method=='direct' and (start or finish):
-            if minutes(finish)<minutes(start):raise Problem(400,'Finish time must not be before start time.')
+            if not (start and finish):raise Problem(400,f'{day_name}: enter both start and finish times.')
+            if minutes(finish)<minutes(start):raise Problem(400,f'{day_name}: finish time must not be before start time.')
         if not (net_direct and method=='direct'):hours -= lunch_hours
         total += hours
-        keep_times = status == 'Work' and (method == 'times' or bool(start and finish))
+        keep_times = status == 'Work' and entered_hours > 0 and (method == 'times' or bool(start and finish))
         cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'enteredHours': float(entered_hours), 'netDirectHours':net_direct,'unpaidLunch': unpaid_lunch, 'lunchHours': float(lunch_hours), 'start': start if keep_times else '', 'finish': finish if keep_times else ''})
     entry = {'id': str(uuid.uuid4()), 'revision': 1, 'technician': technician, 'weekStart': week, 'signature': signature, 'notes': text(data.get('notes', ''), 'weekly notes', 4000), 'days': cleaned, 'total': float(total), 'submittedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
     if isinstance(on_call, bool):

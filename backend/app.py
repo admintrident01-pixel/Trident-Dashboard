@@ -673,7 +673,7 @@ class Application:
 
       payload=self.objects.get(key);mime='application/pdf'
 
-     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/timesheet-drafts','/api/staff-settings','/api/vehicles','/api/vehicle-order','/api/vehicle-checks','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
+     elif method=='POST' and path in ('/api/workbook','/api/quote-save','/api/timesheets','/api/timesheet-drafts','/api/timesheet-draft-delete','/api/staff-settings','/api/vehicles','/api/vehicle-order','/api/vehicle-checks','/api/time-settings','/api/quote-settings','/api/timesheet-edit'):
 
       length=int(environ.get('CONTENT_LENGTH') or 0)
 
@@ -758,6 +758,11 @@ class Application:
        try:p=json.loads(body)
        except Exception:raise Problem(400,'Invalid draft request.')
        state,entry=timesheet_drafts.save(state,p,user);payload={'saved':True,'draft':entry,'message':'Draft saved. Continue it from your time sheet history.'}
+
+      elif path=='/api/timesheet-draft-delete':
+       try:p=json.loads(body)
+       except Exception:raise Problem(400,'Invalid draft request.')
+       state,entry=timesheet_drafts.delete(state,p,user);payload={'saved':True,'id':entry['id'],'message':'Draft deleted. It was not included in reports or payables.'}
 
       elif path=='/api/timesheets':
 

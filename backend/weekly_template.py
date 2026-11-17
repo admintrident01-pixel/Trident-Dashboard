@@ -63,6 +63,30 @@ def row_height(row):
  return min(409.5,15*max([1]+[sum(max(1,len(textwrap.wrap(line,width=max(1,width-2)))) for line in str(value).split('\n'))
                      for value,width in zip(row,widths) if isinstance(value,str)]))
 
+def clock_minutes(value):
+ try:
+  hour,minute=map(int,str(value or '').split(':'))
+  return hour*60+minute
+ except (TypeError,ValueError):
+  return None
+
+def direct_times_match(entry,start,finish):
+ """Only present direct-entry times that reconcile with the paid hours."""
+ if entry.get('method')!='direct' or entry.get('netDirectHours') is not True:return True
+ try:hours=float(entry.get('hours') or 0);lunch=float(entry.get('lunchHours') or 0)
+ except (TypeError,ValueError):return False
+ if hours<=0:return False
+ start_minutes=clock_minutes(start);finish_minutes=clock_minutes(finish)
+ if start_minutes is None or finish_minutes is None or finish_minutes<=start_minutes:return False
+ return abs((finish_minutes-start_minutes)/60-lunch-hours)<0.001
+
+def default_direct_matches(entry,default_start,default_finish):
+ try:hours=float(entry.get('hours') or 0);lunch=float(entry.get('lunchHours') or 0)
+ except (TypeError,ValueError):return False
+ start_minutes=clock_minutes(default_start);finish_minutes=clock_minutes(default_finish)
+ if start_minutes is None or finish_minutes is None or finish_minutes<=start_minutes:return False
+ return abs((finish_minutes-start_minutes)/60-lunch-hours)<0.001
+
 def compact_labour_columns(tree):
  """Remove the two obsolete sum columns and spacer; put charged hours before notes."""
  mapping={'A':'A','B':'B','F':'C','G':'D','H':'E','I':'F','C':'G','J':'H'}
@@ -104,12 +128,20 @@ def labour_rows(state,week,rows,metric):
    work_start=day.get('workFrom') or entry.get('start')
    work_finish=day.get('workTo') or entry.get('finish')
    if work_start and work_finish and entry.get('status')=='Work':
-    start=work_start;finish=work_finish
+    if direct_times_match(entry,work_start,work_finish):
+     start=work_start;finish=work_finish
+    elif float(entry.get('hours') or 0)>0:
+     notes.append('Actual start / finish not recorded')
    elif day.get('leaveHours'):
     if day.get('leaveFrom') and day.get('leaveTo'):start=day['leaveFrom'];finish=day['leaveTo']
     else:start=default_start;finish=default_finish;notes.append('Default times from Time sheet settings')
    elif entry.get('status')=='Work' and entry.get('hours',0)>0:
-    start=default_start;finish=default_finish;notes.append('Default times used; actual start / finish not recorded')
+     if entry.get('method')=='direct' and entry.get('netDirectHours') is True and default_direct_matches(entry,default_start,default_finish):
+      start=default_start;finish=default_finish;notes.append('Default times used')
+     elif entry.get('method')=='direct' and entry.get('netDirectHours') is True:
+      notes.append('Actual start / finish not recorded')
+     else:
+      start=default_start;finish=default_finish;notes.append('Default times used; actual start / finish not recorded')
    if day['note']:notes.append(day['note'])
    if not recorded:notes.append('No submission')
    lunch=entry.get('lunchHours')
