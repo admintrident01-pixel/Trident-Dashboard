@@ -1,46 +1,36 @@
-PUBLISHED AND VERIFIED - Timesheet validation, draft deletion and leave detail popup
-17 November 2026 (Pacific/Auckland)
+PUBLISHED AND VERIFIED - Schedule block edges and checkbox shadows
+18 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Commit: 9307bab39c880cf2baf7202fecc063c3b594c37b
-- Base commit: dce51fa
-- Direct-hours entries default to 07:30-16:00; a custom time requires matching
-  Start and Finish values, and submissions are blocked while a discrepancy
-  remains.
-- Admins can delete every timesheet draft; technicians can delete only their own
-  draft.
-- Leave history separates the leave type, mixed-type detail and Other
-  description, with separate total and Paid/Unpaid badges.
-- Leave request details now open in a modal with close, Escape and backdrop
-  dismissal.
-- The cumulative package also carries the previously published schedule toolbar,
-  travel-block deletion and Excel cell-order fixes.
+- Commit: 9e28b7937eb4de227e11df801e0aa56ae2e594d8
+- Base commit: 448cc7b92049c097205b96192171ac112a4da4e4
+- Recurring-note and notes-type schedule blocks now have a thin 1px border in
+  their matching lavender and mint colour families, with border-box sizing.
+- Schedule selection checkboxes now carry a darker inset shadow along the top,
+  left and right inner edges.
+- The cumulative package includes the previously published timesheet validation,
+  leave detail, schedule toolbar, travel deletion and Excel fixes.
 
 LOCAL VALIDATION
-- npm run lint passed.
-- npm run build passed.
-- Frontend tests: 192 passed.
-- Focused backend tests: 89 passed across direct-hours validation, timesheet
-  drafts, weekly template/report generation, leave types and schedule actions.
-- Local week 2026-11-09 Labour workbook: valid ZIP, 81 rows, 8 columns, zero
-  out-of-order or duplicate cell rows, and openpyxl opens it without repair.
-- Columns C-F are populated for submitted technicians. The retained local data
-  had one submitted technician for this week; technicians without a submission
-  intentionally remain blank.
+- ESLint passed.
+- Production build passed.
+- Local browser checks confirmed the 1px note borders and the darker checkbox
+  inset shadow on all 15 preview checkboxes.
+- The previous full release baseline remains 192 frontend tests and 89 focused
+  backend tests passed.
 
 DEPLOYMENT
-- Push: dce51fa..9307bab main -> main.
+- Push: 448cc7b..9e28b79 main -> main.
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live core JavaScript: assets/index-tgPhISTV.js
+- Live core JavaScript: assets/index-UPNggYWo.js
 - Live core CSS: assets/index-DGleuqip.css
-- Live leave chunk: assets/LeaveForms-CDtnHgIA.js; live leave CSS:
-  assets/LeaveForms-G0RxNzTI.css
-- Live validation helper: timesheet-direct-validation.js
-- Live API health endpoint: https://trident-quote-api-383423323438.australia-southeast1.run.app/api/health
-- API health response: HTTP 200, {"ok": true, "version": "C"}.
-- Live HTML, frontend assets, leave chunk, validation helper and theme stylesheet
-  returned HTTP 200.
+- Live schedule CSS: assets/TechSchedule-Bvckfe2Y.css
+- Live compiled CSS contains the recurring-note border, notes-type border and
+  checkbox inset-shadow rules.
+- Live theme contains the matching lavender/mint border tokens and checkbox
+  shadow token.
+- Live API health: HTTP 200, {"ok": true, "version": "C"}.
 
 PRE-RELEASE BACKUP LIMITATION
 - A fresh BigQuery/GCS snapshot could not be created from this machine because
@@ -48,23 +38,22 @@ PRE-RELEASE BACKUP LIMITATION
 - Latest recoverable verified recovery point remains tag
   excel-parse_20261115T235638Z at register revision 18782, with 35 uploads and
   0 missing referenced uploads.
-- This release is schema-neutral and made no production business writes.
+- This release changed frontend styling only and made no production business
+  writes.
 
 OPEN ONLINE CHECKS
 - The saved browser session was not signed in to production, so authenticated
-  Labour payables, draft-deletion and leave screens were not rechecked online.
-- Bala's online weekend reconciliation could not be independently confirmed
-  locally because the retained local submission set has no Bala record for the
-  week beginning 2026-11-09.
+  schedule screens were not rechecked online.
+- The live compiled stylesheet and theme were verified directly.
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 575 entries, 1,483,006 bytes.
-- SHA256: 840CC8E3331EDABABF812382FC50B7F87EA50BE08562A66A04392F26CB1D692C.
+- 575 entries, 1,483,111 bytes.
+- SHA256: 6A83F4D76E4B78A542FA911AB6BF10739533F2B9549A42CCDCCA0898828A266C.
 - Previous package archived as
-  outputs/Release history/Trident-dashboard-before-timesheet-validation-2026-11-17.zip.
+  outputs/Release history/Trident-dashboard-before-schedule-edge-2026-11-18.zip.
 - Previous package SHA256:
-  7B08F35464A091158FE89FE0250414960AF0A31FC95F0D5E8373FED4923B1C10.
+  840CC8E3331EDABABF812382FC50B7F87EA50BE08562A66A04392F26CB1D692C.
 - The package excludes environment files, runtime data, outputs, tests,
   work-tests and local preview/helper files. `.env.example` is intentionally
   included because it contains no credentials.
