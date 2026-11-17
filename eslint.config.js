@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '.local-runtime/**', '.local-data/**', 'public/pdf-lib.min.js']),
+  globalIgnores(['dist', 'outputs/**', '.local-runtime/**', '.local-data/**', 'public/pdf-lib.min.js']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

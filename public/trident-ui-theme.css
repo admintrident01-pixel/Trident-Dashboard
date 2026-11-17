@@ -60,6 +60,14 @@
   --td-schedule-sheen-time:650ms;
   --td-schedule-sheen-ease:cubic-bezier(.18,.9,.58,1);
   --td-schedule-sheen:linear-gradient(226deg,rgba(255,255,255,.40) 0%,rgba(255,255,255,.40) 35%,rgba(255,255,255,.20) 42%,rgba(255,255,255,0) 60%);
+  --td-schedule-expand-max-height:340px;
+  --td-schedule-expand-width:260px;
+  --td-schedule-expand-width-threshold:180px;
+  --td-schedule-expand-time:260ms;
+  --td-schedule-expand-delay:90ms;
+  --td-schedule-expand-ease:var(--td-ease);
+  --td-schedule-expand-scale:1;
+  --td-schedule-expand-z:8;
   --td-ring:0 0 0 3px rgba(14,124,134,.20);
   --td-ease:cubic-bezier(.2,.75,.3,1);
   --td-fast:140ms;
@@ -581,7 +589,7 @@
   body.trident-portal .schedule-appointment{
     border-radius:var(--td-radius-sm);
     box-shadow:var(--td-schedule-shadow);
-    transition:box-shadow var(--td-fast) var(--td-ease),transform var(--td-fast) var(--td-ease),filter var(--td-fast) var(--td-ease),outline-color var(--td-fast) var(--td-ease);
+    transition:box-shadow var(--td-fast) var(--td-ease),transform var(--td-fast) var(--td-ease),filter var(--td-fast) var(--td-ease),outline-color var(--td-fast) var(--td-ease),width var(--td-schedule-expand-time) var(--td-schedule-expand-ease) var(--td-schedule-expand-delay),height var(--td-schedule-expand-time) var(--td-schedule-expand-ease) var(--td-schedule-expand-delay);
   }
   body.trident-portal .schedule-appointment:is(:hover,:focus-visible){transform:translateY(-2px);box-shadow:var(--td-schedule-hover-shadow);filter:brightness(1.012) saturate(1.05)}
   body.trident-portal .schedule-appointment:active{transform:translateY(0) scale(.997);box-shadow:var(--td-schedule-pressed-shadow);filter:none}
@@ -591,7 +599,7 @@
     background:transparent;
     border-color:transparent;
     box-shadow:none;
-    transition:outline-color var(--td-fast) var(--td-ease)
+    transition:width var(--td-schedule-expand-time) var(--td-schedule-expand-ease) var(--td-schedule-expand-delay),height var(--td-schedule-expand-time) var(--td-schedule-expand-ease) var(--td-schedule-expand-delay),transform var(--td-fast) var(--td-ease),outline-color var(--td-fast) var(--td-ease)
   }
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)::before{
     content:"";position:absolute;inset:-1px;box-sizing:border-box;
@@ -616,8 +624,43 @@
     filter:none!important;
     box-shadow:none!important
   }
-  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-visible)::before{top:calc(-1px - var(--td-schedule-zoom));bottom:calc(-1px - var(--td-schedule-zoom));background-size:calc(var(--td-schedule-rail-width) + var(--td-schedule-zoom)) 100%;box-shadow:var(--td-schedule-hover-shadow)}
-  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-visible)::after{top:calc(-1px - var(--td-schedule-zoom));bottom:calc(-1px - var(--td-schedule-zoom));background-position:0 0}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-within)::before{top:calc(-1px - var(--td-schedule-zoom));bottom:calc(-1px - var(--td-schedule-zoom));background-size:calc(var(--td-schedule-rail-width) + var(--td-schedule-zoom)) 100%;box-shadow:var(--td-schedule-hover-shadow)}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):is(:hover,:focus-within)::after{top:calc(-1px - var(--td-schedule-zoom));bottom:calc(-1px - var(--td-schedule-zoom));background-position:0 0}
+  body.trident-portal .tech-schedule .schedule-track:has(> .schedule-appointment.is-width-expanded){overflow:visible;z-index:calc(var(--td-schedule-expand-z,8) + 1)}
+  body.trident-portal .tech-schedule .schedule-appointment.is-width-expanded:is(.is-measuring,.is-expanded){width:var(--td-schedule-expand-target-width)!important}
+  body.trident-portal .tech-schedule .schedule-appointment.is-measuring{
+    height:auto!important;max-height:none!important;transition:none!important
+  }
+  body.trident-portal .tech-schedule .schedule-appointment.is-measuring .schedule-card-content{
+    container-type:normal;height:auto!important;overflow:visible!important
+  }
+  body.trident-portal .tech-schedule .schedule-appointment.is-measuring .schedule-card-content>:not(.schedule-booking-tags):not(input),
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel).is-expanded .schedule-card-content>:not(.schedule-booking-tags):not(input){
+    white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere
+  }
+  body.trident-portal .tech-schedule .schedule-appointment.is-measuring .schedule-card-heading,
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel).is-expanded .schedule-card-heading{
+    flex-wrap:nowrap
+  }
+  body.trident-portal .tech-schedule .schedule-appointment.is-measuring .schedule-card-heading>:is(.schedule-client-line,.schedule-client-address),
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel).is-expanded .schedule-card-heading>:is(.schedule-client-line,.schedule-client-address){
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal
+  }
+  body.trident-portal .tech-schedule .schedule-appointment.is-measuring .schedule-card-meta,
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel).is-expanded .schedule-card-meta{display:block}
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel).is-expanded{
+    height:var(--td-schedule-expand-target)!important;
+    max-height:none!important;
+    transform:translateX(var(--td-schedule-expand-shift,0)) scale(var(--td-schedule-expand-scale))!important;
+    transform-origin:left top;
+    z-index:var(--td-schedule-expand-z,8)
+  }
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel).is-expanded .schedule-card-content{
+    container-type:normal;overflow-x:hidden;overflow-y:hidden
+  }
+  body.trident-portal .tech-schedule .schedule-appointment:not(.travel).is-expanded[data-expand-scroll] .schedule-card-content{
+    overflow-y:auto;scrollbar-width:thin
+  }
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note)>:is(strong,span,small,em){position:relative;z-index:1}
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):active::before,
   body.trident-portal .tech-schedule .schedule-appointment:not(.travel):not(.leave):not(.lunch):not(.recurring-note):not(.type-note):active::after{top:-1px;bottom:-1px}

@@ -38,6 +38,22 @@ class RecurringNotes(unittest.TestCase):
   self.create(fromDate='2026-11-02') # alternating weeks do not conflict
   self.state['appointments']={'a':{'id':'a','date':'2026-11-02','start':'15:30','duration':30,'technician':'Sample technician','client':'Existing client'}}
   with self.assertRaises(Problem):self.create(fromDate='2026-11-02')
+ def test_delete_one_occurrence_for_one_technician(self):
+  self.state['staffSettings']['technicians']=[{'name':'Sample technician','rego':''},{'name':'Second technician','rego':''}]
+  state=self.create(technicians=['Sample technician','Second technician']);rule=next(iter(state['scheduleNoteSeries'].values()))
+  self.assertEqual(len(schedule_notes.blocks(state,'2026-10-26')),2)
+  for bad in ({'technician':'Unknown','date':'2026-10-26','version':1},{'technician':'Sample technician','date':'2026-10-27','version':1},{'technician':'Sample technician','date':'2026-10-26','version':0}):
+   with self.subTest(bad=bad),self.assertRaises(Problem):schedule_notes.save(state,{'action':'delete_occurrence','id':rule['id'],**bad},self.user)
+  deleted=schedule_notes.save(state,{'action':'delete_occurrence','id':rule['id'],'date':'2026-10-26','technician':'Sample technician','version':1},self.user)
+  self.assertEqual([b['technician'] for b in schedule_notes.blocks(deleted,'2026-10-26')],['Second technician'])
+  self.assertEqual(len(schedule_notes.blocks(deleted,'2026-11-09')),2)
+  self.assertEqual(deleted['scheduleNoteSeries'][rule['id']]['excluded'][0]['technician'],'Sample technician')
+  self.assertEqual(deleted['scheduleNoteSeries'][rule['id']]['version'],2)
+  with self.assertRaises(Problem):schedule_notes.save(deleted,{'action':'delete_occurrence','id':rule['id'],'date':'2026-10-26','technician':'Sample technician','version':2},self.user)
+  restored=schedule_notes.save(deleted,{'action':'restore_occurrence','id':rule['id'],'date':'2026-10-26','technician':'Sample technician','version':2},self.user)
+  self.assertEqual(len(schedule_notes.blocks(restored,'2026-10-26')),2)
+  self.assertEqual(restored['scheduleNoteSeries'][rule['id']]['excluded'],[])
+  self.assertEqual(len(restored['scheduleNoteSeries'][rule['id']]['history']),3)
  def test_reserved_time_blocks_booking_resize_and_selection_delete(self):
   state=self.create();base={'date':'2026-10-26','technician':'Sample technician','start':'15:30','duration':30,'client':'Visit','address':'1 Sample Road','type':'Other','timing':'flexible'}
   with self.assertRaises(Problem):schedule.save(state,base,self.user)

@@ -15,11 +15,15 @@ def occurs(rule,date):
     day=dt.date.fromisoformat(date);anchor=first(rule)
     return day>=anchor and (not rule.get('toDate') or date<=rule['toDate']) and (day-anchor).days%(7*rule['intervalWeeks'])==0
 
+def excluded(rule,date,name):
+    return any(item.get('date')==date and item.get('technician')==name for item in rule.get('excluded',[]))
+
 def blocks(state,date):
     result=[]
     for rule in state.get('scheduleNoteSeries',{}).values():
         if not occurs(rule,date):continue
         for name in rule['technicians']:
+            if excluded(rule,date,name):continue
             result.append({'id':f"note:{rule['id']}:{date}:"+str(uuid.uuid5(uuid.NAMESPACE_URL,name)),
                 'seriesId':rule['id'],'source':'note','date':date,'technician':name,'technicians':[name],
                 'client':rule['title'],'address':rule['notes'],'notes':rule['notes'],'type':'Recurring notes',
@@ -68,16 +72,34 @@ def save(state,data,user):
         if from_date>'9998-12-24' or to_date>'9998-12-31':raise Problem(400,'Choose a date before the year 9999.')
         rule={'id':str(uuid.uuid4()),'title':s.text(data.get('title'),'a block title',160),'notes':str(data.get('notes','')).strip(),
             'technicians':names,'weekday':weekday,'intervalWeeks':interval,'fromDate':from_date,'toDate':to_date,
-            'start':data['start'],'duration':end-start,'createdAt':now,'createdBy':user['email'],'deleted':False,'version':1,'history':[]}
+            'start':data['start'],'duration':end-start,'createdAt':now,'createdBy':user['email'],'deleted':False,'excluded':[],'version':1,'history':[]}
         if len(rule['notes'])>4000:raise Problem(400,'Keep notes under 4,000 characters.')
         if to_date and first(rule).isoformat()>to_date:raise Problem(400,'The date range does not include the chosen weekday.')
         validate_conflicts(state,rule)
+    elif action in ('delete_occurrence','restore_occurrence'):
+        if not old:raise Problem(404,'This series is no longer available. Refresh the list.')
+        if data.get('version')!=old['version']:raise Problem(409,'This series changed. Refresh before trying again.')
+        technician=data.get('technician')
+        if not isinstance(technician,str) or technician not in old.get('technicians',[]):raise Problem(400,'Choose a technician from this series.')
+        date=s.day(data.get('date'))
+        if not occurs(old,date):raise Problem(409,'This series has no note on that date.')
+        rule=copy.deepcopy(old);excluded_items=rule.setdefault('excluded',[])
+        found=next((index for index,item in enumerate(excluded_items) if item.get('date')==date and item.get('technician')==technician),None)
+        if action=='delete_occurrence':
+            if found is not None:raise Problem(409,'This note is already deleted for that technician and date.')
+            excluded_items.append({'date':date,'technician':technician,'at':now,'by':user['email']})
+        else:
+            if found is None:raise Problem(404,'This note is not deleted for that technician and date.')
+            del excluded_items[found]
+        rule['version']+=1
     elif action in ('delete','restore'):
         if not old:raise Problem(404,'This series is no longer available. Refresh the list.')
         if data.get('version')!=old['version']:raise Problem(409,'This series changed. Refresh before trying again.')
         rule=copy.deepcopy(old);rule['deleted']=action=='delete';rule['version']+=1
         if action=='restore':validate_conflicts(state,rule)
-    else:raise Problem(400,'Choose Create, Delete or Restore.')
-    rule['history'].append({'action':action,'at':now,'by':user['email']})
+    else:raise Problem(400,'Choose Create, Delete, Restore or Occurrence action.')
+    history={'action':action,'at':now,'by':user['email']}
+    if action in ('delete_occurrence','restore_occurrence'):history.update({'date':date,'technician':technician})
+    rule['history'].append(history)
     result={**state,'scheduleNoteSeries':copy.deepcopy(state.get('scheduleNoteSeries',{}))};result['scheduleNoteSeries'][rule['id']]=rule
     return result

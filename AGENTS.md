@@ -5,6 +5,11 @@
 - Source/local preview: C:/Users/TECH11/Documents/Trident-Complete-Computer-Transfer/outputs/Version C/Online. GitHub clone: C:/Users/TECH11/Documents/GitHub/Trident-Dashboard. Local preview: http://127.0.0.1:18780/.
 - The online dashboard is https://trident-dashboard.admintrident01.workers.dev/. A push to main automatically starts frontend and API deployments, so a GitHub push is also a publishing action requiring the approval above.
 
+## Local and online parity — 18 November 2026
+
+- After every approved release is published, bring the local working copy and local preview back to the exact production version. Confirm the same commit, built assets, settings and behaviour locally; do not leave local files behind the online site. Preserve and merge any approved local-only work before publishing so nothing is lost either way.
+- Show previews from the real local app pages and the same sample records used online, not a standalone mock, unless the user specifically asks to tune a component in the block lab. The preview must match the current online layout and data so changes are reviewed in context.
+
 ## Icon style
 
 - Use the supplied Feather icon pack and shared `src/Icon.jsx` component. For a missing icon, draw one in the same 24px, 2px rounded-outline style. Follow `ICON-STYLE.md`; preserve compact controls and accessible labels. This preference was requested on 18 October 2026.

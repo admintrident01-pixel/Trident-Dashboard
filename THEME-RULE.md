@@ -101,6 +101,27 @@ Motion: `140ms` colour/press, `220ms` transform/dialog, ease
   sweep, inset top light, soft inner depth and a teal halo. Paint the surface,
   border and sweep on a pseudo-layer so the card moves without transforming or
   blurring its text. Keep a teal selected ring and clear drag/drop states.
+- On hover or keyboard focus, every block except travel expands in place after
+  `--td-schedule-expand-delay` (`90ms`) over
+  `--td-schedule-expand-time` (`260ms`) using
+  `--td-schedule-expand-ease` (`var(--td-ease)`). The card measures its own
+  content and grows only enough to fit it — there is no fixed expanded height.
+  `--td-schedule-expand-max-height` (`340px`) is a safety cap; longer content
+  scrolls inside the card. A block never shrinks below its scheduled height.
+  Cards whose resting width is `--td-schedule-expand-width-threshold` (`180px`)
+  or less also grow horizontally to `--td-schedule-expand-width` (`260px`) on
+  hover/focus, using the same delay and timing. The expanded card stays inside
+  the visible schedule viewport and may open leftward when there is not enough
+  room on the right.
+  Expanded cards reveal address, booking tags, total duration and type, notes and
+  team in the same surface instead of a browser tooltip or floating detail
+  overlay. Drag-source blocks stay compact. The optional
+  `--td-schedule-expand-scale` (`1`) adds a subtle zoom; keep it at `1` for
+  sharp text. Expanded cards rise to `--td-schedule-expand-z` (`8`).
+- Keep the booking time/client name and address on one heading row. Place the
+  address immediately after the client name, never stretched to the card's far
+  edge. Truncate it safely when space is tight. The address must never move to a
+  separate line below the client name, including while the card is expanded.
 - Paint the booking status rail, card fill and selected ring on that same
   expanding surface, so the rail and selection edge zoom with the card and the
   ring sits flush against the card edge without an inset gap.
@@ -109,8 +130,9 @@ Motion: `140ms` colour/press, `220ms` transform/dialog, ease
   rest and under reduced-motion preferences.
 - Position block-select checkboxes at the vertical centre of a 15-minute block
   and keep that fixed top offset for every longer duration.
-- Travel, leave, lunch and note blocks stay completely flat in every interaction
-  state: no tilt, lift, shadow, glow, filter or internal gradient.
+- Travel blocks stay completely flat in every interaction state: no tilt, lift,
+  shadow, glow, filter or internal gradient. Leave, lunch and note blocks keep
+  their existing flat fills but expand in place like other non-travel blocks.
 - Resize handles turn teal on hover; the office splitter uses a pale tint plus a
   small grip, never a full-height saturated stripe.
 

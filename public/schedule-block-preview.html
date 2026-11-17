@@ -25,10 +25,11 @@
     .demo-caption{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 1px 10px;color:#526981;font-size:10px;font-weight:650;letter-spacing:.01em}
     .demo-caption small{color:#7a8da1;font-size:9px;font-weight:500}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block{
-      position:relative;top:auto;left:auto;width:100%!important;height:auto!important;min-height:61px;
+      position:relative;top:auto;left:auto;width:100%!important;height:61px;min-height:0;
       margin:0;overflow:hidden;box-sizing:border-box;cursor:pointer;z-index:1
     }
-    body.schedule-demo .tech-schedule .schedule-appointment.demo-block strong{padding-right:8px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block>strong,
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-card-content>strong{padding-right:8px}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-booking-tags,
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-client-notes,
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block .schedule-team-label{margin-top:2px}
@@ -39,12 +40,54 @@
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block.type-note{padding-left:7px}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block.leave{padding-left:7px}
     body.schedule-demo .tech-schedule .schedule-appointment.demo-block:has(.schedule-select-block){padding-left:22px}
-    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.demo-compact{height:18px!important;min-height:18px!important;padding-top:0;padding-bottom:0}
-    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.demo-compact>strong{padding-top:0;line-height:16px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.demo-compact{height:18px;min-height:18px;padding-top:0;padding-bottom:0}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.demo-compact>strong,
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.demo-compact .schedule-card-content>strong{padding-top:0;line-height:16px}
+    body.schedule-demo .tech-schedule .schedule-appointment.demo-block.demo-live-sample{height:44px}
     .demo-help{margin:16px 0 0;padding:12px 14px;border:1px solid var(--td-line);border-radius:var(--td-radius);background:rgba(255,255,255,.72);color:#526981;font-size:11px;line-height:1.55}
     .demo-help strong{color:var(--td-navy)}
+    .demo-lab{margin:0 0 16px;padding:12px 14px;border:1px solid var(--td-line);border-radius:var(--td-radius-lg);background:rgba(255,255,255,.94);box-shadow:var(--td-shadow-1)}
+    .demo-lab-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+    .demo-lab-head h2{margin:0;color:var(--td-navy);font-size:14px}
+    .demo-lab-head p{margin:2px 0 0;color:var(--td-muted);font-size:10px}
+    .demo-lab-head button{min-height:28px;padding:4px 10px;font-size:11px}
+    .demo-controls{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px 14px}
+    .demo-control{display:grid;gap:5px;min-width:0;color:#526981;font-size:10px;font-weight:650}
+    .demo-control span{display:flex;align-items:center;justify-content:space-between;gap:6px;white-space:nowrap}
+    .demo-control output{color:var(--td-teal-deep);font-weight:700;font-variant-numeric:tabular-nums}
+    .demo-control input[type=range]{width:100%;margin:0;accent-color:var(--td-teal);min-height:18px}
+    .demo-control select{width:100%;min-height:26px;padding:3px 5px;font-size:10px}
+    .demo-lab-note{margin:9px 0 0;color:#6c8095;font-size:10px;line-height:1.45}
+    .demo-vars{margin:0 0 16px;border:1px solid var(--td-line);border-radius:var(--td-radius);background:rgba(255,255,255,.78);font-size:10px;line-height:1.45}
+    .demo-vars summary{padding:8px 12px;cursor:pointer;color:var(--td-navy);font-weight:700}
+    .demo-var-table{width:100%;border-collapse:collapse;color:#526981}
+    .demo-var-table th,.demo-var-table td{padding:5px 10px;border-top:1px solid var(--td-line);text-align:left;vertical-align:top}
+    .demo-var-table th{color:var(--td-navy);background:var(--td-surface-2);font-weight:700;white-space:nowrap}
+    .demo-var-table code{font-size:9.5px;color:var(--td-teal-deep);overflow-wrap:anywhere}
     @media(max-width:960px){.demo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:650px){.demo-shell{padding:18px 12px 24px}.demo-grid{grid-template-columns:1fr}.demo-header{align-items:flex-start}.demo-header h1{font-size:23px}.demo-note{white-space:normal}}
+    @media(max-width:960px){.demo-controls{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:650px){.demo-shell{padding:18px 12px 24px}.demo-grid{grid-template-columns:1fr}.demo-header{align-items:flex-start}.demo-header h1{font-size:23px}.demo-note{white-space:normal}.demo-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .size-lab{margin:0 0 16px;border:1px solid var(--td-line);border-radius:var(--td-radius-lg);background:rgba(255,255,255,.94);padding:16px;box-shadow:var(--td-shadow-1)}
+    .size-lab-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:13px}
+    .size-lab h2{margin:0;color:var(--td-navy);font-size:15px}
+    .size-lab-head p{margin:4px 0 0;color:var(--td-muted);font-size:11px;line-height:1.45}
+    .size-lab-note{flex:none;color:#6c8095;font-size:10px;font-weight:600;white-space:nowrap}
+    .size-lab-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .size-block-group{border-top:1px solid var(--td-line);padding-top:12px;min-width:0}
+    .size-block-group h3{margin:0;color:var(--td-navy);font-size:12px}
+    .size-block-group>p{margin:3px 0 10px;color:var(--td-muted);font-size:10px;line-height:1.45}
+    .size-row{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;align-items:center;margin:0 0 9px}
+    .size-row:last-child{margin-bottom:0}
+    .size-row-label{color:#526981;font-size:10px;font-weight:700;line-height:1.3}
+    .size-row-label small{display:block;color:#7a8da1;font-size:9px;font-weight:500}
+    .size-stage{min-width:0}
+    .size-durations .size-stage{max-width:320px}
+    .size-row:has(.is-width-expanded){position:relative;z-index:5}
+    .size-widths .size-stage{width:var(--size-width,100%)}
+    .size-stage .schedule-appointment.demo-block{width:100%!important;height:var(--size-height,61px)!important;min-height:0!important}
+    .size-stage .schedule-appointment.demo-block.is-width-expanded{width:var(--td-schedule-expand-target-width)!important}
+    .size-stage[data-minutes="15"] .schedule-appointment.demo-block{padding-top:0;padding-bottom:0}
+    @media(max-width:760px){.size-lab-grid{grid-template-columns:1fr}.size-row{grid-template-columns:76px minmax(0,1fr)}.size-lab-head{align-items:flex-start;flex-direction:column;gap:4px}}
     @media(prefers-reduced-motion:reduce){body.schedule-demo .schedule-appointment{transition:none!important}}
   </style>
 </head>
@@ -56,13 +99,112 @@
         <h1>Schedule block examples</h1>
         <p>Mock-only examples using the live block styles. Nothing here is saved to the schedule.</p>
       </div>
-      <span class="demo-note">Hover a booking for a quick 2px vertical card zoom</span>
+      <span class="demo-note">Hover any block except travel to expand it in place</span>
     </header>
+
+    <section class="demo-lab" aria-labelledby="animationLab">
+      <div class="demo-lab-head">
+        <div>
+          <h2 id="animationLab">Card expansion lab</h2>
+          <p>Live CSS variables. Hover the William Mane sample or a leave block to test the grow animation.</p>
+        </div>
+        <button type="button" id="resetAnimation">Reset defaults</button>
+      </div>
+      <div class="demo-controls">
+        <label class="demo-control">Hover delay <span><output id="oDelay">90 ms</output></span>
+          <input id="cDelay" type="range" min="0" max="400" step="10" value="90">
+        </label>
+        <label class="demo-control">Grow time <span><output id="oTime">260 ms</output></span>
+          <input id="cTime" type="range" min="80" max="600" step="10" value="260">
+        </label>
+        <label class="demo-control">Max expanded height <span><output id="oHeight">340 px</output></span>
+          <input id="cHeight" type="range" min="140" max="520" step="10" value="340">
+        </label>
+        <label class="demo-control">Zoom scale <span><output id="oScale">1.000</output></span>
+          <input id="cScale" type="range" min="1" max="1.03" step="0.002" value="1">
+        </label>
+        <label class="demo-control">Edge zoom <span><output id="oEdge">2 px</output></span>
+          <input id="cEdge" type="range" min="0" max="6" step="0.5" value="2">
+        </label>
+        <label class="demo-control">Easing <span><output>&nbsp;</output></span>
+          <select id="cEase">
+            <option value="theme" selected>Deep Current</option>
+            <option value="sheen">Sheen curve</option>
+            <option value="out">Ease out</option>
+            <option value="linear">Linear</option>
+          </select>
+        </label>
+      </div>
+      <p class="demo-lab-note">Delay holds the card closed until the pointer settles, then the card grows downward just enough to fit its own content. The max height is only a safety cap; a card never shrinks below its scheduled block height. The edge zoom is the existing 2px surface/rail growth. Scale stays at 1 by default so text remains sharp; raise it for a subtle zoom.</p>
+    </section>
+
+    <details class="demo-vars">
+      <summary>Animation variables, defaults and ranges</summary>
+      <table class="demo-var-table">
+        <thead><tr><th>Variable</th><th>Default</th><th>Range</th><th>What it changes</th></tr></thead>
+        <tbody>
+          <tr><td><code>--td-schedule-expand-delay</code></td><td>90ms</td><td>0–400ms</td><td>Wait before the card starts to grow or shrink.</td></tr>
+          <tr><td><code>--td-schedule-expand-time</code></td><td>260ms</td><td>80–600ms</td><td>Duration of the grow and shrink transition.</td></tr>
+          <tr><td><code>--td-schedule-expand-max-height</code></td><td>340px</td><td>140–520px</td><td>Safety cap. Cards grow only to fit their own text, never to a fixed height.</td></tr>
+          <tr><td><code>--td-schedule-expand-width</code></td><td>260px</td><td>220–360px</td><td>Maximum width for a narrow card when it expands horizontally.</td></tr>
+          <tr><td><code>--td-schedule-expand-width-threshold</code></td><td>180px</td><td>120–240px</td><td>Cards at or below this resting width grow to the expanded width.</td></tr>
+          <tr><td><code>--td-schedule-expand-scale</code></td><td>1</td><td>1–1.03</td><td>Extra zoom while expanded. 1 keeps text perfectly sharp.</td></tr>
+          <tr><td><code>--td-schedule-expand-ease</code></td><td><code>var(--td-ease)</code></td><td>any easing</td><td>Timing curve for the height and scale.</td></tr>
+          <tr><td><code>--td-schedule-expand-z</code></td><td>8</td><td>6–20</td><td>Stacking order while a card is expanded.</td></tr>
+          <tr><td><code>--td-schedule-zoom</code></td><td>2px</td><td>0–6px</td><td>Existing surface and rail edge growth on hover.</td></tr>
+          <tr><td><code>--td-schedule-sheen-time</code></td><td>650ms</td><td>200–1200ms</td><td>Diagonal light sweep duration (unchanged).</td></tr>
+        </tbody>
+      </table>
+    </details>
+
+    <section class="size-lab" aria-labelledby="sizeLabTitle">
+      <div class="size-lab-head">
+        <div>
+          <h2 id="sizeLabTitle">Block size and width</h2>
+          <p>Same William Mane booking, compared at four durations and four technician-column widths.</p>
+        </div>
+        <span class="size-lab-note">1 hour = 61 px in this lab</span>
+      </div>
+      <div class="size-lab-grid">
+        <div class="size-block-group size-durations">
+          <h3>Duration</h3>
+          <p>0.25, 0.50, 0.75 and 1.00 hour. The card keeps its scheduled height and clips extra detail.</p>
+          <div class="size-row"><div class="size-row-label">0.25 hour<small>15 min · 18 px</small></div><div class="size-stage" data-size-sample data-minutes="15" style="--size-height:18px"></div></div>
+          <div class="size-row"><div class="size-row-label">0.50 hour<small>30 min · 32 px</small></div><div class="size-stage" data-size-sample data-minutes="30" style="--size-height:32px"></div></div>
+          <div class="size-row"><div class="size-row-label">0.75 hour<small>45 min · 46 px</small></div><div class="size-stage" data-size-sample data-minutes="45" style="--size-height:46px"></div></div>
+          <div class="size-row"><div class="size-row-label">1.00 hour<small>60 min · 61 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px"></div></div>
+        </div>
+        <div class="size-block-group size-widths">
+          <h3>Width</h3>
+          <p>One-hour booking in narrow to extra-wide technician columns. Cards up to 180 px grow to 260 px on hover or focus; the address stays on the name row.</p>
+          <div class="size-row"><div class="size-row-label">Narrow<small>120 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:120px"></div></div>
+          <div class="size-row"><div class="size-row-label">Medium<small>180 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:180px"></div></div>
+          <div class="size-row"><div class="size-row-label">Wide<small>260 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:260px"></div></div>
+          <div class="size-row"><div class="size-row-label">Extra wide<small>340 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:340px"></div></div>
+        </div>
+      </div>
+    </section>
 
     <div class="demo-grid">
       <section class="demo-panel" aria-labelledby="bookingExamples">
         <h2 id="bookingExamples">Bookings</h2>
         <p>Booking status controls the outer colour rail. Appointment type controls the main card fill, and client notes appear underneath in italics.</p>
+
+        <div class="demo-item">
+          <div class="demo-caption">William Mane · live sample <small>hover to expand</small></div>
+          <div class="schedule-appointment demo-block demo-live-sample fixed booking-confirmed" style="--appointment-fill:#e5efff" tabindex="0">
+            <input class="schedule-select-block" type="checkbox" aria-label="Select William Mane">
+            <div class="schedule-card-content">
+              <div class="schedule-card-heading">
+                <strong class="schedule-client-line">9:30 am · William Mane</strong>
+                <span class="schedule-client-address" title="5 Standing Place, Kaitaia">5 Standing Place, Kaitaia</span>
+              </div>
+              <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency high">High</span></span>
+              <span class="schedule-card-meta">45 min · Service</span>
+              <span class="schedule-client-notes">Access via the rear driveway. Call ahead if the gate is locked.</span>
+            </div>
+          </div>
+        </div>
 
         <div class="demo-item">
           <div class="demo-caption">Booked · fixed <small>green rail</small></div>
@@ -196,11 +338,11 @@
 
       <section class="demo-panel" aria-labelledby="otherExamples">
         <h2 id="otherExamples">Leave, notes &amp; states</h2>
-        <p>Non-booking states keep their own flat tint so they remain distinguishable without card motion.</p>
+        <p>Leave, notes and lunch keep their own flat tint but expand in place to reveal the full text. Travel blocks never expand.</p>
 
         <div class="demo-item">
-          <div class="demo-caption">Approved leave <small>solid flat fill</small></div>
-          <div class="schedule-appointment demo-block leave" tabindex="0">
+          <div class="demo-caption">Approved leave <small>short block · hover expands</small></div>
+          <div class="schedule-appointment demo-block leave demo-compact" tabindex="0">
             <strong>Annual leave · Approved</strong><span>Full day</span>
           </div>
         </div>
@@ -256,7 +398,153 @@
       </section>
     </div>
 
-    <p class="demo-help"><strong>Try the interaction states:</strong> hover or focus a booking for a quick 2px card zoom at both the top and bottom edges, with no tilt or upward shift, plus the diagonal light sweep. The left status rail shares that expansion and widens by 2px, the selected ring follows the card edge without an inset gap, and selector boxes use the 15-minute-block centre position on every duration. The text stays sharp and untinted. Travel, leave, lunch and note blocks stay flat with no gradient, lift, shadow, glow or filter. These are mock examples only; no appointment, travel, leave or note record is created.</p>
+    <p class="demo-help"><strong>Try the interaction states:</strong> hover or keyboard-focus any block except travel and it grows in place just enough to fit its own text — no browser tooltip or floating detail panel. Bookings also get the quick 2px surface zoom, the diagonal light sweep and their status rail; leave, lunch and note blocks keep their flat own tint but expand too. Expanded cards show the total duration once, not the start and finish again. Travel blocks never move. These are mock examples only; no appointment, travel, leave or note record is created.</p>
   </main>
+  <template id="sizeBlockTemplate">
+    <div class="schedule-appointment demo-block fixed booking-confirmed" style="--appointment-fill:#e5efff" tabindex="0">
+      <input class="schedule-select-block" type="checkbox" aria-label="Select William Mane size sample">
+      <div class="schedule-card-content">
+        <div class="schedule-card-heading">
+          <strong class="schedule-client-line">9:30 am · William Mane</strong>
+          <span class="schedule-client-address" title="5 Standing Place, Kaitaia">5 Standing Place, Kaitaia</span>
+        </div>
+        <span class="schedule-booking-tags"><span>Booked</span><span class="schedule-urgency high">High</span></span>
+        <span class="schedule-card-meta">60 min · Service</span>
+        <span class="schedule-client-notes">Access via the rear driveway. Call ahead if the gate is locked.</span>
+      </div>
+    </div>
+  </template>
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const delay = document.getElementById('cDelay');
+      const time = document.getElementById('cTime');
+      const height = document.getElementById('cHeight');
+      const scale = document.getElementById('cScale');
+      const edge = document.getElementById('cEdge');
+      const ease = document.getElementById('cEase');
+      const output = id => document.getElementById(id);
+      const easeValues = {
+        theme: '',
+        sheen: 'cubic-bezier(.18,.9,.58,1)',
+        out: 'cubic-bezier(0,0,.2,1)',
+        linear: 'linear'
+      };
+
+      const sizeTemplate = document.getElementById('sizeBlockTemplate');
+      document.querySelectorAll('[data-size-sample]').forEach(stage => {
+        const minutes = stage.dataset.minutes || '60';
+        const card = sizeTemplate.content.firstElementChild.cloneNode(true);
+        card.querySelector('.schedule-card-meta').textContent = minutes + ' min · Service';
+        card.querySelector('.schedule-select-block').setAttribute('aria-label', 'Select William Mane · ' + minutes + ' minute sample');
+        if (minutes === '15') card.classList.add('demo-compact');
+        stage.appendChild(card);
+      });
+
+      document.querySelectorAll('.tech-schedule .schedule-appointment').forEach(card => {
+        if (card.querySelector(':scope > .schedule-card-content')) return;
+        const content = document.createElement('div');
+        content.className = 'schedule-card-content';
+        [...card.childNodes].forEach(node => {
+          if (node.nodeType === 1 && node.matches('input,button')) return;
+          content.appendChild(node);
+        });
+        card.appendChild(content);
+      });
+
+      const expandLimit = card => {
+        const value = parseFloat(getComputedStyle(card).getPropertyValue('--td-schedule-expand-max-height'));
+        return Number.isFinite(value) && value > 0 ? value : 340;
+      };
+      const cssPixels = (card, property, fallback) => {
+        const value = parseFloat(getComputedStyle(card).getPropertyValue(property));
+        return Number.isFinite(value) && value > 0 ? value : fallback;
+      };
+      const expandedWidth = (card, rect) => {
+        const threshold = cssPixels(card, '--td-schedule-expand-width-threshold', 180);
+        const limit = cssPixels(card, '--td-schedule-expand-width', 260);
+        if (!rect.width || rect.width > threshold || limit <= rect.width) return null;
+        const gutter = 8;
+        const roomRight = Math.max(0, window.innerWidth - rect.left - gutter);
+        const roomLeft = Math.max(0, rect.right - gutter);
+        let width = Math.min(limit, roomRight);
+        let shift = 0;
+        if (width < rect.width + 24 && roomLeft > width) {
+          width = Math.min(limit, roomLeft);
+          shift = rect.width - width;
+        }
+        return width >= rect.width + 24 ? { width: Math.round(width), shift: Math.round(shift) } : null;
+      };
+      const clearWidth = card => {
+        card.classList.remove('is-width-expanded');
+        card.style.removeProperty('--td-schedule-expand-target-width');
+        card.style.removeProperty('--td-schedule-expand-shift');
+      };
+      const expand = (card, event) => {
+        if (!card || card.classList.contains('travel') || card.classList.contains('drag-source')) return;
+        if (event?.pointerType === 'touch') return;
+        if (card.classList.contains('is-expanded')) return;
+        const rect = card.getBoundingClientRect();
+        const base = Math.ceil(rect.height);
+        const targetWidth = expandedWidth(card, rect);
+        if (targetWidth) {
+          card.style.setProperty('--td-schedule-expand-target-width', targetWidth.width + 'px');
+          card.style.setProperty('--td-schedule-expand-shift', targetWidth.shift + 'px');
+          card.classList.add('is-width-expanded');
+        } else clearWidth(card);
+        card.classList.add('is-measuring');
+        const natural = Math.ceil(card.getBoundingClientRect().height);
+        card.classList.remove('is-measuring');
+        if (!base || !natural) return;
+        const target = Math.max(base, Math.min(natural, expandLimit(card)));
+        card.toggleAttribute('data-expand-scroll', natural > target + 1);
+        card.style.setProperty('--td-schedule-expand-target', target + 'px');
+        card.getBoundingClientRect();
+        card.classList.add('is-expanded');
+      };
+      const collapse = (card, keepKeyboardFocus) => {
+        if (!card) return;
+        if (keepKeyboardFocus && (card.matches(':focus-visible') || card.querySelector(':focus-visible'))) return;
+        card.classList.remove('is-expanded');
+        clearWidth(card);
+      };
+      document.querySelectorAll('.tech-schedule .schedule-appointment').forEach(card => {
+        card.addEventListener('pointerenter', event => expand(card, event));
+        card.addEventListener('pointerleave', () => collapse(card, true));
+        card.addEventListener('focusin', () => expand(card));
+        card.addEventListener('focusout', event => {
+          if (!card.contains(event.relatedTarget)) collapse(card);
+        });
+      });
+
+      function sync() {
+        root.style.setProperty('--td-schedule-expand-delay', delay.value + 'ms');
+        root.style.setProperty('--td-schedule-expand-time', time.value + 'ms');
+        root.style.setProperty('--td-schedule-expand-max-height', height.value + 'px');
+        root.style.setProperty('--td-schedule-expand-scale', scale.value);
+        root.style.setProperty('--td-schedule-zoom', edge.value + 'px');
+        const easing = easeValues[ease.value];
+        if (easing) root.style.setProperty('--td-schedule-expand-ease', easing);
+        else root.style.removeProperty('--td-schedule-expand-ease');
+        output('oDelay').textContent = delay.value + ' ms';
+        output('oTime').textContent = time.value + ' ms';
+        output('oHeight').textContent = height.value + ' px';
+        output('oScale').textContent = Number(scale.value).toFixed(3);
+        output('oEdge').textContent = edge.value + ' px';
+      }
+
+      [delay, time, height, scale, edge, ease].forEach(control => control.addEventListener('input', sync));
+      document.getElementById('resetAnimation').addEventListener('click', () => {
+        delay.value = '90';
+        time.value = '260';
+        height.value = '340';
+        scale.value = '1';
+        edge.value = '2';
+        ease.value = 'theme';
+        sync();
+      });
+      sync();
+    })();
+  </script>
 </body>
 </html>
