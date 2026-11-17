@@ -34,10 +34,13 @@
   --td-travel-line:#a9c2c8;
   --td-travel-ink:#2d4a55;
   --td-leave-fill:#e9edf5;
+  --td-recurring-line:#cbb6e2;
+  --td-note-line:#9fc9c0;
   --td-schedule-shadow:0 1px 2px rgba(11,34,57,.10),inset 0 1px 0 rgba(255,255,255,.22);
   --td-schedule-hover-shadow:0 2px 3px rgba(11,34,57,.10),0 8px 18px rgba(11,34,57,.16),0 0 0 1px rgba(159,205,209,.48),0 0 16px rgba(14,124,134,.12),inset 0 1px 0 rgba(255,255,255,.82),inset 0 -1px 0 rgba(11,34,57,.04);
   --td-schedule-pressed-shadow:inset 0 2px 6px rgba(11,34,57,.14),inset 0 1px 0 rgba(255,255,255,.44),0 1px 2px rgba(11,34,57,.08);
   --td-schedule-selection:var(--td-teal);
+  --td-schedule-checkbox-inset:inset 0 1px 3px rgba(11,34,57,.42),inset 1px 0 1px rgba(11,34,57,.22),inset -1px 0 1px rgba(11,34,57,.22);
   --td-field-line:#c8d7e6;
   --td-field-hover:#9fb9ce;
   --td-touch:44px;
