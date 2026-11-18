@@ -34,8 +34,8 @@ const blank=(date,technician,start='08:00')=>({date,technician:technician||'',te
 const scheduleExpandLimit=card=>{const value=parseFloat(getComputedStyle(card).getPropertyValue('--td-schedule-expand-max-height'));return Number.isFinite(value)&&value>0?value:340}
 const scheduleCssPixels=(card,property,fallback)=>{const value=parseFloat(getComputedStyle(card).getPropertyValue(property));return Number.isFinite(value)&&value>0?value:fallback}
 function scheduleExpandedWidth(card,rect){
- const threshold=scheduleCssPixels(card,'--td-schedule-expand-width-threshold',180)
- const limit=scheduleCssPixels(card,'--td-schedule-expand-width',260)
+ const threshold=scheduleCssPixels(card,'--td-schedule-expand-width-threshold',355)
+ const limit=scheduleCssPixels(card,'--td-schedule-expand-width',355)
  if(!rect.width||rect.width>threshold||limit<=rect.width)return null
  const scroller=card.closest('.schedule-scroll')
  const viewport=scroller?scroller.getBoundingClientRect():{left:0,right:window.innerWidth}
@@ -44,11 +44,11 @@ function scheduleExpandedWidth(card,rect){
  const roomLeft=Math.max(0,rect.right-viewport.left-gutter)
  let width=Math.min(limit,roomRight)
  let shift=0
- if(width<rect.width+24&&roomLeft>width){
+ if(width<limit&&roomLeft>width){
   width=Math.min(limit,roomLeft)
   shift=rect.width-width
  }
- return width>=rect.width+24?{width:Math.round(width),shift:Math.round(shift)}:null
+ return width>=rect.width+1?{width:Math.round(width),shift:Math.round(shift)}:null
 }
 function clearScheduleCardWidth(card){
  card.classList.remove('is-width-expanded')
@@ -87,6 +87,7 @@ function collapseScheduleCard(card,keepKeyboardFocus){
 export default function TechSchedule({request,isAdmin,active,draftOwner,incomingJob,onIncomingConsumed,onReviewImportedJob}){
  const draftKey='trident-schedule-drafts-v1:'+draftOwner
  const [drafts,setDrafts]=useState(()=>readScheduleDrafts(sessionStorage,draftKey)),[editConflict,setEditConflict]=useState(null),[draftWarning,setDraftWarning]=useState('')
+ const noticesRef=useRef(null)
  const liveRefreshRef=useRef(null)
  function removeDraft(key){setDrafts(current=>{const next={...current};delete next[key];try{sessionStorage.setItem(draftKey,JSON.stringify(next))}catch{setDraftWarning('This browser could not update the unfinished booking backup. Keep this tab open.')}return next})}
  const gestureFrame=useRef(0)
@@ -124,6 +125,25 @@ export default function TechSchedule({request,isAdmin,active,draftOwner,incoming
  function setDate(value){setSelected([]);setMarquee(null);selectionRef.current=null;updateDate(value)}
  function setFilter(value){setSelected([]);setMarquee(null);selectionRef.current=null;updateFilter(value)}
  useEffect(()=>{const cancel=e=>{if(e.key==='Escape'){setSelected([]);setMarquee(null);selectionRef.current=null;gestureRef.current=null;setGesture(null)}};window.addEventListener('keydown',cancel);return()=>window.removeEventListener('keydown',cancel)},[])
+ useEffect(()=>{
+  const closeNotices=e=>{
+   const details=noticesRef.current||(noticesRef.current=document.querySelector('.schedule-notices'))
+   if(!details?.open)return
+   if(e.type==='keydown'){
+    if(e.key!=='Escape')return
+    details.open=false
+    details.querySelector('summary')?.focus()
+    return
+   }
+   if(!details.contains(e.target))details.open=false
+  }
+  document.addEventListener('pointerdown',closeNotices,true)
+  document.addEventListener('keydown',closeNotices,true)
+  return()=>{
+   document.removeEventListener('pointerdown',closeNotices,true)
+   document.removeEventListener('keydown',closeNotices,true)
+  }
+ },[])
  useLayoutEffect(()=>{syncRef.current.date=date;etagRef.current=etag;dataRef.current=data},[date,etag,data])
  const routeRead=useRef(null)
  const routeSnapshot=useRef('')

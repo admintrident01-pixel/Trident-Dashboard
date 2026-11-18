@@ -2,7 +2,8 @@
 .schedule-unified-toolbar{margin-top:0!important;padding-top:0!important}
 .schedule-hours-view{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
 .schedule-notices{position:relative;flex:none;z-index:35}
-.schedule-notices summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:2px;min-height:28px;min-width:28px;padding:2px 5px;border:1px solid #d6ad43;border-radius:4px;color:#956700;background:#fff3cd}
+.schedule-notices summary{position:relative;list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0;width:28px;min-width:28px;max-width:28px;min-height:28px;padding:0;border:1px solid #d6ad43;border-radius:4px;color:#956700;background:#fff3cd;box-sizing:border-box}
+.schedule-notices summary span{position:absolute;top:-5px;right:-5px;display:grid;place-items:center;min-width:14px;height:14px;padding:0 3px;border:1px solid #fff3cd;border-radius:999px;background:#b87510;color:#fffdf5;font-size:9px;font-weight:700;line-height:1;box-sizing:border-box;pointer-events:none}
 .schedule-notices summary::-webkit-details-marker{display:none}
 .schedule-notices:not(.has-notices) summary{opacity:.55}
 .schedule-notices summary:focus-visible{outline:2px solid #3472ac;outline-offset:1px}

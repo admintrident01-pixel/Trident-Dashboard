@@ -108,8 +108,8 @@ Motion: `140ms` colour/press, `220ms` transform/dialog, ease
   content and grows only enough to fit it — there is no fixed expanded height.
   `--td-schedule-expand-max-height` (`340px`) is a safety cap; longer content
   scrolls inside the card. A block never shrinks below its scheduled height.
-  Cards whose resting width is `--td-schedule-expand-width-threshold` (`180px`)
-  or less also grow horizontally to `--td-schedule-expand-width` (`260px`) on
+  Cards narrower than `--td-schedule-expand-width-threshold` (`355px`) also grow
+  horizontally to `--td-schedule-expand-width` (`355px`) on
   hover/focus, using the same delay and timing. The expanded card stays inside
   the visible schedule viewport and may open leftward when there is not enough
   room on the right.

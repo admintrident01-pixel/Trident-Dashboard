@@ -146,8 +146,8 @@
           <tr><td><code>--td-schedule-expand-delay</code></td><td>90ms</td><td>0–400ms</td><td>Wait before the card starts to grow or shrink.</td></tr>
           <tr><td><code>--td-schedule-expand-time</code></td><td>260ms</td><td>80–600ms</td><td>Duration of the grow and shrink transition.</td></tr>
           <tr><td><code>--td-schedule-expand-max-height</code></td><td>340px</td><td>140–520px</td><td>Safety cap. Cards grow only to fit their own text, never to a fixed height.</td></tr>
-          <tr><td><code>--td-schedule-expand-width</code></td><td>260px</td><td>220–360px</td><td>Maximum width for a narrow card when it expands horizontally.</td></tr>
-          <tr><td><code>--td-schedule-expand-width-threshold</code></td><td>180px</td><td>120–240px</td><td>Cards at or below this resting width grow to the expanded width.</td></tr>
+          <tr><td><code>--td-schedule-expand-width</code></td><td>355px</td><td>220–360px</td><td>Maximum width for a narrow card when it expands horizontally.</td></tr>
+          <tr><td><code>--td-schedule-expand-width-threshold</code></td><td>355px</td><td>220–360px</td><td>Cards narrower than this resting width grow to the expanded width.</td></tr>
           <tr><td><code>--td-schedule-expand-scale</code></td><td>1</td><td>1–1.03</td><td>Extra zoom while expanded. 1 keeps text perfectly sharp.</td></tr>
           <tr><td><code>--td-schedule-expand-ease</code></td><td><code>var(--td-ease)</code></td><td>any easing</td><td>Timing curve for the height and scale.</td></tr>
           <tr><td><code>--td-schedule-expand-z</code></td><td>8</td><td>6–20</td><td>Stacking order while a card is expanded.</td></tr>
@@ -176,11 +176,11 @@
         </div>
         <div class="size-block-group size-widths">
           <h3>Width</h3>
-          <p>One-hour booking in narrow to extra-wide technician columns. Cards up to 180 px grow to 260 px on hover or focus; the address stays on the name row.</p>
+          <p>One-hour booking in narrow to extra-wide technician columns. Cards narrower than 355 px grow to 355 px on hover or focus; the address stays on the name row.</p>
           <div class="size-row"><div class="size-row-label">Narrow<small>120 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:120px"></div></div>
           <div class="size-row"><div class="size-row-label">Medium<small>180 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:180px"></div></div>
           <div class="size-row"><div class="size-row-label">Wide<small>260 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:260px"></div></div>
-          <div class="size-row"><div class="size-row-label">Extra wide<small>340 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:340px"></div></div>
+          <div class="size-row"><div class="size-row-label">Extra wide<small>355 px</small></div><div class="size-stage" data-size-sample data-minutes="60" style="--size-height:61px;--size-width:355px"></div></div>
         </div>
       </div>
     </section>
@@ -461,19 +461,19 @@
         return Number.isFinite(value) && value > 0 ? value : fallback;
       };
       const expandedWidth = (card, rect) => {
-        const threshold = cssPixels(card, '--td-schedule-expand-width-threshold', 180);
-        const limit = cssPixels(card, '--td-schedule-expand-width', 260);
+        const threshold = cssPixels(card, '--td-schedule-expand-width-threshold', 355);
+        const limit = cssPixels(card, '--td-schedule-expand-width', 355);
         if (!rect.width || rect.width > threshold || limit <= rect.width) return null;
         const gutter = 8;
         const roomRight = Math.max(0, window.innerWidth - rect.left - gutter);
         const roomLeft = Math.max(0, rect.right - gutter);
         let width = Math.min(limit, roomRight);
         let shift = 0;
-        if (width < rect.width + 24 && roomLeft > width) {
+        if (width < limit && roomLeft > width) {
           width = Math.min(limit, roomLeft);
           shift = rect.width - width;
         }
-        return width >= rect.width + 24 ? { width: Math.round(width), shift: Math.round(shift) } : null;
+        return width >= rect.width + 1 ? { width: Math.round(width), shift: Math.round(shift) } : null;
       };
       const clearWidth = card => {
         card.classList.remove('is-width-expanded');

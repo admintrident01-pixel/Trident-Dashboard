@@ -61,8 +61,8 @@
   --td-schedule-sheen-ease:cubic-bezier(.18,.9,.58,1);
   --td-schedule-sheen:linear-gradient(226deg,rgba(255,255,255,.40) 0%,rgba(255,255,255,.40) 35%,rgba(255,255,255,.20) 42%,rgba(255,255,255,0) 60%);
   --td-schedule-expand-max-height:340px;
-  --td-schedule-expand-width:260px;
-  --td-schedule-expand-width-threshold:180px;
+  --td-schedule-expand-width:355px;
+  --td-schedule-expand-width-threshold:355px;
   --td-schedule-expand-time:260ms;
   --td-schedule-expand-delay:90ms;
   --td-schedule-expand-ease:var(--td-ease);
@@ -525,7 +525,7 @@
 
   /* Compact toolbar controls: one calm surface and a clear state for each action. */
   body.trident-portal .tech-schedule .schedule-notices>summary{
-    min-width:32px;min-height:32px;height:32px;padding:0 8px;gap:4px;
+    position:relative;width:32px;min-width:32px;max-width:32px;min-height:32px;height:32px;padding:0;gap:0;box-sizing:border-box;
     border:1px solid var(--td-amber);border-radius:var(--td-radius-sm);
     background:var(--td-amber-soft);color:var(--td-amber-ink);box-shadow:var(--td-shadow-1);
     transition:background-color var(--td-fast) var(--td-ease),border-color var(--td-fast) var(--td-ease),box-shadow var(--td-fast) var(--td-ease)
@@ -533,9 +533,9 @@
   body.trident-portal .tech-schedule .schedule-notices>summary:hover{border-color:var(--td-amber-hover);background:var(--td-amber-soft);box-shadow:var(--td-shadow-2)}
   body.trident-portal .tech-schedule .schedule-notices>summary:focus-visible{outline:2px solid var(--td-amber);outline-offset:2px;box-shadow:var(--td-shadow-1)}
   body.trident-portal .tech-schedule .schedule-notices>summary span{
-    display:inline-grid;place-items:center;min-width:14px;height:14px;padding:0 3px;
-    border-radius:999px;background:var(--td-amber);color:var(--td-amber-ink);
-    font-size:9px;font-weight:700;line-height:1
+    position:absolute;top:-5px;right:-5px;display:grid;place-items:center;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;
+    border:1px solid var(--td-amber-soft);border-radius:999px;background:var(--td-amber);color:var(--td-amber-ink);
+    font-size:9px;font-weight:700;line-height:1;pointer-events:none
   }
   body.trident-portal .tech-schedule .schedule-cancelled-toggle{
     display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
@@ -920,6 +920,7 @@
     body.trident-portal .portal-mobile-modules summary{min-height:var(--td-touch);box-sizing:border-box}
     body.trident-portal .tech-schedule .schedule-toolbar :is(button,select,input:not([type=checkbox])),
     body.trident-portal .tech-schedule .schedule-toolbar :is(.schedule-notices>summary,.schedule-history-actions button){min-height:var(--td-touch);height:var(--td-touch);max-height:none}
+    body.trident-portal .tech-schedule .schedule-notices>summary{width:var(--td-touch);min-width:var(--td-touch);max-width:var(--td-touch)}
     body.trident-portal .tech-schedule .schedule-toolbar :is(.schedule-search-button,.schedule-refresh,.schedule-date-controls button,.schedule-history-actions button){min-width:var(--td-touch);width:var(--td-touch);flex-basis:var(--td-touch);padding:0}
     body.trident-portal .tech-schedule .schedule-toolbar .schedule-search-button{align-self:flex-start}
     body.trident-portal .tech-schedule .schedule-cancelled-toggle{min-height:var(--td-touch)}
