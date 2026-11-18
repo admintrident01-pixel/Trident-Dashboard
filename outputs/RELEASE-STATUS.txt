@@ -1,41 +1,45 @@
-PUBLISHED AND VERIFIED - Recurring note day deletion and schedule card expansion
+PUBLISHED AND VERIFIED - Schedule messages sizing and 355px card expansion
 18 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Commit: 1fd17085779458d89ca556e2ca28471752ab6368
-- Base commit: 37ddbb3
-- Recurring notes can now be removed for one technician and one date without
-  changing the series or other technicians' occurrences.
-- The schedule block actions menu exposes "Delete this day only" on recurring
-  notes and writes history with the technician and date.
-- Schedule cards now expand in place on hover or keyboard focus to reveal the
-  full details, with the address retained beside the client name.
-- The block preview includes the approved size and width examples and the
-  shared Deep Current animation variables.
-- The package includes the previously published timesheet validation, leave
-  detail, schedule toolbar, travel deletion and Excel fixes.
+- Commit: 43c862141a266f7d15f3527661c0b5a177a53bcc
+- Base commit: e9c22a4
+- Schedule cards narrower than 355px now expand to 355px on hover or keyboard
+  focus; cards already 355px remain unchanged.
+- The schedule messages control keeps a fixed 32px desktop width with the count
+  badge positioned outside the sizing flow, so new messages do not resize it.
+- The messages panel now closes on an outside click or Escape, with focus
+  restored to the summary after Escape.
+- The package includes the previously published recurring-note day deletion,
+  timesheet validation, leave detail, schedule toolbar, travel deletion and
+  Excel fixes.
 
 LOCAL VALIDATION
-- Focused backend tests: 25 passed.
 - Frontend/work tests: 192 passed.
 - ESLint passed.
 - Production build passed.
-- Local browser checks confirmed one-technician occurrence deletion, untouched
-  later weeks, the schedule action menu, and history labels.
+- Playwright confirmed 120, 180 and 260px cards expand to 355px and a 355px
+  card stays at 355px.
+- Playwright confirmed the messages control remains 32px with and without a
+  count badge, stays open for an inside click, and closes on outside click or
+  Escape.
 
 DEPLOYMENT
-- Push: 37ddbb3..1fd1708 main -> main.
+- Push: e9c22a4..43c8621 main -> main.
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live core JavaScript: assets/index-B1DNQlou.js
+- Live core JavaScript: assets/index-Dz_mxUqW.js
 - Live core CSS: assets/index-DGleuqip.css
-- Live schedule JavaScript: assets/TechSchedule-B_1SJF7-.js
-- Live schedule CSS: assets/TechSchedule-BZdDXqQW.css
-- Live leave JavaScript: assets/LeaveForms-DGOw_HHC.js
-- Live theme and scheduling CSS contain the expansion tokens and rules.
-- Live schedule JavaScript contains the delete_occurrence action and the
-  "Delete this day only" label.
-- Live timesheet validation script and preview page are served.
+- Live schedule JavaScript: assets/TechSchedule-CbDCJj5A.js
+- Live schedule CSS: assets/TechSchedule-Bu8TbsDb.css
+- Live leave JavaScript: assets/LeaveForms-06rO7PHo.js
+- Live theme and scheduling CSS contain the 355px expansion tokens and rules.
+- Live schedule JavaScript contains the fixed notices, outside-click and Escape
+  behaviour.
+- All 28 hashed assets were cache-prewarmed and verified with correct MIME type
+  and byte length; the signed-out live app booted with no console or network
+  errors and imported the schedule and leave modules successfully.
+- Live preview page and timesheet validation script are served.
 - Live API health: HTTP 200, {"ok": true, "version": "C"}.
 
 PRE-RELEASE BACKUP LIMITATION
@@ -50,16 +54,16 @@ PRE-RELEASE BACKUP LIMITATION
 OPEN ONLINE CHECKS
 - An authenticated production browser session was not available, so live
   business screens were not rechecked interactively.
-- Live compiled assets, theme, schedule action text, preview, timesheet script
-  and API health were verified directly.
+- Live compiled assets, theme, signed-out boot, module imports, preview,
+  timesheet script and API health were verified directly.
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 575 entries, 1,486,553 bytes.
-- SHA256: 7CD571E417E14F0702F5748E29A028D39891C456A12982476336A5BB54A13234.
+- 575 entries, 1,487,492 bytes.
+- SHA256: B2E201C1E901DF5106F58702EC01E44F73489C787DCAA787E6C7C0BAD1AB3EF6.
 - Previous package archived as
-  outputs/Release history/Trident-dashboard-before-recurring-note-day-2026-11-18.zip.
-- Previous package SHA256: 6A83F4D76E4B78A542FA911AB6BF10739533F2B9549A42CCDCCA0898828A266C.
+  outputs/Release history/Trident-dashboard-before-schedule-notices-355-2026-11-18.zip.
+- Previous package SHA256: 7CD571E417E14F0702F5748E29A028D39891C456A12982476336A5BB54A13234.
 - The package excludes environment files, runtime data, outputs, tests,
   work-tests and local preview/helper files. `.env.example` is intentionally
   included because it contains no credentials.
