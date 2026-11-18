@@ -1,41 +1,36 @@
-PUBLISHED AND VERIFIED - Schedule messages sizing and 355px card expansion
+PUBLISHED AND VERIFIED - Remove outside-hours schedule alert
 18 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Commit: 43c862141a266f7d15f3527661c0b5a177a53bcc
-- Base commit: e9c22a4
-- Schedule cards narrower than 355px now expand to 355px on hover or keyboard
-  focus; cards already 355px remain unchanged.
-- The schedule messages control keeps a fixed 32px desktop width with the count
-  badge positioned outside the sizing flow, so new messages do not resize it.
-- The messages panel now closes on an outside click or Escape, with focus
-  restored to the summary after Escape.
-- The package includes the previously published recurring-note day deletion,
-  timesheet validation, leave detail, schedule toolbar, travel deletion and
-  Excel fixes.
+- Commit: 2fd947030d0d36f5e6ee836197870e2283c9957b
+- Base commit: acddecd
+- Removed the schedule toolbar's separate "Appointments outside normal hours"
+  alert/Fit button and its dedicated styling.
+- The standard Normal workday/Fit toggle remains available and its existing
+  behaviour is unchanged.
+- The package includes the previously published 355px schedule card expansion,
+  schedule-message dismissal, recurring-note day deletion, timesheet validation,
+  leave detail, schedule toolbar, travel deletion and Excel fixes.
 
 LOCAL VALIDATION
 - Frontend/work tests: 192 passed.
 - ESLint passed.
 - Production build passed.
-- Playwright confirmed 120, 180 and 260px cards expand to 355px and a 355px
-  card stays at 355px.
-- Playwright confirmed the messages control remains 32px with and without a
-  count badge, stays open for an inside click, and closes on outside click or
-  Escape.
+- Local browser checks at 1065x480 confirmed no outside-hours alert button,
+  no alert text, no horizontal overflow and no console errors.
 
 DEPLOYMENT
-- Push: e9c22a4..43c8621 main -> main.
+- Push: acddecd..2fd9470 main -> main.
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live core JavaScript: assets/index-Dz_mxUqW.js
+- Live core JavaScript: assets/index-B8s9uo4I.js
 - Live core CSS: assets/index-DGleuqip.css
-- Live schedule JavaScript: assets/TechSchedule-CbDCJj5A.js
-- Live schedule CSS: assets/TechSchedule-Bu8TbsDb.css
-- Live leave JavaScript: assets/LeaveForms-06rO7PHo.js
-- Live theme and scheduling CSS contain the 355px expansion tokens and rules.
-- Live schedule JavaScript contains the fixed notices, outside-click and Escape
-  behaviour.
+- Live schedule JavaScript: assets/TechSchedule-DFIK5w71.js
+- Live schedule CSS: assets/TechSchedule-5GfnBEfS.css
+- Live leave JavaScript: assets/LeaveForms-EyGnjoB-.js
+- Live schedule bundle contains no "schedule-hours-alert" class or
+  "Appointments outside normal hours" text; live schedule CSS contains no
+  alert rule. Normal workday is retained.
 - All 28 hashed assets were cache-prewarmed and verified with correct MIME type
   and byte length; the signed-out live app booted with no console or network
   errors and imported the schedule and leave modules successfully.
@@ -59,11 +54,11 @@ OPEN ONLINE CHECKS
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 575 entries, 1,487,492 bytes.
-- SHA256: B2E201C1E901DF5106F58702EC01E44F73489C787DCAA787E6C7C0BAD1AB3EF6.
+- 575 entries, 1,487,338 bytes.
+- SHA256: 8E7F76B69A994905131290F78D0359E33A00F364FF5D2ED709C92788739EA293.
 - Previous package archived as
-  outputs/Release history/Trident-dashboard-before-schedule-notices-355-2026-11-18.zip.
-- Previous package SHA256: 7CD571E417E14F0702F5748E29A028D39891C456A12982476336A5BB54A13234.
+  outputs/Release history/Trident-dashboard-before-remove-outside-hours-alert-2026-11-18.zip.
+- Previous package SHA256: B2E201C1E901DF5106F58702EC01E44F73489C787DCAA787E6C7C0BAD1AB3EF6.
 - The package excludes environment files, runtime data, outputs, tests,
   work-tests and local preview/helper files. `.env.example` is intentionally
   included because it contains no credentials.
