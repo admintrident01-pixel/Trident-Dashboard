@@ -1,41 +1,55 @@
-PUBLISHED AND VERIFIED - Remove outside-hours schedule alert
-18 November 2026 (Pacific/Auckland)
+PUBLISHED AND VERIFIED - Fix unpaid leave payables and exclude client stock from stocktakes
+24 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Commit: 2fd947030d0d36f5e6ee836197870e2283c9957b
-- Base commit: acddecd
-- Removed the schedule toolbar's separate "Appointments outside normal hours"
-  alert/Fit button and its dedicated styling.
-- The standard Normal workday/Fit toggle remains available and its existing
-  behaviour is unchanged.
-- The package includes the previously published 355px schedule card expansion,
-  schedule-message dismissal, recurring-note day deletion, timesheet validation,
-  leave detail, schedule toolbar, travel deletion and Excel fixes.
+- Release commit: eb75a58a6fbee39ed5ba7ba16a48481c5091f2de
+- Base commit: cfcaa82e11d70fa5a0ff19b21bb2370fa5846fc6
+- Push: cfcaa82..eb75a58 main -> main.
+- Unpaid approved leave now contributes 0 payable hours while remaining visible in
+  timesheets and reports. Payability is derived from the leave type, so stale saved
+  paid flags cannot make unpaid leave payable again.
+- New submitted timesheets store payableTotal; legacy records continue to derive a
+  compatible payable total.
+- Stocktakes now exclude stock that is Allocated or With client. Physical stocktake
+  statuses are Available, Incoming, Refurbishing, Awaiting new asset number and Repair.
+- onHandQuantity is deliberately unchanged because allocated stock remains business
+  inventory; only the physical count quantities exclude it.
+- Existing stocktake drafts created before this rule are marked draftOutdated, cannot
+  be modified or completed, and prompt for a fresh count.
+- Excel and PDF stocktake exports explain the client-stock exclusion.
+
+PAYABLES AND STOCK EVIDENCE
+- Payables week 2026-11-16: Kirsten Tuesday 2 payable hours, week total 10, report
+  total 221. Before the fix these were 8, 40 and 251 respectively.
+- Online stock records were unchanged: 37 products, 24 available, 0 allocated,
+  28 with clients, last stocktake 18/11/2026 and next due 18/12/2026.
 
 LOCAL VALIDATION
-- Frontend/work tests: 192 passed.
+- Focused stock tests: 63 passed.
+- Payables backend tests: 40 passed.
+- Node leave, stock and payables tests: 12 of 12 passed.
 - ESLint passed.
 - Production build passed.
-- Local browser checks at 1065x480 confirmed no outside-hours alert button,
-  no alert text, no horizontal overflow and no console errors.
+- Full backend suite: 622 of 623 passed. The only failure,
+  test_recycle.RecycleTests.test_restore_rejects_new_booking_conflict_without_partial_changes,
+  also fails unchanged on base commit cfcaa82 and is unrelated to this release.
+- Local visual checks confirmed the onsite-only stocktake count and the corrected
+  unpaid-leave payable values.
 
 DEPLOYMENT
-- Push: acddecd..2fd9470 main -> main.
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live core JavaScript: assets/index-B8s9uo4I.js
-- Live core CSS: assets/index-DGleuqip.css
-- Live schedule JavaScript: assets/TechSchedule-DFIK5w71.js
-- Live schedule CSS: assets/TechSchedule-5GfnBEfS.css
-- Live leave JavaScript: assets/LeaveForms-EyGnjoB-.js
-- Live schedule bundle contains no "schedule-hours-alert" class or
-  "Appointments outside normal hours" text; live schedule CSS contains no
-  alert rule. Normal workday is retained.
-- All 28 hashed assets were cache-prewarmed and verified with correct MIME type
-  and byte length; the signed-out live app booted with no console or network
-  errors and imported the schedule and leave modules successfully.
-- Live preview page and timesheet validation script are served.
-- Live API health: HTTP 200, {"ok": true, "version": "C"}.
+- Live core JavaScript: assets/index-aglAbLQU.js
+- Live stock JavaScript: assets/StockPage-BvCUnQi5.js
+- Live weekly report JavaScript: assets/WeeklyReport-C0EmDCBi.js
+- All 28 hashed assets were checked and matched the local production build bytes.
+- Direct API health:
+  https://trident-quote-api-383423323438.australia-southeast1.run.app/api/health
+- API health: HTTP 200, {"ok": true, "version": "C"}.
+- The Worker /api/health path returns HTML because of the frontend route fallback;
+  API health was therefore verified against the direct Cloud Run URL.
+- No production business writes were made and no online stocktake was started or
+  completed for verification.
 
 PRE-RELEASE BACKUP LIMITATION
 - A fresh BigQuery/GCS snapshot could not be created from this machine because
@@ -43,22 +57,24 @@ PRE-RELEASE BACKUP LIMITATION
 - Latest recoverable verified recovery point remains tag
   excel-parse_20261115T235638Z at register revision 18782, with 35 uploads and
   0 missing referenced uploads.
-- This release changed source code and deploy assets only; it made no production
-  business writes.
-
-OPEN ONLINE CHECKS
-- An authenticated production browser session was not available, so live
-  business screens were not rechecked interactively.
-- Live compiled assets, theme, signed-out boot, module imports, preview,
-  timesheet script and API health were verified directly.
+- This release changed source code, deploy assets and release records only; it made
+  no production business writes. Online stock and payables were checked read-only
+  before and after deployment.
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 575 entries, 1,487,338 bytes.
-- SHA256: 8E7F76B69A994905131290F78D0359E33A00F364FF5D2ED709C92788739EA293.
+- 576 entries, 1,496,800 bytes.
+- SHA256: FA8D269CA8D15C9CF9EC880D29AE8E76C5DE77D88BE693465AED9A98A5A37E39.
 - Previous package archived as
-  outputs/Release history/Trident-dashboard-before-remove-outside-hours-alert-2026-11-18.zip.
-- Previous package SHA256: B2E201C1E901DF5106F58702EC01E44F73489C787DCAA787E6C7C0BAD1AB3EF6.
-- The package excludes environment files, runtime data, outputs, tests,
-  work-tests and local preview/helper files. `.env.example` is intentionally
-  included because it contains no credentials.
+  outputs/Release history/Trident-dashboard-before-unpaid-leave-stocktake-2026-11-24.zip.
+- Previous package SHA256:
+  8E7F76B69A994905131290F78D0359E33A00F364FF5D2ED709C92788739EA293.
+- The package excludes environment files, runtime data, outputs, tests, work-tests
+  and local preview/helper files. .env.example is intentionally included because it
+  contains no credentials.
+
+EVIDENCE
+- outputs/Visual review/online-payables-unpaid-leave-fixed-full-2026-11-24.png
+- outputs/Visual review/online-kirsten-unpaid-leave-row-2026-11-24.png
+- outputs/Visual review/stocktake-excludes-client-stock-2026-11-24.png
+- outputs/Visual review/unpaid-leave-payables-verified-local-2026-11-24.png
