@@ -164,7 +164,7 @@ def decide(state,data,email):
  entry.update(status=action,revision=r['revision']+1,decisionNotes=notes,decidedBy=email,decidedAt=now,updatedAt=now)
  return result,entry
 def approved(state):
- return [{k:r[k] for k in ('id','technician','leaveType','paid','typeCategory','other','dates','hoursPerDay','startTime','endTime','lunchHours','lunchChoice','lunchStart','lunchEnd','lunchReason') if k in r} for request in state.get('leaveRequests',{}).values() if request['status']=='Approved' for r in expand_days(request)]
+ return [{**{k:r[k] for k in ('id','technician','leaveType','typeCategory','other','dates','hoursPerDay','startTime','endTime','lunchHours','lunchChoice','lunchStart','lunchEnd','lunchReason') if k in r},'paid':type_paid(r.get('leaveType'))} for request in state.get('leaveRequests',{}).values() if request['status']=='Approved' for r in expand_days(request)]
 def enforce_timesheet(state,entry):
  approved_days={date:r for r in approved(state) if r['technician'].casefold()==entry['technician'].casefold() for date in r['dates']}
  start=day(entry['weekStart'])
@@ -174,7 +174,10 @@ def enforce_timesheet(state,entry):
    if row['method']=='times' and time_minutes(row['start'])<time_minutes(r['endTime'],True) and time_minutes(row['finish'])>time_minutes(r['startTime']):raise Problem(400,f'{date}: work times overlap approved leave. Use Direct hours for separate work periods, excluding leave.')
    if row['hours']+r['hoursPerDay']>24:raise Problem(400,f'{date}: work plus approved leave cannot exceed 24 hours.')
    row['leave']={k:r[k] for k in ('id','leaveType','other','hoursPerDay','startTime','endTime','lunchHours') if k in r}
+   row['leave']['paid']=type_paid(r['leaveType'])
    entry['total']=float(decimal.Decimal(str(entry['total']))+decimal.Decimal(str(r['hoursPerDay'])))
+   if type_paid(r['leaveType']):
+    entry['payableTotal']=float(decimal.Decimal(str(entry.get('payableTotal',entry['total']-r['hoursPerDay'])))+decimal.Decimal(str(r['hoursPerDay'])))
    continue
   if r and (row['status']!=r['leaveType'] or row['hours']!=r['hoursPerDay'] or (type_category(r['leaveType'])=='other' and row.get('other','')!=r.get('other',''))):raise Problem(400,f'{date}: use the approved leave type and hours. Refresh the time sheet.')
   if not r and row['status']!='Work' and row['hours']>0:raise Problem(400,f'{date}: submit a leave request and have it approved before recording leave hours.')

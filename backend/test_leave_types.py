@@ -59,6 +59,60 @@ class LeaveTypeTests(unittest.TestCase):
   self.assertEqual(days[4]['otherDescription'],'Community event')
   self.assertEqual(days[5]['otherDescription'],'Community event')
 
+ def test_unpaid_leave_types_ignore_stale_saved_paid_flags(self):
+  for kind in ('Unpaid annual leave','Sick leave unpaid','Other unpaid'):
+   with self.subTest(kind=kind):
+    state=self.approved(self.request(kind))
+    request=next(iter(state['leaveRequests'].values()))
+    request.update(paid=True,paidHours=8,unpaidHours=0)
+    day=weekly_report.week_rows(state,'2027-02-01')[0]['days'][0]
+    self.assertEqual((day['leaveLabel'],day['leaveHours'],day['paid'],day['all']),(kind,8,0,8))
+    self.assertFalse(day['leavePaid'])
+    self.assertFalse(leave.approved(state)[0]['paid'])
+
+ def test_part_day_unpaid_leave_leaves_only_work_payable(self):
+  state=self.approved(self.request('Sick leave unpaid',startTime='10:30',endTime='16:30',hoursPerDay=6))
+  request=next(iter(state['leaveRequests'].values()))
+  request.update(paid=True,paidHours=6,unpaidHours=0,lunchHours=0.5)
+  sheet=self.sheet()
+  sheet['days'][0]={'status':'Work','method':'times','start':'08:00','finish':'10:30','unpaidLunch':True,'notes':''}
+  state,entry=timesheets.save(state,sheet)
+  self.assertEqual((entry['total'],entry['payableTotal']),(8,2))
+  day=weekly_report.week_rows(state,'2027-02-01')[0]['days'][0]
+  self.assertEqual((day['work'],day['leaveHours'],day['paid'],day['all']),(2,6,2,8))
+  self.assertFalse(day['leavePaid'])
+  self.assertEqual((day['workFrom'],day['workTo'],day['leaveFrom'],day['leaveTo']),('08:00','10:30','10:30','16:30'))
+  raw=base64.b64decode(weekly_export.weekly(state,{'week':'2027-02-01','mode':'work'})['file'])
+  sheet=openpyxl.load_workbook(io.BytesIO(raw))['Labour Report']
+  self.assertEqual(sheet['E2'].value,2)
+  self.assertIn('Sick leave unpaid 6h',sheet['H2'].value)
+
+ def test_unpaid_full_day_keeps_history_but_has_no_payable_total(self):
+  state=self.approved(self.request('Sick leave unpaid'))
+  state,entry=timesheets.save(state,self.sheet('Sick leave unpaid'))
+  self.assertEqual((entry['total'],entry['payableTotal']),(8,0))
+  self.assertEqual(entry['days'][0]['status'],'Sick leave unpaid')
+
+ def test_unpaid_leave_week_total_excludes_sick_leave_and_keeps_worked_hours(self):
+  state=self.approved(self.request('Sick leave unpaid',startDate='2027-02-02',endDate='2027-02-02',startTime='10:30',endTime='16:30',hoursPerDay=6))
+  state=self.approved_full_week(state,'Sick leave unpaid','2027-02-03','2027-02-05')
+  days=[{'status':'Work','method':'direct','hours':8,'unpaidLunch':False,'notes':''},
+        {'status':'Work','method':'times','start':'08:00','finish':'10:30','unpaidLunch':True,'notes':''},
+        {'status':'Sick leave unpaid','method':'direct','hours':8,'notes':''},
+        {'status':'Sick leave unpaid','method':'direct','hours':8,'notes':''},
+        {'status':'Sick leave unpaid','method':'direct','hours':8,'notes':''},
+        {'status':'Work','method':'direct','hours':0,'notes':''},
+        {'status':'Work','method':'direct','hours':0,'notes':''}]
+  state,entry=timesheets.save(state,{'technician':'Alex','weekStart':'2027-02-01','signature':'Alex','days':days})
+  self.assertEqual((entry['total'],entry['payableTotal']),(40,10))
+  report=weekly_report.week_rows(state,'2027-02-01')[0]['days']
+  self.assertEqual([day['paid'] for day in report],[8,2,0,0,0,0,0])
+  self.assertEqual([day['all'] for day in report],[8,8,8,8,8,0,0])
+
+ def approved_full_week(self,state,kind,start,end):
+  state,request=leave.create(state,self.request(kind,startDate=start,endDate=end))
+  return leave.decide(state,{'id':request['id'],'revision':1,'status':'Approved'},'admin@example.nz')[0]
+
  def test_new_other_types_require_a_description(self):
   for kind in ('Other paid','Other unpaid'):
    with self.subTest(kind=kind),self.assertRaisesRegex(Problem,'other leave description'):

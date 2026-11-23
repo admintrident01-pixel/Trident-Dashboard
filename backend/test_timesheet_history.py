@@ -26,7 +26,7 @@ class HistoryTests(unittest.TestCase):
         change=copy.deepcopy(self.change);change['days'][0].update(status='Annual leave',hours=4,unpaidLunch=False)
         state,row=timesheets.edit_submission(state,change,'admin@example.nz')
         report=next(r for r in weekly_report.read(state,'2027-02-01')['rows'] if r['name']=='Scott Yearbury')
-        self.assertEqual(row['total'],4);self.assertEqual(report['days'][0]['annual'],4);self.assertEqual(report['days'][0]['work'],0)
+        self.assertEqual((row['total'],row['payableTotal']),(4,0));self.assertEqual(report['days'][0]['annual'],4);self.assertEqual(report['days'][0]['work'],0)
     def test_api_admin_only_and_conflicts(self):
         api=test_accounts.AccountsAPI();api.setUp();api.store.state.update(copy.deepcopy(self.state))
         self.assertEqual(api.call('/api/timesheets',token='tech')[0],200)

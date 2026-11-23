@@ -64,7 +64,7 @@ def week_rows(state, week):
             leave_record=request if request else entry
             category='' if status=='Work' else leave.type_category(status)
             leave_hours=0 if status=='Work' else hours
-            leave_paid=(leave_record.get('paid') if isinstance(leave_record.get('paid'),bool) else leave.type_paid(status))
+            leave_paid=leave.type_paid(status)
             work=hours if status=='Work' else 0
             if request and request.get('startTime') and entry['status']=='Work':work=float(entry['hours'])
             sick=leave_hours if category=='sick' else 0

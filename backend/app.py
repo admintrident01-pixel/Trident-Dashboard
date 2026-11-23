@@ -770,7 +770,7 @@ class Application:
 
        except Exception:raise Problem(400,'Invalid time sheet request.')
 
-       accounts.own(user,p.get('technician'));state,entry=timesheet_drafts.submit(state,p,user);entry['submittedBy']=email;payload={'saved':True,'id':entry['id'],'total':entry['total'],'message':'Signed time sheet saved.'}
+       accounts.own(user,p.get('technician'));state,entry=timesheet_drafts.submit(state,p,user);entry['submittedBy']=email;payload={'saved':True,'id':entry['id'],'total':entry['total'],'payableTotal':entry.get('payableTotal',entry['total']),'message':'Signed time sheet saved.'}
 
       elif path=='/api/workbook':
 

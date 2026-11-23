@@ -29,7 +29,7 @@ class TimesheetDraftTests(unittest.TestCase):
   self.assertEqual(self.api.call('/api/timesheets','POST',p,token='tech')[0],400)
   self.assertIn(draft['id'],self.api.store.state['timesheetDrafts'])
   p['signature']='Scott';status,data,_=self.api.call('/api/timesheets','POST',p,token='tech');self.assertEqual(status,200)
-  self.assertEqual(data['total'],56);self.assertEqual(self.api.store.state['timesheetDrafts'],{})
+  self.assertEqual((data['total'],data['payableTotal']),(56,56));self.assertEqual(self.api.store.state['timesheetDrafts'],{})
   self.assertEqual(len(self.api.call('/api/timesheets',token='tech')[1]['timesheets']),1)
  def test_history_filters_other_staff_and_duplicate_drafts(self):
   self.save();self.assertEqual(self.save()[0],409)

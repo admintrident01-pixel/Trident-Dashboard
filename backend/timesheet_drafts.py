@@ -1,6 +1,6 @@
 """Unsubmitted sheets are kept separately from payable business records."""
 import copy, datetime as dt, decimal, uuid
-import accounts, timesheets
+import accounts, leave, timesheets
 from core import Problem
 
 def visible(state,user):
@@ -31,7 +31,7 @@ def save(state,data,user):
     require_available(state,name,week,user,exclude_draft=old['id'] if old else None)
     days=data.get('days')
     if not isinstance(days,list) or len(days)!=7:raise Problem(400,'The draft must contain seven days.')
-    cleaned=[];total=decimal.Decimal(0)
+    cleaned=[];total=decimal.Decimal(0);payable_total=decimal.Decimal(0)
     for day in days:
         if not isinstance(day,dict) or day.get('status') not in timesheets.TIME_SHEET_STATUSES or day.get('method') not in ('direct','times'):raise Problem(400,'Choose valid day types and entry methods.')
         row={k:timesheets.text(day.get(k,''),k,limit) for k,limit in [('other',200),('notes',2000),('start',5),('finish',5)]}
@@ -47,14 +47,17 @@ def save(state,data,user):
         if not isinstance(unpaid,bool):raise Problem(400,'Choose a valid lunch option.')
         row.update(netDirectHours=day.get('netDirectHours') is True,status=day['status'],method=day['method'],hours=str(value),unpaidLunch=unpaid and day['status']=='Work')
         gross=hours if row['method']=='direct' else decimal.Decimal(max(0,timesheets.minutes(row['finish'])-timesheets.minutes(row['start'])))/60 if row['start'] and row['finish'] else decimal.Decimal(0)
-        total+=max(decimal.Decimal(0),gross-(decimal.Decimal('0.5') if row['unpaidLunch'] and not (row['method']=='direct' and row['netDirectHours']) else 0));cleaned.append(row)
+        day_total=max(decimal.Decimal(0),gross-(decimal.Decimal('0.5') if row['unpaidLunch'] and not (row['method']=='direct' and row['netDirectHours']) else 0));total+=day_total
+        if row['status']=='Work' or leave.type_paid(row['status']):payable_total+=day_total
+        cleaned.append(row)
     stamp=dt.datetime.now(dt.timezone.utc).isoformat()
-    import leave
     timed={leave_date:r for r in leave.approved(state) if r['technician'].casefold()==name.casefold() and r.get('startTime') for leave_date in r['dates']}
     for index,row in enumerate(cleaned):
         approved=timed.get((date+dt.timedelta(days=index)).isoformat())
-        if row['status']=='Work' and approved:total+=decimal.Decimal(str(approved['hoursPerDay']))
-    entry={'id':old['id'] if old else str(uuid.uuid4()),'revision':old['revision']+1 if old else 1,'owner':old['owner'] if old else user['email'],'technician':name,'weekStart':week,'signature':timesheets.text(data.get('signature',''),'signature',160),'notes':timesheets.text(data.get('notes',''),'weekly notes',4000),'days':cleaned,'total':float(total),'createdAt':old['createdAt'] if old else stamp,'updatedAt':stamp,'isDraft':True}
+        if row['status']=='Work' and approved:
+            total+=decimal.Decimal(str(approved['hoursPerDay']))
+            if leave.type_paid(approved.get('leaveType')):payable_total+=decimal.Decimal(str(approved['hoursPerDay']))
+    entry={'id':old['id'] if old else str(uuid.uuid4()),'revision':old['revision']+1 if old else 1,'owner':old['owner'] if old else user['email'],'technician':name,'weekStart':week,'signature':timesheets.text(data.get('signature',''),'signature',160),'notes':timesheets.text(data.get('notes',''),'weekly notes',4000),'days':cleaned,'total':float(total),'payableTotal':float(payable_total),'createdAt':old['createdAt'] if old else stamp,'updatedAt':stamp,'isDraft':True}
     entry['onCall']=on_call
     result=copy.deepcopy(state);result.setdefault('timesheetDrafts',{})[entry['id']]=entry
     return result,entry

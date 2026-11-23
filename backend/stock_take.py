@@ -7,14 +7,15 @@ import stock,stock_standard
 TITLE='Stock take Sheet'
 QHEAD=['Product code','Condition','Description','Asset numbers','Expected','Counted','Difference','Notes']
 AHEAD=['Product code','Condition','Description','Current asset number','Expected stage / location','Found','Actual location / discrepancies']
-ONSITE=('Available','Allocated','Incoming','Refurbishing','Awaiting new asset number','Repair')
+# Stock allocated or delivered to clients is not physically at Trident for counting.
+ONSITE=('Available','Incoming','Refurbishing','Awaiting new asset number','Repair')
 
 def rows(state):
     snap=stock_standard.snapshot(state);quantities=[];assets=[]
     for p,items,known in snap['groups']:
         pending=sum(max(0,r['quantity']-len(r['assetIds'])) for r in snap['data']['receipts'].values() if r['productId']==p['id'] and not r.get('openingBalance') and (r['pool']!='Trident refurb stock' or not r.get('refurbComplete')))
-        other=pending+sum(a['status'] in ONSITE and a['status'] not in ('Available','Allocated') for a in items)
-        quantities.append([p['code'],stock_standard.condition(p),p['description'],'\n'.join(a['number'] for a in items if a['status'] in ONSITE),p['onHandQuantity']+other if known else 'Not recorded','','',''])
+        other=pending+sum(a['status'] in ONSITE and a['status']!='Available' for a in items)
+        quantities.append([p['code'],stock_standard.condition(p),p['description'],'\n'.join(a['number'] for a in items if a['status'] in ONSITE),p['availableQuantity']+other if known else 'Not recorded','','',''])
         for a in items:
             if a['status'] not in ONSITE:continue
             label=a['number']+('\nEarlier: '+', '.join(a.get('previousNumbers',[])) if a.get('previousNumbers') else '')
@@ -39,8 +40,8 @@ def excel(state,date):
         header_styles=[int(c.get('s','0')) for c in old[7]];body_styles=[int(c.get('s','0')) for c in old[8]]
         for r in list(sheet):
             if int(r.get('r'))>=7:sheet.remove(r)
-        summary='Snapshot '+date+' (Auckland). Count physically at Trident. Client-held and retired assets are excluded.'
-        for number,text in [(1,'Trident Community Equipment - '+TITLE),(2,summary),(5,'Count all stock at Trident, including receiving/workshop and allocated items still onsite. Not recorded means unknown, not zero.')]:
+        summary='Snapshot '+date+' (Auckland). Count stock physically at Trident. Stock allocated or delivered to clients, and retired assets, are excluded.'
+        for number,text in [(1,'Trident Community Equipment - '+TITLE),(2,summary),(5,'Count stock physically at Trident, including receiving and workshop. Do not count stock allocated or delivered to clients. Not recorded means unknown, not zero.')]:
             row=old[number];style=int(row[0].get('s','0'));row[:]=[cell('A'+str(number),text,style)];row.set('ht','36' if number in (2,5) else '26');row.set('customHeight','1')
         for j,values_row in enumerate([headers,*values],7):
             row=ET.SubElement(sheet,q('row'),{'r':str(j),'ht':str(32 if j==7 else 56 if i==2 else max(54,min(160,32+18*len(str(values_row[3]).splitlines())))),'customHeight':'1'})
@@ -121,7 +122,7 @@ def pdf(state,date):
             return para(v)
         t=Table([[para(h,compact_header if h in ('Expected','Counted','Difference') else bold) for h in headers],*[[value(v) for v in row] for row in values]],colWidths=widths,minRowHeights=[30]+[height]*len(values),repeatRows=1,hAlign='LEFT')
         t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#E8EDF2')),('GRID',(0,0),(-1,-1),.4,colors.HexColor('#BFC8D3')),('VALIGN',(0,0),(-1,-1),'MIDDLE'),('LEFTPADDING',(0,0),(-1,-1),5),('RIGHTPADDING',(0,0),(-1,-1),5),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5)]));return t
-    story=[para('Trident Community Equipment - '+TITLE,heading),para('Snapshot '+date+' (Auckland time)    |    Technician: ____________________    Count date: ______________'),Spacer(1,6),para('Checked by: ____________________    Signature: ____________________    Review date: ______________'),Spacer(1,6),para('Count stock in store, receiving and workshop, including allocated stock still onsite. Client-held and retired assets are excluded. Not recorded means unknown. Difference = Counted - Expected. Count each product/condition once; continued rows only extend its asset list.'),Spacer(1,8),para('1. Quantity count',heading)]
+    story=[para('Trident Community Equipment - '+TITLE,heading),para('Snapshot '+date+' (Auckland time)    |    Technician: ____________________    Count date: ______________'),Spacer(1,6),para('Checked by: ____________________    Signature: ____________________    Review date: ______________'),Spacer(1,6),para('Count stock physically at Trident in store, receiving and workshop. Do not count stock allocated or delivered to clients, or retired assets. Not recorded means unknown. Difference = Counted - Expected. Count each product/condition once; continued rows only extend its asset list.'),Spacer(1,8),para('1. Quantity count',heading)]
     widths=[44,52,176,255,43,41,47,doc.width-658]
     grid=[]
     for row in quantities:

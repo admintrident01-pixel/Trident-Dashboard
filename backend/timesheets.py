@@ -1,7 +1,7 @@
 import copy, datetime, decimal, re, uuid
 from zoneinfo import ZoneInfo
 from core import Problem
-from leave import TYPES as LEAVE_TYPES, approved as approved_leave
+from leave import TYPES as LEAVE_TYPES, approved as approved_leave, type_paid
 
 TIME_SHEET_STATUSES=('Work',)+LEAVE_TYPES
 
@@ -152,7 +152,7 @@ def save(state, data, user=None, exclude_submission=None, exclude_draft=None, ch
     days = data.get('days')
     if not isinstance(days, list) or len(days) != 7:
         raise Problem(400, 'The time sheet must contain seven days.')
-    cleaned, total = [], decimal.Decimal(0)
+    cleaned, total, payable_total = [], decimal.Decimal(0), decimal.Decimal(0)
     default_start, default_finish = default_work_times(state)
     default_direct_hours = decimal.Decimal(minutes(default_finish) - minutes(default_start)) / 60
     timed_leave = timed_leave_for_week(state, technician, week)
@@ -214,9 +214,11 @@ def save(state, data, user=None, exclude_submission=None, exclude_draft=None, ch
             if minutes(finish)<minutes(start):raise Problem(400,f'{day_name}: finish time must not be before start time.')
         if not (net_direct and method=='direct'):hours -= lunch_hours
         total += hours
+        if status == 'Work' or type_paid(status):
+            payable_total += hours
         keep_times = status == 'Work' and entered_hours > 0 and (method == 'times' or bool(start and finish))
         cleaned.append({'status': status, 'other': other, 'notes': notes, 'method': method, 'hours': float(hours), 'enteredHours': float(entered_hours), 'netDirectHours':net_direct,'unpaidLunch': unpaid_lunch, 'lunchHours': float(lunch_hours), 'start': start if keep_times else '', 'finish': finish if keep_times else ''})
-    entry = {'id': str(uuid.uuid4()), 'revision': 1, 'technician': technician, 'weekStart': week, 'signature': signature, 'notes': text(data.get('notes', ''), 'weekly notes', 4000), 'days': cleaned, 'total': float(total), 'submittedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
+    entry = {'id': str(uuid.uuid4()), 'revision': 1, 'technician': technician, 'weekStart': week, 'signature': signature, 'notes': text(data.get('notes', ''), 'weekly notes', 4000), 'days': cleaned, 'total': float(total), 'payableTotal': float(payable_total), 'submittedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
     if isinstance(on_call, bool):
         entry['onCall'] = on_call
     result = copy.deepcopy(state)

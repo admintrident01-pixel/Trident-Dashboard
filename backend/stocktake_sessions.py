@@ -4,7 +4,9 @@ from zoneinfo import ZoneInfo
 from core import Problem
 import stock
 
-ONSITE = ('Available','Allocated','Incoming','Refurbishing','Awaiting new asset number','Repair')
+# Allocated and delivered stock is reserved for clients and is not physically counted.
+ONSITE = ('Available','Incoming','Refurbishing','Awaiting new asset number','Repair')
+SNAPSHOT_VERSION = 2
 
 def today(): return dt.datetime.now(ZoneInfo('Pacific/Auckland')).date()
 
@@ -32,7 +34,7 @@ def snapshot(state):
 
 def read(state,actor):
     draft=next((s for s in state.get('stockTakes',{}).values() if s['status']=='draft' and s['createdBy']==actor),None)
-    return {'draft':copy.deepcopy(draft),'stockTakeStatus':status(state),'stockChanged':bool(draft and draft['fingerprint']!=fingerprint(state))}
+    return {'draft':copy.deepcopy(draft),'stockTakeStatus':status(state),'draftOutdated':bool(draft and draft.get('snapshotVersion')!=SNAPSHOT_VERSION),'stockChanged':bool(draft and draft['fingerprint']!=fingerprint(state))}
 
 def count(value):
     if type(value) is not int or not 0<=value<=10000:raise Problem(400,'Enter a counted total from 0 to 10,000.')
@@ -64,11 +66,13 @@ def action(state,p,actor):
     sessions=result['stockTakes'];kind=p.get('action')
     if kind=='start':
         if not any(s['status']=='draft' and s['createdBy']==actor for s in sessions.values()):
-            key=str(uuid.uuid4());sessions[key]={'id':key,'status':'draft','createdBy':actor,'date':today().isoformat(),'version':1,'fingerprint':fingerprint(state),'rows':snapshot(state),'entries':{}}
+            key=str(uuid.uuid4());sessions[key]={'id':key,'status':'draft','createdBy':actor,'date':today().isoformat(),'version':1,'snapshotVersion':SNAPSHOT_VERSION,'fingerprint':fingerprint(state),'rows':snapshot(state),'entries':{}}
         return result
     session=sessions.get(p.get('id'))
     if not session or session['createdBy']!=actor:raise Problem(404,'This stocktake was not found.')
     if session['status']!='draft' or type(p.get('version')) is not int or session['version']!=p['version']:raise Problem(409,'This stocktake changed. Refresh before continuing.')
+    if session.get('snapshotVersion')!=SNAPSHOT_VERSION and kind not in ('discard','refresh'):
+        raise Problem(409,'The stocktake rules changed. Start a fresh count so stock allocated or delivered to clients is excluded.')
     if kind=='discard':
         session.update(status='cancelled',version=session['version']+1);return result
     if kind=='refresh':

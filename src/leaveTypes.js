@@ -51,14 +51,10 @@ export function requestPaidTotals(request){
  if(!request)return {paid:0,unpaid:0,total:0}
  if(request.dailyBreakdown?.length){
   return request.dailyBreakdown.reduce((totals,row)=>{
-   const hours=Number(row.hoursPerDay)||0,paid=typeof row.paid==='boolean'?row.paid:leaveTypeInfo(row.leaveType||request.leaveType).paid
+   const hours=Number(row.hoursPerDay)||0,paid=leaveTypeInfo(row.leaveType||request.leaveType).paid
    totals[paid?'paid':'unpaid']+=hours;totals.total+=hours;return totals
   },{paid:0,unpaid:0,total:0})
  }
- if(Number.isFinite(Number(request.paidHours))&&Number.isFinite(Number(request.unpaidHours))){
-  const paid=Number(request.paidHours),unpaid=Number(request.unpaidHours)
-  return {paid,unpaid,total:paid+unpaid}
- }
- const total=Number(request.totalHours)||0,isPaid=typeof request.paid==='boolean'?request.paid:leaveTypeInfo(request.leaveType).paid
+ const total=Number(request.totalHours)||(Number(request.paidHours)||0)+(Number(request.unpaidHours)||0),isPaid=leaveTypeInfo(request.leaveType).paid
  return {paid:isPaid?total:0,unpaid:isPaid?0:total,total}
 }

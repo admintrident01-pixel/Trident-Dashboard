@@ -9,8 +9,8 @@ class StocktakeTests(unittest.TestCase):
  def setUp(self):
   self.state=stock.action({},dict(action='product',code='1234567',condition='NEW',description='Count test'),'admin')
   self.pid=next(iter(self.state['stock']['products']))
-  self.state=stock.action(self.state,dict(action='receive_stock',date='2026-10-15',productId=self.pid,pool='Existing stock',quantity=3,numbers=['FOUND','MISSING','CLIENT']),'admin')
-  self.ids=list(self.state['stock']['assets']);self.move('allocate',self.ids[1:],client='Test client',reference='SO1',jobId='JOB1');self.move('dispatch',self.ids[2:])
+  self.state=stock.action(self.state,dict(action='receive_stock',date='2026-10-15',productId=self.pid,pool='Existing stock',quantity=4,numbers=['FOUND','MISSING','ALLOCATED','CLIENT']),'admin')
+  self.ids=list(self.state['stock']['assets']);self.move('allocate',self.ids[1:],client='Test client',reference='SO1',jobId='JOB1');self.move('dispatch',self.ids[3:]);self.move('return',self.ids[1:2],condition='Ready for stock')
  def move(self,action,ids,**kw):
   self.state=stock.action(self.state,dict(action=action,date='2026-10-15',assetIds=ids,revisions={i:self.state['stock']['assets'][i]['revision'] for i in ids},**kw),'admin')
  def start(self):
@@ -22,11 +22,28 @@ class StocktakeTests(unittest.TestCase):
   before=copy.deepcopy(self.state['stock']);d=self.start();self.state=takes.action(self.state,dict(action='save',id=d['id'],version=1,entries={self.pid:dict(count=None,decisions={},numbers=[],notes='Partway')}),'admin')
   self.assertEqual(self.state['stock'],before);self.assertIsNone(takes.read(self.state,'other')['draft']);self.assertEqual(self.start()['version'],2)
   with self.assertRaises(Problem):takes.action(self.state,dict(action='save',id=d['id'],version=1,entries={}), 'admin')
+ def test_snapshot_excludes_allocated_and_delivered_client_stock(self):
+  d=self.start();row=d['rows'][0];numbers=sorted(a['number'] for a in row['assets'])
+  self.assertEqual(d['snapshotVersion'],takes.SNAPSHOT_VERSION);self.assertEqual(numbers,['FOUND','MISSING']);self.assertEqual(row['expected'],2)
+  self.assertNotIn('ALLOCATED',numbers);self.assertNotIn('CLIENT',numbers)
+ def test_old_snapshot_draft_requires_a_fresh_count(self):
+  d=self.start();self.assertFalse(takes.read(self.state,'admin')['draftOutdated']);self.state['stockTakes'][d['id']].pop('snapshotVersion')
+  self.assertTrue(takes.read(self.state,'admin')['draftOutdated'])
+  with self.assertRaisesRegex(Problem,'rules changed'):
+   takes.action(self.state,dict(action='save',id=d['id'],version=d['version'],entries={}),'admin')
+  with self.assertRaisesRegex(Problem,'rules changed'):
+   takes.action(self.state,dict(action='complete',id=d['id'],version=d['version'],entries={},confirmed=True),'admin')
+  with self.assertRaisesRegex(Problem,'rules changed'):
+   takes.action(self.state,dict(action='add_product',id=d['id'],version=d['version'],code='NEW',description='New'),'admin')
+  result=takes.action(self.state,dict(action='refresh',id=d['id'],version=d['version']),'admin');fresh=takes.read(result,'admin')['draft']
+  self.assertEqual(result['stockTakes'][d['id']]['status'],'cancelled');self.assertEqual(fresh['snapshotVersion'],takes.SNAPSHOT_VERSION);self.assertFalse(takes.read(result,'admin')['draftOutdated'])
+  result['stockTakes'][fresh['id']].pop('snapshotVersion');result=takes.action(result,dict(action='discard',id=fresh['id'],version=fresh['version']),'admin')
+  self.assertEqual(result['stockTakes'][fresh['id']]['status'],'cancelled')
  def test_missing_retired_preserves_identity_allocation_history_and_client_stock(self):
   d=self.start();entry=self.entry(count=2);entry[self.pid].update(decisions={self.ids[0]:'found',self.ids[1]:'missing'},numbers=['ADDED'],notes='Missing in store')
   result=self.complete(entry);data=result['stock'];missing=data['assets'][self.ids[1]]
   self.assertEqual(missing['status'],'Retired');self.assertEqual(missing['number'],'MISSING');self.assertEqual(missing['numberHistory'],self.state['stock']['assets'][self.ids[1]]['numberHistory'])
-  self.assertEqual(data['assets'][self.ids[2]]['status'],'With client');self.assertEqual(data['allocations'][missing['lastAllocationId']]['assetStates'][missing['id']]['status'],'Cancelled')
+  self.assertEqual(data['assets'][self.ids[2]]['status'],'Allocated');self.assertEqual(data['assets'][self.ids[3]]['status'],'With client');self.assertEqual(data['allocations'][missing['lastAllocationId']]['assetStates'][missing['id']]['status'],'Cancelled')
   self.assertEqual(len([a for a in data['assets'].values() if a['status'] in takes.ONSITE]),2)
   self.assertEqual(result['stockTakes'][d['id']]['status'],'completed');self.assertTrue(takes.status(result)['lastCompleted'])
   self.assertEqual(stock.read(result)['stockTakeStatus']['lastCompleted'],takes.status(result)['lastCompleted'])
@@ -47,7 +64,7 @@ class StocktakeTests(unittest.TestCase):
   result=self.complete(self.entry(6));self.assertEqual(result['stock']['receipts'][rid],receipt)
  def test_existing_unlabelled_stock_assigned_without_double_counting(self):
   self.state=stock.action(self.state,dict(action='receive',productId=self.pid,pool='Existing stock',quantity=4,date='2026-10-15'),'admin');rid=list(self.state['stock']['receipts'])[-1];self.state['stock']['receipts'][rid]['openingBalance']=True;self.start();e=self.entry(5);e[self.pid]['numbers']=['EXTRA1','EXTRA2'];result=self.complete(e)
-  self.assertEqual(result['stock']['receipts'][rid]['quantity'],3);self.assertEqual(len(result['stock']['receipts'][rid]['assetIds']),2);self.assertEqual(stock.balances(result['stock'],self.pid)['onHandQuantity'],5)
+  self.assertEqual(result['stock']['receipts'][rid]['quantity'],3);self.assertEqual(len(result['stock']['receipts'][rid]['assetIds']),2);self.assertEqual(stock.balances(result['stock'],self.pid)['onHandQuantity'],6)
  def test_unknown_count_zero_becomes_known(self):
   self.state=stock.action({},dict(action='product',code='ZERO',description='Unknown'),'admin');self.pid=next(iter(self.state['stock']['products']));p=self.state['stock']['products'][self.pid];p.update(sourceRow=1,sourceQuantity=None,quantityBasis='listed_assets');self.start();result=self.complete({self.pid:dict(count=0,decisions={},numbers=[],notes='Checked empty')})
   self.assertTrue(stock.quantity_known(result['stock'],result['stock']['products'][self.pid]));self.assertEqual(stock.balances(result['stock'],self.pid)['onHandQuantity'],0)

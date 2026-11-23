@@ -5,7 +5,7 @@ import leave,schedule,timesheets,timesheet_drafts,weekly_report
 class TimedLeaveTests(unittest.TestCase):
  def setUp(self):
   self.state={'staffSettings':{'technicians':[{'name':'Scott','rego':''}]},'timeSettings':{'start':'08:00','finish':'16:00'}}
-  self.request={'technician':'Scott','leaveType':'Annual leave','other':'','startDate':'2027-02-01','endDate':'2027-02-01','startTime':'12:00','endTime':'16:00','hoursPerDay':4,'reason':'Sample afternoon leave'}
+  self.request={'technician':'Scott','leaveType':'Paid annual leave','other':'','startDate':'2027-02-01','endDate':'2027-02-01','startTime':'12:00','endTime':'16:00','hoursPerDay':4,'reason':'Sample afternoon leave'}
   self.actor={'email':'admin@example.nz','role':'admin'}
  def approved(self,**changes):
   state,request=leave.create(self.state,{**self.request,**changes});return leave.decide(state,{'id':request['id'],'revision':1,'status':'Approved'},self.actor['email'])[0]
@@ -16,7 +16,7 @@ class TimedLeaveTests(unittest.TestCase):
   self.assertEqual((block['start'],block['duration'],block['hoursPerDay']),('12:00',240,3.5))
  def test_work_and_leave_are_added_once_in_submission_and_payables(self):
   state,entry=timesheets.save(self.approved(),self.sheet(netDirectHours=True,start='08:00',finish='16:00'));day=entry['days'][0]
-  self.assertEqual(day['hours'],4);self.assertEqual(day['leave']['hoursPerDay'],4);self.assertEqual(entry['total'],8)
+  self.assertEqual(day['hours'],4);self.assertEqual(day['leave']['hoursPerDay'],4);self.assertEqual((entry['total'],entry['payableTotal']),(8,8))
   report=weekly_report.week_rows(state,'2027-02-01')[0]['days'][0]
   self.assertEqual((report['work'],report['annual'],report['all']),(4,4,8));self.assertEqual(report['leaveFrom'],'12:00')
   payload={**self.sheet(),'id':entry['id'],'revision':1,'editReason':'Sample correction'}
@@ -24,7 +24,7 @@ class TimedLeaveTests(unittest.TestCase):
   self.assertEqual(weekly_report.week_rows(corrected,'2027-02-01')[0]['days'][0]['all'],8)
  def test_timed_leave_direct_hours_only_need_the_leave_inside_the_actual_window(self):
   state,entry=timesheets.save(self.approved(),self.sheet(netDirectHours=True,hours=2.5,start='07:00',finish='09:30',unpaidLunch=False))
-  self.assertEqual(entry['days'][0]['hours'],2.5);self.assertEqual(entry['total'],6.5)
+  self.assertEqual(entry['days'][0]['hours'],2.5);self.assertEqual((entry['total'],entry['payableTotal']),(6.5,6.5))
   with self.assertRaisesRegex(Problem,'do not match'):
    timesheets.save(self.approved(),self.sheet(netDirectHours=True,hours=2,start='07:00',finish='09:30',unpaidLunch=False))
  def test_sick_leave_and_work_both_count_in_paid_metric(self):
@@ -32,12 +32,12 @@ class TimedLeaveTests(unittest.TestCase):
   report=weekly_report.week_rows(state,'2027-02-01')[0]['days'][0];self.assertEqual(report['paid'],8)
  def test_unsubmitted_work_is_excluded_from_payables_but_draft_total_includes_leave(self):
   state=self.approved();state,entry=timesheet_drafts.save(state,self.sheet(),{**self.actor,'technician':'Scott'})
-  self.assertEqual(entry['total'],8);self.assertEqual(weekly_report.week_rows(state,'2027-02-01')[0]['days'][0]['all'],4)
+  self.assertEqual((entry['total'],entry['payableTotal']),(8,8));self.assertEqual(weekly_report.week_rows(state,'2027-02-01')[0]['days'][0]['all'],4)
  def test_work_times_must_not_overlap_leave_and_direct_hours_allow_split_work(self):
   with self.assertRaisesRegex(Problem,'overlap'):timesheets.save(self.approved(),self.sheet(method='times',start='09:00',finish='13:00'))
   _,entry=timesheets.save(self.approved(),self.sheet(method='times',start='08:00',finish='12:00'));self.assertEqual(entry['total'],8)
  def test_client_cannot_forge_approved_leave_hours(self):
-  _,entry=timesheets.save(self.state,self.sheet(leave={'hoursPerDay':20},leaveHours=20));self.assertEqual(entry['total'],4);self.assertNotIn('leave',entry['days'][0])
+  _,entry=timesheets.save(self.state,self.sheet(leave={'hoursPerDay':20},leaveHours=20));self.assertEqual((entry['total'],entry['payableTotal']),(4,4));self.assertNotIn('leave',entry['days'][0])
  def test_invalid_and_overnight_ranges_are_rejected(self):
   for changes in [{'startTime':'12:07'},{'endTime':'11:00'},{'startTime':'','endTime':'16:00'},{'hoursPerDay':4.25}]:
    with self.subTest(changes=changes),self.assertRaises(Problem):leave.create(self.state,{**self.request,**changes})
