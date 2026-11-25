@@ -54,3 +54,12 @@ class PeriodTests(unittest.TestCase):
    three_months=weekly_report.averages(state,'2026-10-12')
    row=next(r for r in three_months['rows'] if r['name']=='Scott')
    for metric in ['paidAverage','allAverage','chargedAverage']:self.assertAlmostEqual(row[metric],28/13)
+
+ def test_deleted_staff_are_omitted_from_weekly_and_average_reports(self):
+  week='2026-10-12'
+  def sheet(name):return {'technician':name,'weekStart':week,'submittedAt':week,'days':[{'status':'Work','hours':6}]+[{'status':'Work','hours':0}]*6}
+  self.state={'staffSettings':{'technicians':[{'name':'Active','rego':''}]},'timesheets':{'active':sheet('Active'),'deleted':sheet('Deleted')},'weeklyChargedHours':{week:{'active':{'name':'Active','days':{week:2}},'deleted':{'name':'Deleted','days':{week:3}}}}}
+  self.assertEqual([row['name'] for row in weekly_report.week_rows(self.state,week)],['Active'])
+  self.assertEqual([row['name'] for row in weekly_report.averages(self.state,week)['rows']],['Active'])
+  self.assertEqual([row['name'] for row in weekly_report.selected_period(self.state,{'start':week,'end':week})['rows']],['Active'])
+  self.assertIn('deleted',self.state['timesheets'])

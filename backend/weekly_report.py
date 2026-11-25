@@ -43,14 +43,12 @@ def week_rows(state, week):
         if sheet['weekStart']==week: latest[sheet['technician'].casefold()]=sheet
     approved={}
     names={r['name'].casefold():r['name'] for r in timesheets.settings(state)['technicians']}
-    for key,sheet in latest.items(): names.setdefault(key,sheet['technician'])
     for request in leave.approved(state):
         for date in request['dates']:
-            if date in dates:
+            if date in dates and request['technician'].casefold() in names:
                 key=request['technician'].casefold()
-                names.setdefault(key,request['technician']);approved[(key,date)]=request
+                approved[(key,date)]=request
     charged=state.get('weeklyChargedHours',{}).get(week,{})
-    for key,entry in charged.items():names.setdefault(key,entry['name'])
     notes=state.get('weeklyReportNotes',{}).get(week,{})
     rows=[]
     for key,name in names.items():
