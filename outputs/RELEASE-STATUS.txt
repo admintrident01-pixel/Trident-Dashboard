@@ -1,55 +1,53 @@
-PUSHED AND VERIFIED - Add stock catalogue and retired stock management
+PUSHED AND VERIFIED - Hide deleted staff from labour reports
 26 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Release commit: 7cf4f886f6bd8ae39de7cca5c8b8c11ba183082d
-- Base commit: 852647ae8c8ef46d6902ab6b24dd9266c3c5762a
-- Push: 852647a..7cf4f88 main -> main.
-- Remote origin/main points to 7cf4f88.
+- Release commit: 36579c4da19677083107dc48566605803ace329c
+- Base commit: 6825146dfcb4ddfae60f622d63dac81407a0f936
+- Push: 6825146..36579c4 main -> main.
+- Remote origin/main points to 36579c4.
 
 WHAT CHANGED
-- Added Edit / delete beside Add product, with a searchable catalogue manager and row-level Edit/Delete actions.
-- Product code and description edits preserve product IDs, linked assets and history.
-- Catalogue deletion requires a reason and is blocked when numbered stock, receipts or an open stocktake reference the product.
-- Added a Retired stock section with individual Delete, Select, Select all, Clear selection and bulk deletion.
-- Retired deletion uses revision checks, removes receipt references atomically and retains an audit snapshot / movement record.
-- Stocktakes count only physically onsite stock: Available, Incoming, Refurbishing, Awaiting new asset number and Repair.
-- Allocated, delivered (With client) and Retired stock are never included in stocktake counts.
-- Retired deletion does not invalidate an open count, while catalogue additions and edits require a fresh count for an open draft.
-- The previous unpaid-leave payable fix remains unchanged.
+- Labour payables now use only the current staffSettings roster as the authoritative staff list.
+- Historical timesheets, approved leave and charged-hours records remain stored, but a deleted staff member can no longer be re-added to a report from historical data.
+- The filter applies to the weekly table, previous-week view, selected-period report, three-month averages, and the PDF and Excel exports.
+- Existing unpaid-leave payable logic is unchanged: unpaid approved leave remains visible for reference but is excluded from payable hours.
+- The stock catalogue, retired-stock management, stocktake exclusions and unpaid-leave changes from the previous release are unchanged.
 
 LOCAL VALIDATION
-- Focused stock and stocktake backend suite: 120 of 120 passed.
-- Node stock-tree tests: 6 of 6 passed.
+- Focused report suites: 17 of 17 passed (test_report_periods, test_weekly_report, test_charged_report).
 - ESLint passed.
 - Production build passed (115 modules).
-- No online stocktake was started or completed during verification.
+- Frontend source did not change; live bundle names remain index-Cj8_QOgb.js, index-DGleuqip.css and WeeklyReport-COcFMyxE.js.
+- Local review used a safe copy of the dataset with a historical Jackie Gough timesheet and charged-hours record retained. Jackie was hidden from all report sections while the historical records remained in storage.
+- Historical week 16 November still excludes Kirsten's unpaid 6-hour sick leave from payable hours, producing 10 payable hours.
 
-DEPLOYMENT
+LIVE VERIFICATION
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live core JavaScript: assets/index-Cj8_QOgb.js
-- Live stock JavaScript: assets/StockPage-JcSk9_uf.js
-- All 28 hashed assets returned HTTP 200 and matched the local production build byte-for-byte.
+- Live report: https://trident-dashboard.admintrident01.workers.dev/#reports
 - Direct API health: HTTP 200, {"ok": true, "version": "C"}.
-- Live stock baseline: 38 products, 22 available, 0 allocated, 28 with clients, 0 refurbishing, 0 awaiting asset numbers, 12 retired products / 20 retired assets.
-- Last stocktake: 18/11/2026; next due: 18/12/2026.
+- Live frontend JavaScript and CSS matched the local production build byte-for-byte.
+- Live report for week starting 23 November 2026 was checked after deployment: Rick Leef and Jackie Gough are absent from the weekly table and three-month averages.
+- The selected-period report for 23-29 November 2026 also omits both deleted names.
+- Bala Ganesh Venkatesan remains at 8 payable sick-leave hours and total payable hours remain 8.
+- Active three-month averages are unchanged; Jackie Gough's former 16.54 average is removed with the deleted staff row.
+- Allan Burney's My day total read 12.74 at verification because the live running timer advanced from the 12.61 baseline; the report correctly marked the current day as running.
 - No production business writes were made.
 
 PRE-RELEASE BACKUP LIMITATION
 - A fresh BigQuery/GCS snapshot could not be created because gcloud and google.cloud are unavailable on this machine.
 - Latest recoverable verified recovery point remains tag excel-parse_20261115T235638Z at register revision 18782, with 35 uploads and 0 missing referenced uploads.
-- Read-only pre- and post-release captures were retained under outputs/release-backups/.
+- The live report was inspected read-only before and after release; no business records were changed.
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 576 entries, 1,501,718 bytes.
-- SHA256: 7E78B56C672E520885C7D137633B42B57CD371F6A0AA0927CB64F7E0E22076C9.
-- Previous package archived as outputs/Release history/Trident-dashboard-before-stock-catalogue-retired-2026-11-26.zip.
-- Previous package SHA256: FA8D269CA8D15C9CF9EC880D29AE8E76C5DE77D88BE693465AED9A98A5A37E39.
-- The package excludes environment files, runtime data, outputs, tests, work-tests and local preview/helper files. .env.example is intentionally included because it contains no credentials.
+- 576 entries, 1,501,875 bytes.
+- SHA256: 83EAB36491EE6D768267455E4935B895DA51303598A36E0DFBACD4BC4BC6624A.
+- Previous package archived as outputs/Release history/Trident-dashboard-before-hide-deleted-report-staff-2026-11-26.zip.
+- Previous package: 1,501,718 bytes, SHA256 7E78B56C672E520885C7D137633B42B57CD371F6A0AA0927CB64F7E0E22076C9.
+- The package retains the established 576-file scope and excludes environment files, runtime data, outputs, tests, work-tests and local preview/helper files.
 
 EVIDENCE
-- outputs/Visual review/online-stock-before-catalogue-release-2026-11-26.png
-- outputs/Visual review/online-stock-catalogue-live-2026-11-26.png
-- outputs/Visual review/online-retired-stock-live-2026-11-26.png
+- outputs/Visual review/online-report-deleted-staff-hidden-2026-11-26.png
+- outputs/Visual review/online-report-deleted-staff-averages-2026-11-26.png
