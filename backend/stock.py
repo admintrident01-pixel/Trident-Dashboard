@@ -268,6 +268,27 @@ def action(state,p,actor):
         if any(row['code'].casefold()==code.casefold() and row.get('condition','')==condition for row in data['products'].values()):raise Problem(409,'That product code already exists. Use the existing product.')
         key=str(uuid.uuid4());data['products'][key]={'id':key,'code':code,'condition':condition,'description':description,'sourceRow':None,'sourceQuantity':None,'quantityReviewed':False,'sourceNotes':{},'reviewIssues':[]}
         event(data,'Product added',actor,date,productId=key,notes=notes)
+    elif kind=='product_edit':
+        row=product(data,p.get('productId'))
+        code=text(p.get('code'),'product code',100,True);description=text(p.get('description'),'description',400,True)
+        condition=row.get('condition','')
+        if any(key!=row['id'] and other['code'].casefold()==code.casefold() and other.get('condition','')==condition for key,other in data['products'].items()):raise Problem(409,'That product code already exists for this condition. Use the existing product.')
+        previous={'code':row['code'],'description':row['description']}
+        if previous!={'code':code,'description':description}:
+            row.update(code=code,description=description)
+            event(data,'Product updated',actor,date,productId=row['id'],previous=previous,code=code,description=description,notes=notes)
+    elif kind=='product_delete':
+        row=product(data,p.get('productId'));key=row['id']
+        linked_assets=[a for a in data['assets'].values() if a.get('productId')==key]
+        linked_receipts=[r for r in data['receipts'].values() if r.get('productId')==key]
+        linked_drafts=[s for s in state.get('stockTakes',{}).values() if s.get('status')=='draft' and any(r.get('id')==key for r in s.get('rows',[]))]
+        if linked_assets or linked_receipts:
+            raise Problem(409,'This product has numbered stock or receipt history and must stay in the catalogue so historical records remain intact.')
+        if linked_drafts:
+            raise Problem(409,'This product is included in an open stocktake. Finish or discard that count before deleting it.')
+        reason=text(p.get('notes'),'deletion reason',4000,True)
+        data['products'].pop(key)
+        event(data,'Product deleted',actor,date,productId=key,productCode=row['code'],description=row['description'],condition=row.get('condition',''),notes=reason)
     elif kind=='receive':
         prod=product(data,p.get('productId'));pool=p.get('pool')
         if pool not in POOLS:raise Problem(400,'Choose a stock type.')
@@ -399,7 +420,7 @@ def action(state,p,actor):
             elif kind=='repair':asset.update(status='Repair',location='Repair workshop')
             elif kind=='retire':
                 if not notes:raise Problem(400,'Record why the asset is being retired.')
-                asset.update(status='Retired',location='Retired')
+                asset.update(status='Retired',location='Retired',retiredAt=date)
             elif kind=='relabel':
                 number=text(p.get('number'),'new asset number',80,True)
                 if not notes:raise Problem(400,'Record why the asset number changed.')
@@ -413,6 +434,37 @@ def action(state,p,actor):
             asset['revision']+=1
             labels={'allocate':'Allocated to PO / client','dispatch':'Dispatched','return':'Allocation cancelled' if old=='Allocated' else 'Returned','ready':'Refurb complete' if old=='Refurbishing' else 'Repair complete','repair':'Sent for repair','retire':'Retired','relabel':'Asset number changed'}
             event(data,labels[kind],actor,date,assetId=asset['id'],number=asset['number'],productId=asset['productId'],fromStatus=old,toStatus=asset['status'],client=client or allocation['client'],reference=reference or allocation['reference'],referenceType=ref_type if kind=='allocate' else asset.get('referenceType',existingAllocation.get('referenceType','PO') if existingAllocation else 'PO'),jobId=job or allocation['jobId'],technician=asset.get('refurbTechnician',''),previousNumbers=asset['previousNumbers'][:],pool=asset['pool'],notes=notes)
+    elif kind=='retired_delete':
+        ids=p.get('assetIds');versions=p.get('revisions',{})
+        if not isinstance(ids,list) or not ids or len(ids)>1000 or any(not isinstance(key,str) for key in ids) or len(set(ids))!=len(ids):raise Problem(400,'Choose one or more retired assets to delete.')
+        selected=[]
+        for key in ids:
+            asset=data['assets'].get(key)
+            if not asset:raise Problem(404,'A retired asset no longer exists. Refresh the stock list.')
+            if not isinstance(versions,dict) or type(versions.get(key)) is not int or versions[key]!=asset['revision']:raise Problem(409,'A selected asset changed. Refresh and reopen the retired stock list.')
+            if asset.get('status')!='Retired':raise Problem(400,f"{asset['number']} is {asset.get('status','not retired')}. Only retired stock can be deleted.")
+            selected.append(asset)
+        reason=text(p.get('notes'),'deletion reason',4000,True)
+        receipt_assets={}
+        for asset in selected:
+            receipt_id=asset.get('receiptId')
+            receipt=data['receipts'].get(receipt_id)
+            if receipt and asset['id'] in receipt.get('assetIds',[]):receipt_assets.setdefault(receipt_id,[]).append(asset['id'])
+        receipt_changes={}
+        for receipt_id,asset_ids in receipt_assets.items():
+            receipt=data['receipts'][receipt_id];previous=receipt['quantity']
+            receipt['assetIds']=[key for key in receipt['assetIds'] if key not in asset_ids]
+            receipt['quantity']=max(0,previous-len(asset_ids));receipt['revision']+=1
+            receipt_changes[receipt_id]={'previousQuantity':previous,'quantity':receipt['quantity'],'removedAssets':len(asset_ids)}
+        allocation_ids={}
+        for group in data['allocations'].values():
+            for key in ids:
+                if key in group.get('assetStates',{}):group['assetStates'].pop(key,None);allocation_ids.setdefault(key,[]).append(group['id'])
+                if key in group.get('assetIds',[]):group['assetIds']=[asset_id for asset_id in group['assetIds'] if asset_id!=key]
+        for asset in selected:
+            snapshot=copy.deepcopy(asset);receipt_id=snapshot.get('receiptId','')
+            data['assets'].pop(asset['id'],None)
+            event(data,'Retired asset deleted',actor,date,assetId=snapshot['id'],number=snapshot['number'],productId=snapshot['productId'],receiptId=receipt_id,receiptChange=receipt_changes.get(receipt_id),allocationIds=allocation_ids.get(snapshot['id'],[]),pool=snapshot.get('pool',''),retiredAt=snapshot.get('retiredAt',''),assetSnapshot=snapshot,notes=reason)
     elif kind=='review':
         row=product(data,p.get('productId'));review=text(p.get('review'),'review note',4000,True)
         row.update(quantityReviewed=True,reviewNote=review,reviewedBy=actor)

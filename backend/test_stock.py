@@ -375,6 +375,79 @@ class StockTests(unittest.TestCase):
         for values in [{'technician':'Office','notes':'Complete'},{'technician':'Rick Leef','notes':''}]:
             with self.assertRaises(Problem):self.run_action('refurb_receipt_ready',receiptId=rid,receiptRevision=1,**values)
 
+    def test_product_edit_updates_code_and_description_without_changing_linked_stock(self):
+        rid=self.receive(qty=1);ids=self.register(rid,['EDIT-1'])
+        before_asset=copy.deepcopy(self.state['stock']['assets'][ids[0]])
+        self.run_action('product_edit',productId=self.pid,code='BED-EDIT',description='Updated bed description',notes='Correct catalogue details')
+        row=self.state['stock']['products'][self.pid]
+        self.assertEqual((row['code'],row['description']),('BED-EDIT','Updated bed description'))
+        self.assertEqual(self.state['stock']['assets'][ids[0]],before_asset)
+        movement=self.state['stock']['movements'][-1]
+        self.assertEqual(movement['kind'],'Product updated')
+        self.assertEqual(movement['previous'],{'code':'BED','description':'Bed'})
+        self.assertEqual(movement['productId'],self.pid)
+        self.state=stock.action(self.state,{'action':'product','code':'OTHER','description':'Other product'},'admin@example.nz')
+        other=next(key for key,value in self.state['stock']['products'].items() if value['code']=='OTHER')
+        before=copy.deepcopy(self.state)
+        with self.assertRaisesRegex(Problem,'already exists'):
+            stock.action(self.state,{'action':'product_edit','productId':other,'code':'bed-edit','description':'Duplicate'},'admin@example.nz')
+        self.assertEqual(self.state,before)
+
+    def test_product_delete_only_removes_unused_catalogue_rows(self):
+        self.state=stock.action(self.state,{'action':'product','code':'SPARE','description':'Unused spare'},'admin@example.nz')
+        spare=next(key for key,value in self.state['stock']['products'].items() if value['code']=='SPARE')
+        with self.assertRaisesRegex(Problem,'deletion reason'):
+            stock.action(self.state,{'action':'product_delete','productId':spare},'admin@example.nz')
+        self.run_action('product_delete',productId=spare,notes='Duplicate catalogue row')
+        self.assertNotIn(spare,self.state['stock']['products'])
+        self.assertEqual(self.state['stock']['movements'][-1]['kind'],'Product deleted')
+        rid=self.receive(qty=1)
+        before=copy.deepcopy(self.state)
+        with self.assertRaisesRegex(Problem,'stock or receipt history'):
+            stock.action(self.state,{'action':'product_delete','productId':self.pid},'admin@example.nz')
+        self.assertEqual(self.state,before)
+
+    def test_retired_delete_updates_receipt_and_audit_atomically(self):
+        rid=self.receive(qty=2);ids=self.register(rid,['RETIRED-1','RETIRED-2'])
+        self.act_assets('retire',[ids[0]],notes='Damaged beyond repair')
+        deleted_retired=copy.deepcopy(self.state['stock']['assets'][ids[0]])
+        before_receipt=copy.deepcopy(self.state['stock']['receipts'][rid])
+        self.run_action('retired_delete',assetIds=[ids[0]],revisions={ids[0]:deleted_retired['revision']},notes='Disposed')
+        self.assertNotIn(ids[0],self.state['stock']['assets'])
+        receipt=self.state['stock']['receipts'][rid]
+        self.assertEqual(receipt['quantity'],before_receipt['quantity']-1)
+        self.assertEqual(receipt['assetIds'],[ids[1]])
+        self.assertEqual(receipt['revision'],before_receipt['revision']+1)
+        movement=self.state['stock']['movements'][-1]
+        self.assertEqual(movement['kind'],'Retired asset deleted')
+        self.assertEqual(movement['assetSnapshot']['number'],'RETIRED-1')
+        self.assertEqual(movement['receiptChange']['quantity'],receipt['quantity'])
+        self.assertEqual(stock.read(self.state)['summary']['Retired'],0)
+        before=copy.deepcopy(self.state)
+        with self.assertRaisesRegex(Problem,'Only retired stock'):
+            stock.action(self.state,{'action':'retired_delete','assetIds':[ids[1]],'revisions':{ids[1]:self.state['stock']['assets'][ids[1]]['revision']}},'admin@example.nz')
+        self.assertEqual(self.state,before)
+        self.act_assets('retire',[ids[1]],notes='Damaged beyond repair')
+        retired=copy.deepcopy(self.state['stock']['assets'][ids[1]])
+        with self.assertRaisesRegex(Problem,'deletion reason'):
+            stock.action(self.state,{'action':'retired_delete','assetIds':[ids[1]],'revisions':{ids[1]:retired['revision']}},'admin@example.nz')
+        with self.assertRaisesRegex(Problem,'no longer exists'):
+            stock.action(self.state,{'action':'retired_delete','assetIds':[ids[0]],'revisions':{ids[0]:deleted_retired['revision']}},'admin@example.nz')
+        self.assertEqual(self.state['stock']['assets'][ids[1]]['status'],'Retired')
+
+    def test_bulk_retired_delete_rejects_mixed_selection_without_partial_changes(self):
+        rid=self.receive(qty=2);ids=self.register(rid,['BULK-RETIRED','BULK-AVAILABLE'])
+        self.act_assets('retire',[ids[0]],notes='No longer repairable')
+        before=copy.deepcopy(self.state)
+        with self.assertRaisesRegex(Problem,'Only retired stock'):
+            stock.action(self.state,{'action':'retired_delete','assetIds':ids,'revisions':{key:self.state['stock']['assets'][key]['revision'] for key in ids}},'admin@example.nz')
+        self.assertEqual(self.state,before)
+        versions={key:self.state['stock']['assets'][key]['revision'] for key in ids}
+        versions[ids[0]]+=1
+        with self.assertRaisesRegex(Problem,'changed'):
+            stock.action(self.state,{'action':'retired_delete','assetIds':ids[:1],'revisions':versions},'admin@example.nz')
+        self.assertEqual(self.state,before)
+
 class StockImportTests(unittest.TestCase):
     def test_import_preserves_unknown_counts_duplicates_and_notes(self):
         candidate=stock_import.preview(workbook(),'Example.xlsx')

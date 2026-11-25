@@ -4,9 +4,10 @@ from zoneinfo import ZoneInfo
 from core import Problem
 import stock
 
-# Allocated and delivered stock is reserved for clients and is not physically counted.
+# Allocated and delivered stock is reserved for clients. Retired stock is no
+# longer part of the live register. None of these are physically counted.
 ONSITE = ('Available','Incoming','Refurbishing','Awaiting new asset number','Repair')
-SNAPSHOT_VERSION = 2
+SNAPSHOT_VERSION = 3
 
 def today(): return dt.datetime.now(ZoneInfo('Pacific/Auckland')).date()
 
@@ -21,20 +22,21 @@ def status(state, date=None):
     return {**config(state),'lastCompleted':last,'nextDue':due,'daysRemaining':(dt.date.fromisoformat(due)-date).days}
 
 def fingerprint(state):
-    data={k:v for k,v in state.get('stock',stock.empty()).items() if k not in ('workbookTemplate','sourceSnapshot')}
-    return hashlib.sha256(json.dumps(data,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    # Only countable stock belongs in this guard. Client-reserved and retired
+    # assets, plus audit-only movement history, cannot change a physical count.
+    return hashlib.sha256(json.dumps(snapshot(state),sort_keys=True,separators=(',',':')).encode()).hexdigest()
 
 def snapshot(state):
     data=state.get('stock',stock.empty()); rows=[]
     for p in sorted(data['products'].values(),key=lambda p:(p['code'],p.get('condition',''))):
-        assets=[{'id':a['id'],'number':a['number'],'status':a['status'],'location':a['location']} for a in data['assets'].values() if a['productId']==p['id'] and a['status'] in ONSITE]
+        assets=[{'id':a['id'],'number':a['number'],'status':a['status'],'location':a['location'],'revision':a.get('revision',0)} for a in data['assets'].values() if a['productId']==p['id'] and a['status'] in ONSITE]
         pending=sum(max(0,r['quantity']-len(r['assetIds'])) for r in data['receipts'].values() if r['productId']==p['id'] and (r['pool']!='Trident refurb stock' or not r.get('refurbComplete')))
         rows.append({'id':p['id'],'code':p['code'],'condition':p.get('condition',''),'description':p['description'],'assets':assets,'expected':len(assets)+pending if stock.quantity_known(data,p) else None})
     return rows
 
 def read(state,actor):
     draft=next((s for s in state.get('stockTakes',{}).values() if s['status']=='draft' and s['createdBy']==actor),None)
-    return {'draft':copy.deepcopy(draft),'stockTakeStatus':status(state),'draftOutdated':bool(draft and draft.get('snapshotVersion')!=SNAPSHOT_VERSION),'stockChanged':bool(draft and draft['fingerprint']!=fingerprint(state))}
+    return {'draft':copy.deepcopy(draft),'stockTakeStatus':status(state),'draftOutdated':bool(draft and draft.get('snapshotVersion')!=SNAPSHOT_VERSION),'stockChanged':bool(draft and draft.get('fingerprint')!=fingerprint(state))}
 
 def count(value):
     if type(value) is not int or not 0<=value<=10000:raise Problem(400,'Enter a counted total from 0 to 10,000.')
@@ -72,7 +74,7 @@ def action(state,p,actor):
     if not session or session['createdBy']!=actor:raise Problem(404,'This stocktake was not found.')
     if session['status']!='draft' or type(p.get('version')) is not int or session['version']!=p['version']:raise Problem(409,'This stocktake changed. Refresh before continuing.')
     if session.get('snapshotVersion')!=SNAPSHOT_VERSION and kind not in ('discard','refresh'):
-        raise Problem(409,'The stocktake rules changed. Start a fresh count so stock allocated or delivered to clients is excluded.')
+        raise Problem(409,'The stocktake rules changed. Start a fresh count so allocated, delivered and retired stock is excluded.')
     if kind=='discard':
         session.update(status='cancelled',version=session['version']+1);return result
     if kind=='refresh':

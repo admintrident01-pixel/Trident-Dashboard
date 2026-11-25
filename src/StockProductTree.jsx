@@ -4,13 +4,14 @@ import Icon from './Icon.jsx'
 function Condition({value}){return value?<span className={'stock-badge stock-'+value.toLowerCase()}>{value}</span>:null}
 function Status({value}){return <span className={'stock-badge stock-'+value.toLowerCase().replaceAll(' ','-')}>{value}</span>}
 const date=(value,raw)=>value?new Date(value+'T12:00:00').toLocaleDateString('en-NZ'):raw?raw+' (year not recorded)':'Not recorded'
-export default function StockProductTree({groups,tab,query,status,pool,open,onViewAsset,onAssetAction,onReceiptAction,onAllocation}){
+export default function StockProductTree({groups,tab,query,status,pool,open,onViewAsset,onAssetAction,onReceiptAction,onAllocation,retiredSelection={},onRetiredToggle,onDeleteRetired}){
  const [expanded,setExpanded]=useState({})
  const key=g=>[tab,query,status,pool,g.product.id].join('|')
  const isOpen=g=>expanded[key(g)]??Boolean(query.trim())
  const toggle=g=>setExpanded(current=>({...current,[key(g)]:!isOpen(g)}))
  const overview=tab==='products',columns=overview?8:5
  function assetActions(a){return <>
+  {tab==='retired'&&a.status==='Retired'&&<label className="stock-retired-select"><input type="checkbox" aria-label={'Select retired asset '+a.number} checked={Boolean(retiredSelection[a.id])} onChange={e=>onRetiredToggle(a,e.target.checked)}/>Select</label>}
   {a.status==='Incoming'&&<button onClick={()=>open('custom_move',{assetIds:[a.id],destination:'assets',stageTitle:'Receive numbered stock'})}>Receive to stock on hand</button>}
   {a.status==='Refurbishing'&&<button onClick={()=>open('custom_move',{assetIds:[a.id],destination:'assets',stageTitle:'Complete refurb'})}>Complete refurb</button>}
   {a.status==='Available'&&<button onClick={()=>onAssetAction('allocate',a)}>Allocate to client</button>}
@@ -18,8 +19,10 @@ export default function StockProductTree({groups,tab,query,status,pool,open,onVi
   {a.status==='Awaiting new asset number'&&<button onClick={()=>onAssetAction('relabel',a)}>Assign new asset number</button>}
   <button onClick={()=>onViewAsset(a)}>View / history</button>
   {a.allocationId&&<button onClick={()=>onAllocation(a.allocationId)}>View order</button>}
+  {tab==='retired'&&a.status==='Retired'&&<button type="button" className="stock-danger-action" onClick={()=>onDeleteRetired(a)}>Delete</button>}
  </>}
  function productActions(g){const ids=g.assets.filter(a=>a.status==='Available').map(a=>a.id);return <>
+  {tab==='products'&&<><button onClick={()=>open('product_edit',{productId:g.product.id,code:g.product.code,description:g.product.description,condition:g.product.condition})}>Edit product</button><button type="button" className="stock-danger-action" onClick={()=>open('product_delete',{productId:g.product.id,productLabel:g.product.code+' · '+g.product.description})}>Delete product</button></>}
   {['products','intake'].includes(tab)&&<button onClick={()=>open('receive',{productId:g.product.id})}>Receive stock</button>}
   {tab==='assets'&&ids.length>0&&<button onClick={()=>open('allocate',{assetIds:ids})}>Allocate to client</button>}
   {tab==='refurbing'&&g.assets.length>0&&<button onClick={()=>open('custom_move',{assetIds:g.assets.map(a=>a.id),destination:'assets',stageTitle:'Complete refurb'})}>Complete refurb</button>}

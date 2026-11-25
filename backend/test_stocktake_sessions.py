@@ -93,6 +93,62 @@ class StocktakeTests(unittest.TestCase):
   self.assertFalse(stock.read(result)['stockTakeStatus']['automatic'])
   with self.assertRaises(Problem):stock.action(self.state,dict(action='stock_settings',minimums={},stocktakeIntervalDays=0,automaticStocktakes=True),'admin')
 
+ def test_retired_stock_and_retired_deletion_never_change_stocktake_expected(self):
+  self.move('retire',[self.ids[0]],notes='No longer repairable')
+  self.assertEqual(stock.read(self.state)['summary']['Retired'],1)
+  d=self.start();row=d['rows'][0]
+  self.assertEqual([a['number'] for a in row['assets']],['MISSING'])
+  self.assertEqual(row['expected'],1)
+  self.state=takes.action(self.state,dict(action='discard',id=d['id'],version=d['version']),'admin')
+  retired=copy.deepcopy(self.state['stock']['assets'][self.ids[0]])
+  self.state=stock.action(self.state,dict(action='retired_delete',date='2026-10-15',assetIds=[self.ids[0]],revisions={self.ids[0]:retired['revision']},notes='Disposed'),'admin')
+  self.assertNotIn(self.ids[0],self.state['stock']['assets'])
+  d=self.start();row=d['rows'][0]
+  self.assertEqual([a['number'] for a in row['assets']],['MISSING'])
+  self.assertEqual(row['expected'],1)
+  self.assertEqual(takes.snapshot(self.state)[0]['expected'],1)
+
+ def test_product_edit_and_added_products_use_fresh_stocktake_snapshot(self):
+  d=self.start()
+  self.state=stock.action(self.state,dict(action='product_edit',date='2026-10-15',productId=self.pid,code='EDITED-CODE',description='Edited description'),'admin')
+  self.assertTrue(takes.read(self.state,'admin')['stockChanged'])
+  with self.assertRaisesRegex(Problem,'Stock changed'):takes.action(self.state,dict(action='complete',id=d['id'],version=d['version'],entries={},confirmed=True),'admin')
+  self.state=takes.action(self.state,dict(action='refresh',id=d['id'],version=d['version']),'admin')
+  fresh=takes.read(self.state,'admin')['draft']
+  self.assertEqual((fresh['rows'][0]['code'],fresh['rows'][0]['description']),('EDITED-CODE','Edited description'))
+  self.state=stock.action(self.state,dict(action='product',code='NEW-COUNT',description='Added for count'),'admin')
+  fresh=takes.read(self.state,'admin')['draft']
+  self.assertTrue(takes.read(self.state,'admin')['stockChanged'])
+  self.state=takes.action(self.state,dict(action='refresh',id=fresh['id'],version=fresh['version']),'admin')
+  fresh=takes.read(self.state,'admin')['draft']
+  self.assertIn('NEW-COUNT',{row['code'] for row in fresh['rows']})
+
+ def test_product_delete_is_blocked_while_product_is_in_open_stocktake(self):
+  self.state=stock.action(self.state,dict(action='product',code='OPEN-COUNT',description='Unused count product'),'admin')
+  pid=next(key for key,row in self.state['stock']['products'].items() if row['code']=='OPEN-COUNT')
+  self.start()
+  before=copy.deepcopy(self.state)
+  with self.assertRaisesRegex(Problem,'open stocktake'):
+   stock.action(self.state,dict(action='product_delete',productId=pid,notes='Duplicate catalogue row'),'admin')
+  self.assertEqual(self.state,before)
+
+ def test_deleted_unused_product_is_absent_from_the_next_stocktake(self):
+  self.state=stock.action(self.state,dict(action='product',code='DELETE-ME',description='Unused duplicate'),'admin')
+  pid=next(key for key,row in self.state['stock']['products'].items() if row['code']=='DELETE-ME')
+  d=self.start();self.assertIn('DELETE-ME',{row['code'] for row in d['rows']})
+  self.state=takes.action(self.state,dict(action='discard',id=d['id'],version=d['version']),'admin')
+  self.state=stock.action(self.state,dict(action='product_delete',productId=pid,notes='Duplicate catalogue row'),'admin')
+  self.assertNotIn(pid,self.state['stock']['products'])
+  d=self.start();self.assertNotIn('DELETE-ME',{row['code'] for row in d['rows']})
+
+ def test_retired_deletion_does_not_invalidate_an_open_count(self):
+  self.move('retire',[self.ids[0]],notes='No longer repairable')
+  d=self.start();before_fingerprint=self.state['stockTakes'][d['id']]['fingerprint']
+  retired=copy.deepcopy(self.state['stock']['assets'][self.ids[0]])
+  self.state=stock.action(self.state,dict(action='retired_delete',date='2026-10-15',assetIds=[self.ids[0]],revisions={self.ids[0]:retired['revision']},notes='Disposed'),'admin')
+  self.assertEqual(takes.fingerprint(self.state),before_fingerprint)
+  self.assertFalse(takes.read(self.state,'admin')['stockChanged'])
+
 class StocktakeAPITests(AccountsAPI):
  def test_stocktake_api_admin_only_and_version_guard(self):
   self.assertEqual(self.call('/api/stocktake',token='tech')[0],403);self.assertEqual(self.call('/api/stocktake','POST',{'action':'start'},token='tech')[0],403)

@@ -1,4 +1,4 @@
-export const stockTreeSections=['products','intake','refurbing','assets','allocations','delivered']
+export const stockTreeSections=['products','intake','refurbing','assets','allocations','delivered','retired']
 export function stockQuantityKnown(product,assets){
  if(product.stocktakeQuantityConfirmed)return true
  return product.quantityBasis==='listed_assets'?product.sourceQuantity>0||assets.length>0:Boolean(product.openingQuantityConfirmed||!product.sourceRow||assets.length)
@@ -9,7 +9,7 @@ export function stockProductGroups({data,tab,query='',status='',pool=''}){
  const matches=(...values)=>values.flat(Infinity).filter(v=>v!==null&&v!==undefined).join(' ').toLowerCase().includes(needle)
  const assetMatches=a=>matches(a.number,a.previousNumbers,a.pool,a.status,a.location,a.client,a.reference,a.jobId,a.refurbTechnician,a.sourceAssetCell,(a.numberHistory||[]).map(h=>[h.number,h.referenceType,h.reference]))
  const receiptMatches=r=>matches(r.client,r.reference,r.jobId,r.pool,r.notes)
- const stageAsset=a=>tab==='products'||tab==='intake'&&a.status==='Incoming'||tab==='refurbing'&&['Refurbishing','Awaiting new asset number'].includes(a.status)||tab==='assets'&&(status?a.status===status:['Available','Allocated'].includes(a.status))&&(!pool||a.pool===pool)||tab==='allocations'&&a.status==='Allocated'||tab==='delivered'&&a.status==='With client'
+ const stageAsset=a=>tab==='products'||tab==='intake'&&a.status==='Incoming'||tab==='refurbing'&&['Refurbishing','Awaiting new asset number'].includes(a.status)||tab==='assets'&&(status?a.status===status:['Available','Allocated'].includes(a.status))&&(!pool||a.pool===pool)||tab==='allocations'&&a.status==='Allocated'||tab==='delivered'&&a.status==='With client'||tab==='retired'&&a.status==='Retired'
  const stageReceipt=r=>tab==='products'||tab==='intake'&&r.pool!=='Trident refurb stock'&&!r.openingBalance||tab==='refurbing'&&r.pool==='Trident refurb stock'||tab==='assets'&&r.openingBalance&&(!status||status==='Available')&&(!pool||r.pool===pool)
  return Object.values(data.products).map(product=>{
   const allAssets=assets.filter(a=>a.productId===product.id),allPending=receipts.filter(r=>r.productId===product.id&&r.quantity>r.assetIds.length)
