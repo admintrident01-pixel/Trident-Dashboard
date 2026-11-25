@@ -1,80 +1,55 @@
-PUBLISHED AND VERIFIED - Fix unpaid leave payables and exclude client stock from stocktakes
-24 November 2026 (Pacific/Auckland)
+PUSHED AND VERIFIED - Add stock catalogue and retired stock management
+26 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Release commit: eb75a58a6fbee39ed5ba7ba16a48481c5091f2de
-- Base commit: cfcaa82e11d70fa5a0ff19b21bb2370fa5846fc6
-- Push: cfcaa82..eb75a58 main -> main.
-- Unpaid approved leave now contributes 0 payable hours while remaining visible in
-  timesheets and reports. Payability is derived from the leave type, so stale saved
-  paid flags cannot make unpaid leave payable again.
-- New submitted timesheets store payableTotal; legacy records continue to derive a
-  compatible payable total.
-- Stocktakes now exclude stock that is Allocated or With client. Physical stocktake
-  statuses are Available, Incoming, Refurbishing, Awaiting new asset number and Repair.
-- onHandQuantity is deliberately unchanged because allocated stock remains business
-  inventory; only the physical count quantities exclude it.
-- Existing stocktake drafts created before this rule are marked draftOutdated, cannot
-  be modified or completed, and prompt for a fresh count.
-- Excel and PDF stocktake exports explain the client-stock exclusion.
+- Release commit: 7cf4f886f6bd8ae39de7cca5c8b8c11ba183082d
+- Base commit: 852647ae8c8ef46d6902ab6b24dd9266c3c5762a
+- Push: 852647a..7cf4f88 main -> main.
+- Remote origin/main points to 7cf4f88.
 
-PAYABLES AND STOCK EVIDENCE
-- Payables week 2026-11-16: Kirsten Tuesday 2 payable hours, week total 10, report
-  total 221. Before the fix these were 8, 40 and 251 respectively.
-- Online stock records were unchanged: 37 products, 24 available, 0 allocated,
-  28 with clients, last stocktake 18/11/2026 and next due 18/12/2026.
+WHAT CHANGED
+- Added Edit / delete beside Add product, with a searchable catalogue manager and row-level Edit/Delete actions.
+- Product code and description edits preserve product IDs, linked assets and history.
+- Catalogue deletion requires a reason and is blocked when numbered stock, receipts or an open stocktake reference the product.
+- Added a Retired stock section with individual Delete, Select, Select all, Clear selection and bulk deletion.
+- Retired deletion uses revision checks, removes receipt references atomically and retains an audit snapshot / movement record.
+- Stocktakes count only physically onsite stock: Available, Incoming, Refurbishing, Awaiting new asset number and Repair.
+- Allocated, delivered (With client) and Retired stock are never included in stocktake counts.
+- Retired deletion does not invalidate an open count, while catalogue additions and edits require a fresh count for an open draft.
+- The previous unpaid-leave payable fix remains unchanged.
 
 LOCAL VALIDATION
-- Focused stock tests: 63 passed.
-- Payables backend tests: 40 passed.
-- Node leave, stock and payables tests: 12 of 12 passed.
+- Focused stock and stocktake backend suite: 120 of 120 passed.
+- Node stock-tree tests: 6 of 6 passed.
 - ESLint passed.
-- Production build passed.
-- Full backend suite: 622 of 623 passed. The only failure,
-  test_recycle.RecycleTests.test_restore_rejects_new_booking_conflict_without_partial_changes,
-  also fails unchanged on base commit cfcaa82 and is unrelated to this release.
-- Local visual checks confirmed the onsite-only stocktake count and the corrected
-  unpaid-leave payable values.
+- Production build passed (115 modules).
+- No online stocktake was started or completed during verification.
 
 DEPLOYMENT
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live core JavaScript: assets/index-aglAbLQU.js
-- Live stock JavaScript: assets/StockPage-BvCUnQi5.js
-- Live weekly report JavaScript: assets/WeeklyReport-C0EmDCBi.js
-- All 28 hashed assets were checked and matched the local production build bytes.
-- Direct API health:
-  https://trident-quote-api-383423323438.australia-southeast1.run.app/api/health
-- API health: HTTP 200, {"ok": true, "version": "C"}.
-- The Worker /api/health path returns HTML because of the frontend route fallback;
-  API health was therefore verified against the direct Cloud Run URL.
-- No production business writes were made and no online stocktake was started or
-  completed for verification.
+- Live core JavaScript: assets/index-Cj8_QOgb.js
+- Live stock JavaScript: assets/StockPage-JcSk9_uf.js
+- All 28 hashed assets returned HTTP 200 and matched the local production build byte-for-byte.
+- Direct API health: HTTP 200, {"ok": true, "version": "C"}.
+- Live stock baseline: 38 products, 22 available, 0 allocated, 28 with clients, 0 refurbishing, 0 awaiting asset numbers, 12 retired products / 20 retired assets.
+- Last stocktake: 18/11/2026; next due: 18/12/2026.
+- No production business writes were made.
 
 PRE-RELEASE BACKUP LIMITATION
-- A fresh BigQuery/GCS snapshot could not be created from this machine because
-  gcloud and google.cloud are unavailable.
-- Latest recoverable verified recovery point remains tag
-  excel-parse_20261115T235638Z at register revision 18782, with 35 uploads and
-  0 missing referenced uploads.
-- This release changed source code, deploy assets and release records only; it made
-  no production business writes. Online stock and payables were checked read-only
-  before and after deployment.
+- A fresh BigQuery/GCS snapshot could not be created because gcloud and google.cloud are unavailable on this machine.
+- Latest recoverable verified recovery point remains tag excel-parse_20261115T235638Z at register revision 18782, with 35 uploads and 0 missing referenced uploads.
+- Read-only pre- and post-release captures were retained under outputs/release-backups/.
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 576 entries, 1,496,800 bytes.
-- SHA256: FA8D269CA8D15C9CF9EC880D29AE8E76C5DE77D88BE693465AED9A98A5A37E39.
-- Previous package archived as
-  outputs/Release history/Trident-dashboard-before-unpaid-leave-stocktake-2026-11-24.zip.
-- Previous package SHA256:
-  8E7F76B69A994905131290F78D0359E33A00F364FF5D2ED709C92788739EA293.
-- The package excludes environment files, runtime data, outputs, tests, work-tests
-  and local preview/helper files. .env.example is intentionally included because it
-  contains no credentials.
+- 576 entries, 1,501,718 bytes.
+- SHA256: 7E78B56C672E520885C7D137633B42B57CD371F6A0AA0927CB64F7E0E22076C9.
+- Previous package archived as outputs/Release history/Trident-dashboard-before-stock-catalogue-retired-2026-11-26.zip.
+- Previous package SHA256: FA8D269CA8D15C9CF9EC880D29AE8E76C5DE77D88BE693465AED9A98A5A37E39.
+- The package excludes environment files, runtime data, outputs, tests, work-tests and local preview/helper files. .env.example is intentionally included because it contains no credentials.
 
 EVIDENCE
-- outputs/Visual review/online-payables-unpaid-leave-fixed-full-2026-11-24.png
-- outputs/Visual review/online-kirsten-unpaid-leave-row-2026-11-24.png
-- outputs/Visual review/stocktake-excludes-client-stock-2026-11-24.png
-- outputs/Visual review/unpaid-leave-payables-verified-local-2026-11-24.png
+- outputs/Visual review/online-stock-before-catalogue-release-2026-11-26.png
+- outputs/Visual review/online-stock-catalogue-live-2026-11-26.png
+- outputs/Visual review/online-retired-stock-live-2026-11-26.png
