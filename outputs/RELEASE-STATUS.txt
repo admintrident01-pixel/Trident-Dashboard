@@ -1,53 +1,62 @@
-PUSHED AND VERIFIED - Hide deleted staff from labour reports
-26 November 2026 (Pacific/Auckland)
+PUSHED AND VERIFIED - Floating time sheet and sorted labour export
+27 November 2026 (Pacific/Auckland)
 
 RELEASE
 - Branch: main
-- Release commit: 36579c4da19677083107dc48566605803ace329c
-- Base commit: 6825146dfcb4ddfae60f622d63dac81407a0f936
-- Push: 6825146..36579c4 main -> main.
-- Remote origin/main points to 36579c4.
+- Release commit: 4f40147c2b1bcf93e11bbdada5b78bff651aa07b
+- Base commit: 8f06046e6862638b85d8bf907099a6a5327edafe
+- Push: 8f06046..4f40147 main -> main.
+- Remote origin/main points to 4f40147.
 
 WHAT CHANGED
-- Labour payables now use only the current staffSettings roster as the authoritative staff list.
-- Historical timesheets, approved leave and charged-hours records remain stored, but a deleted staff member can no longer be re-added to a report from historical data.
-- The filter applies to the weekly table, previous-week view, selected-period report, three-month averages, and the PDF and Excel exports.
-- Existing unpaid-leave payable logic is unchanged: unpaid approved leave remains visible for reference but is excluded from payable hours.
-- The stock catalogue, retired-stock management, stocktake exclusions and unpaid-leave changes from the previous release are unchanged.
+- New time sheet and Continue draft now open the weekly form in a floating native dialog instead of the inline form block.
+- The Close button, Escape and backdrop close the dialog. The iframe stays mounted so unsaved entries survive closing and reopening the form.
+- The weekly labour Excel export now follows the visible technician/day/hour sort in either ascending or descending order.
+- The API validates sort index 0-8 and direction asc or desc; unsupported values are rejected.
+- Eight files changed: backend/test_timesheet_release.py, backend/weekly_export.py, public/timesheet.html, src/App.jsx, src/SortableTable.css, src/SortableTable.jsx, src/TimesheetHistory.jsx and src/WeeklyReport.jsx.
+- Existing unpaid-leave payables, stocktake, retired-stock and stock-catalogue rules are unchanged.
 
 LOCAL VALIDATION
-- Focused report suites: 17 of 17 passed (test_report_periods, test_weekly_report, test_charged_report).
+- Focused release and report suites: 27 of 27 passed (test_timesheet_release, test_report_periods, test_weekly_report, test_charged_report, test_deployment_modules).
 - ESLint passed.
 - Production build passed (115 modules).
-- Frontend source did not change; live bundle names remain index-Cj8_QOgb.js, index-DGleuqip.css and WeeklyReport-COcFMyxE.js.
-- Local review used a safe copy of the dataset with a historical Jackie Gough timesheet and charged-hours record retained. Jackie was hidden from all report sections while the historical records remained in storage.
-- Historical week 16 November still excludes Kirsten's unpaid 6-hour sick leave from payable hours, producing 10 payable hours.
+- git diff --check was clean.
+- Local dialog reviewed at desktop and mobile widths. Close, Escape and backdrop paths were verified, and unsaved iframe state was preserved.
+- Local preview remains usable at http://127.0.0.1:18780/ (HTTP 200); the local API is at http://127.0.0.1:18782/ (HTTP 200).
 
 LIVE VERIFICATION
 - Live frontend: https://trident-dashboard.admintrident01.workers.dev/
-- Live report: https://trident-dashboard.admintrident01.workers.dev/#reports
 - Direct API health: HTTP 200, {"ok": true, "version": "C"}.
-- Live frontend JavaScript and CSS matched the local production build byte-for-byte.
-- Live report for week starting 23 November 2026 was checked after deployment: Rick Leef and Jackie Gough are absent from the weekly table and three-month averages.
-- The selected-period report for 23-29 November 2026 also omits both deleted names.
-- Bala Ganesh Venkatesan remains at 8 payable sick-leave hours and total payable hours remain 8.
-- Active three-month averages are unchanged; Jackie Gough's former 16.54 average is removed with the deleted staff row.
-- Allan Burney's My day total read 12.74 at verification because the live running timer advanced from the 12.61 baseline; the report correctly marked the current day as running.
+- Live JavaScript, CSS and weekly-report bundle matched the local production build byte-for-byte:
+  - assets/index-4IInuHLZ.js
+  - assets/index-Cf-zjfa2.css
+  - assets/WeeklyReport-CfVC1Z2h.js
+- New time sheet opened the floating dialog. The Close button and Escape both closed it without saving.
+- Live Excel ascending order matched the table: Allan Burney, Andrew Thomas, Bala Ganesh Venkatesan, Daryll Anderson, Joby Shearing, Kirsten, Scott Yearbury.
+- Live Excel descending order matched the table: Scott Yearbury, Kirsten, Joby Shearing, Daryll Anderson, Bala Ganesh Venkatesan, Andrew Thomas, Allan Burney.
+- Both workbooks had 71 rows by 8 columns and 7 Weekly total rows.
+- Live report totals stayed unchanged: Bala Ganesh Venkatesan 8 paid sick-leave hours, 8 payable hours, 23.67 total My day hours.
+- Live stock stayed unchanged: 24 available, 0 allocated, 28 with clients, 0 refurbishing, 38 products, 0 retired.
+- Live browser console showed 0 errors and 0 warnings.
 - No production business writes were made.
 
 PRE-RELEASE BACKUP LIMITATION
 - A fresh BigQuery/GCS snapshot could not be created because gcloud and google.cloud are unavailable on this machine.
 - Latest recoverable verified recovery point remains tag excel-parse_20261115T235638Z at register revision 18782, with 35 uploads and 0 missing referenced uploads.
-- The live report was inspected read-only before and after release; no business records were changed.
+- Read-only pre-release live capture: outputs/release-backups/timesheet-floating-sorted_20261126T183236Z-pre-release.json.
+- The live report and stock summary were inspected read-only before and after release; no business records changed.
 
 PACKAGE
 - outputs/Trident-dashboard-cumulative-update.zip
-- 576 entries, 1,501,875 bytes.
-- SHA256: 83EAB36491EE6D768267455E4935B895DA51303598A36E0DFBACD4BC4BC6624A.
-- Previous package archived as outputs/Release history/Trident-dashboard-before-hide-deleted-report-staff-2026-11-26.zip.
-- Previous package: 1,501,718 bytes, SHA256 7E78B56C672E520885C7D137633B42B57CD371F6A0AA0927CB64F7E0E22076C9.
-- The package retains the established 576-file scope and excludes environment files, runtime data, outputs, tests, work-tests and local preview/helper files.
+- 576 entries, 1,497,177 bytes.
+- SHA256: 9F73C8DB323D021F3784E9E1408842A8EBF880E1D3915EB54403C56737E15CA9.
+- Previous package archived as outputs/Release history/Trident-dashboard-before-timesheet-floating-sorted-2026-11-27.zip.
+- Previous package: 1,501,875 bytes, SHA256 83EAB36491EE6D768267455E4935B895DA51303598A36E0DFBACD4BC4BC6624A.
+- The same 576-file scope is retained. Exactly eight entries differ from the previous package and all eight match the release worktree.
+- The package excludes environment files, runtime data, outputs, tests, work-tests and local preview/helper files.
 
 EVIDENCE
-- outputs/Visual review/online-report-deleted-staff-hidden-2026-11-26.png
-- outputs/Visual review/online-report-deleted-staff-averages-2026-11-26.png
+- outputs/Visual review/online-timesheet-floating-2026-11-27.png
+- C:/Users/TECH11/Downloads/Trident-weekly-work-hours-2026-11-23 (5).xlsx (ascending)
+- C:/Users/TECH11/Downloads/Trident-weekly-work-hours-2026-11-23 (6).xlsx (descending)
+- outputs/release-backups/timesheet-floating-sorted_20261126T183236Z-pre-release.json
