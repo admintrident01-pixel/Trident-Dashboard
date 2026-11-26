@@ -3,6 +3,7 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 import openpyxl
 import weekly_export,weekly_report,timesheets,reminders,test_accounts
+from core import Problem
 
 class ExcelExport(unittest.TestCase):
  def setUp(self):
@@ -18,6 +19,14 @@ class ExcelExport(unittest.TestCase):
   self.assertEqual(sheet['H2'].data_type,'s');self.assertTrue(sheet['H2'].value.startswith('='))
   self.assertEqual(sheet.freeze_panes,'B2');self.assertEqual(sheet.page_margins.left,.7)
   self.assertEqual(self.state,before)
+ def test_weekly_export_uses_the_active_table_sort(self):
+  state={'staffSettings':{'technicians':[{'name':'Zara','rego':''},{'name':'Aaron','rego':''}]}}
+  for direction,expected in [('asc',['Aaron','Zara']),('desc',['Zara','Aaron'])]:
+   sheet=self.book(weekly_export.weekly(state,{'week':self.week,'sort':{'index':0,'direction':direction}}))['Labour Report'];names=[]
+   for row in sheet.iter_rows(min_row=2,values_only=True):
+    if row[0] not in (None,'Weekly total') and row[0] not in names:names.append(row[0])
+   self.assertEqual(names,expected)
+  with self.assertRaises(Problem):weekly_export.weekly(state,{'week':self.week,'sort':{'index':9,'direction':'asc'}})
  def test_selected_period_and_corrected_week(self):
   change={**self.sheet,'weekStart':'2027-02-08','revision':1,'editReason':'Wrong week','days':[{'status':'Work','method':'direct','hours':9}]+[{'status':'Work','method':'direct','hours':0} for _ in range(6)]}
   state,_=timesheets.edit_submission(self.state,change,'admin@example.nz')

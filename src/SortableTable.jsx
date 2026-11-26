@@ -6,7 +6,7 @@ import {pageWindow,orderedPage} from './pagination'
 const elements=node=>Children.toArray(node).filter(isValidElement)
 const text=node=>typeof node==='string'||typeof node==='number'?String(node):isValidElement(node)?text(node.props.children):Array.isArray(node)?node.map(text).join(' '):''
 function cellValue(cell){return cell?.props['data-sort-value']??text(cell?.props.children)}
-export default function SortableTable({children,groupSize=1,paginate=false,paginationLabel='records',paginationReset='',...props}){
+export default function SortableTable({children,groupSize=1,paginate=false,paginationLabel='records',paginationReset='',onSortChange,...props}){
  const [sort,setSort]=useState(null),[paging,setPaging]=useState({key:'',page:1,size:10})
  const parts=elements(children),head=parts.find(p=>p.type==='thead'),headRow=head&&elements(head.props.children)[0],headers=headRow?elements(headRow.props.children):[]
  const body=parts.find(part=>part.type==='tbody'),bodyRows=body?elements(body.props.children):[],datasetKey=JSON.stringify([paginationReset,bodyRows.map(row=>row.key)])
@@ -14,7 +14,7 @@ export default function SortableTable({children,groupSize=1,paginate=false,pagin
  const changePage=page=>setPaging(current=>({...current,key:datasetKey,page}))
  const changeSize=size=>setPaging({key:datasetKey,page:1,size})
  const labels=headers.map(h=>text(h.props.children))
- function change(index){changePage(1);setSort(current=>({index,direction:current?.index===index&&current.direction==='asc'?'desc':'asc'}))}
+ function change(index){changePage(1);const next={index,direction:sort?.index===index&&sort.direction==='asc'?'desc':'asc'};setSort(next);onSortChange?.(next)}
  return <>{paginate&&<HistoryPagination range={range} label={paginationLabel} onPage={changePage} onSize={changeSize}/>}<table {...props}>{parts.map(part=>{
   if(part.type==='thead'&&headRow)return cloneElement(part,{},cloneElement(headRow,{},headers.map((h,i)=>h.props['data-sort-disabled']||/^(Actions?|Select|Pass|Fail|N\/A)$/i.test(labels[i])?h:cloneElement(h,{'aria-sort':sort?.index===i?sort.direction==='asc'?'ascending':'descending':'none'},<button className="table-sort" type="button" aria-label={`Sort by ${labels[i]} ${sort?.index===i&&sort.direction==='asc'?'descending':'ascending'}`} onClick={()=>change(i)}>{h.props.children}<span className={`sort-triangles ${sort?.index===i?sort.direction:'neutral'}`} aria-hidden="true"><i className="sort-up"/><i className="sort-down"/></span></button>))))
   if(part.type==='tbody'&&(sort||paginate)){

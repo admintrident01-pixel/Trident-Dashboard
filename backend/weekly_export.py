@@ -7,6 +7,21 @@ MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 def mode_of(data):
  if not isinstance(data,dict) or data.get('mode','all') not in ('all','work'):raise Problem(400,'Choose a report type.')
  return data.get('mode','all')
+def report_sort(data):
+ sort=data.get('sort') if isinstance(data,dict) else None
+ if sort is None:return None
+ index=sort.get('index') if isinstance(sort,dict) else None
+ direction=sort.get('direction') if isinstance(sort,dict) else None
+ if isinstance(index,bool) or not isinstance(index,int) or not 0<=index<=8 or direction not in ('asc','desc'):raise Problem(400,'Choose a valid report sort order.')
+ return index,direction
+def ordered_week_rows(rows,sort,metric):
+ if not sort:return rows
+ index,direction=sort
+ def value(row):
+  if index==0:return row['name'].casefold()
+  if index==8:return sum(day[metric] for day in row['days'])
+  return row['days'][index-1][metric]
+ return [row for _,row in sorted(enumerate(rows),key=lambda item:value(item[1]),reverse=direction=='desc')]
 def workbook(tables):
  raw=stock_reports.excel(tables);out=io.BytesIO();ns='http://schemas.openxmlformats.org/spreadsheetml/2006/main';tag=lambda n:'{'+ns+'}'+n
  with zipfile.ZipFile(io.BytesIO(raw)) as z,zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as target:
@@ -41,7 +56,7 @@ def day_annotations(day):
  return '\n'.join(labels)
 
 def weekly(state,data):
- mode=mode_of(data);week=data.get('week');rows=weekly_report.week_rows(state,week);metric='all' if mode=='all' else 'paid'
+ mode=mode_of(data);week=data.get('week');metric='all' if mode=='all' else 'paid';rows=ordered_week_rows(weekly_report.week_rows(state,week),report_sort(data),metric)
  dates=[(weekly_report.week_date(week)+dt.timedelta(days=i)).isoformat() for i in range(7)]
  headers=['Staff member','Hours type',*dates,'Total hours'];summary=[];detail=[]
  for row in rows:

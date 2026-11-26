@@ -41,6 +41,8 @@ export default function App(){
  const [session,setSession]=useState(loadSession),[error,setError]=useState(''),[document,setDocument]=useState(''),[timesheetDocument,setTimesheetDocument]=useState(''),[selectedPage,setPage]=useState(loadPage)
  const page=canAccessPage(selectedPage,session)?(selectedPage==='home'?homePage(session):selectedPage):homePage(session)
  const [timesheetOpenRequest,setTimesheetOpenRequest]=useState(null)
+ const [timesheetFormOpen,setTimesheetFormOpen]=useState(false)
+ const [timesheetFormMounted,setTimesheetFormMounted]=useState(false)
  const [incomingJob,setIncomingJob]=useState(null),quoteImportRef=useRef(null)
  const [savedJobId]=useState(()=>savedCaptureId(location.hash))
  const consumeIncoming=useCallback(()=>setIncomingJob(null),[])
@@ -52,7 +54,7 @@ export default function App(){
  const navigationVisible=navigationMode==='pinned'||navigationOpen
  function navigationPreference(mode){setNavigationMode(mode);setNavigationOpen(false);try{localStorage.setItem('trident-navigation-mode',mode)}catch{/* Keep this window's preference. */}}
  const [visitedPages,setVisitedPages]=useState(()=>({[loadPage()]:true}))
- const visitPage=useCallback(next=>{if(next!=='timesheet')setTimesheetOpenRequest(null);setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
+ const visitPage=useCallback(next=>{if(next!=='timesheet'){setTimesheetOpenRequest(null);setTimesheetFormOpen(false)}setVisitedPages(current=>current[next]?current:{...current,[next]:true});setPage(next)},[])
 
  useEffect(()=>saveSession(session),[session])
  useEffect(()=>{inFlightReads.current.clear()},[session?.token])
@@ -61,9 +63,14 @@ export default function App(){
  useEffect(()=>{if(session)window.history.replaceState(null,'',`${location.pathname}${location.search}#${page}${page==='job-import'?(savedJobId?'?job='+savedJobId:transferId(location.hash)?'?transfer='+transferId(location.hash):''):''}`)},[page,session,savedJobId])
  useEffect(()=>{const change=()=>{const next=loadPage();if(page==='reports'&&next!==page&&window.tridentReportHasUnsavedChanges?.()&&!window.confirm('Report entries are unsaved. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}if(page==='quotes'&&next!==page&&quoteFrame.current?.contentWindow.tridentQuoteHasUnsavedChanges?.()&&!window.confirm('Your quote has unsaved changes. Save your draft before leaving. Leave anyway?')){window.history.replaceState(null,'',`#${page}`);return}visitPage(next)};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[page,visitPage])
 
- const timesheetFrame=useRef(null),quoteFrame=useRef(null),pendingDraft=useRef('')
- function continueTimesheetDraft(id){navigate('timesheet');pendingDraft.current=id;if(timesheetFrame.current){timesheetFrame.current.contentWindow.postMessage({type:'trident-resume-timesheet-draft',id},location.origin);pendingDraft.current='';timesheetFrame.current.scrollIntoView({block:'start',behavior:'smooth'})}}
+ const timesheetFrame=useRef(null),quoteFrame=useRef(null),timesheetDialog=useRef(null),pendingDraft=useRef(''),pendingNew=useRef(false)
+ function postTimesheetMessage(type,payload={}){const frame=timesheetFrame.current?.contentWindow;if(!frame?.postMessage)return false;frame.postMessage({type,...payload},location.origin);return true}
+ function continueTimesheetDraft(id){const frame=timesheetFrame.current?.contentWindow;if(frame?.tridentTimesheetHasUnsavedChanges?.()&&!window.confirm('Open this draft? Any changes since your last save will be discarded.'))return;pendingNew.current=false;navigate('timesheet');setTimesheetFormMounted(true);setTimesheetFormOpen(true);pendingDraft.current=id;if(postTimesheetMessage('trident-resume-timesheet-draft',{id}))pendingDraft.current=''}
+ function openNewTimesheet(){const frame=timesheetFrame.current?.contentWindow;if(timesheetFormMounted&&frame?.tridentTimesheetHasUnsavedChanges?.()&&!window.confirm('Start a new time sheet? Any changes since your last save will be discarded.'))return;pendingDraft.current='';setTimesheetFormMounted(true);setTimesheetFormOpen(true);if(timesheetFormMounted){pendingNew.current=true;if(postTimesheetMessage('trident-new-timesheet'))pendingNew.current=false}}
+ function closeTimesheetForm(){setTimesheetFormOpen(false)}
  const [timesheetHeight,setTimesheetHeight]=useState(900)
+ useEffect(()=>{if(!timesheetFormMounted)return;const dialog=timesheetDialog.current;if(!dialog)return;if(timesheetFormOpen&&!dialog.open){dialog.showModal();dialog.scrollTop=0}else if(!timesheetFormOpen&&dialog.open)dialog.close()},[timesheetFormOpen,timesheetFormMounted])
+ useEffect(()=>{if(!timesheetFormOpen)return;const body=window.document.body,previous=body.style.overflow;body.style.overflow='hidden';return()=>{body.style.overflow=previous}},[timesheetFormOpen])
  const [managementSection,setManagementSection]=useState('staff')
 
  const isAdmin=session?.role==='admin'
@@ -120,7 +127,7 @@ export default function App(){
 
   if(!session||page!=='timesheet'||timesheetDocument)return;let cancelled=false
 
-  fetch('/timesheet.html?v=20261115a',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
+  fetch('/timesheet.html?v=20261126a',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Unable to load the time sheet.');return r.text()}).then(html=>{
 
    const config=JSON.stringify({api,token:session.token,origin:location.origin,pilot:myDayEnabled(session)}).replace(/</g,'\\u003c')
 
@@ -134,7 +141,7 @@ export default function App(){
 
  useEffect(()=>{const handler=e=>{if(e.origin===location.origin&&e.data?.type==='trident-signin-expired'){setSession(null);setDocument('');setTimesheetDocument('');setPage('home');setError('Your session expired. Sign in again.')}};window.addEventListener('message',handler);return()=>window.removeEventListener('message',handler)},[])
 
- useEffect(()=>{const listener=e=>{if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheet-height'&&Number.isFinite(e.data.height)&&e.data.height>0&&e.data.height<20000)setTimesheetHeight(e.data.height);if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheets-updated')window.dispatchEvent(new Event('trident-timesheets-updated'));if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-open-submitted-timesheet'&&typeof e.data.id==='string')setTimesheetOpenRequest({id:e.data.id,nonce:Date.now()})};window.addEventListener('message',listener);return()=>window.removeEventListener('message',listener)},[])
+ useEffect(()=>{const listener=e=>{if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheet-height'&&Number.isFinite(e.data.height)&&e.data.height>0&&e.data.height<20000)setTimesheetHeight(e.data.height);if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-timesheets-updated')window.dispatchEvent(new Event('trident-timesheets-updated'));if(e.origin===location.origin&&e.source===timesheetFrame.current?.contentWindow&&e.data?.type==='trident-open-submitted-timesheet'&&typeof e.data.id==='string')setTimesheetFormOpen(false);setTimesheetOpenRequest({id:e.data.id,nonce:Date.now()})};window.addEventListener('message',listener);return()=>window.removeEventListener('message',listener)},[])
  useEffect(()=>{if(page==='timesheet'&&timesheetDocument)timesheetFrame.current?.contentWindow.postMessage({type:'trident-leave-updated'},location.origin)},[page,timesheetDocument])
 
  useEffect(()=>{const refresh=()=>quoteFrame.current?.contentWindow.postMessage({type:'trident-quote-settings-updated'},location.origin);window.addEventListener('trident-settings-saved',refresh);return()=>window.removeEventListener('trident-settings-saved',refresh)},[])
@@ -203,7 +210,13 @@ export default function App(){
 
   {page==='timesheet'&&!timesheetDocument&&<p className="module-loading" role="status">Loading your time sheet…</p>}
 
-  {timesheetDocument&&<section className="quote-module timesheet-module" hidden={page!=='timesheet'} aria-label="Time sheet"><iframe ref={timesheetFrame} title="Trident time sheet" onLoad={()=>{if(pendingDraft.current){timesheetFrame.current.contentWindow.postMessage({type:'trident-resume-timesheet-draft',id:pendingDraft.current},location.origin);pendingDraft.current=''}}} style={{height:timesheetHeight}} srcDoc={timesheetDocument}/>{page==='timesheet'&&<TimesheetHistory openRequest={timesheetOpenRequest} request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft}/>}</section>}
+{timesheetDocument&&<section className="timesheet-module" hidden={page!=='timesheet'} aria-label="Time sheet">
+   {page==='timesheet'&&<TimesheetHistory openRequest={timesheetOpenRequest} request={request} isAdmin={isAdmin} onContinueDraft={continueTimesheetDraft} onNewTimesheet={openNewTimesheet}/>}
+   {timesheetFormMounted&&<dialog ref={timesheetDialog} className="timesheet-dialog timesheet-new-dialog" aria-labelledby="timesheet-new-title" onCancel={e=>{e.preventDefault();closeTimesheetForm()}} onClose={()=>setTimesheetFormOpen(false)} onClick={e=>{if(e.target!==e.currentTarget)return;const box=e.currentTarget.getBoundingClientRect();if(e.clientX<box.left||e.clientX>box.right||e.clientY<box.top||e.clientY>box.bottom)closeTimesheetForm()}}>
+    <header className="timesheet-dialog-header"><h2 id="timesheet-new-title">New time sheet</h2><button type="button" className="timesheet-dialog-close" aria-label="Close new time sheet" autoFocus onClick={closeTimesheetForm}><Icon name="x" size={18}/></button></header>
+    <div className="timesheet-new-dialog-body"><iframe ref={timesheetFrame} title="Trident time sheet form" onLoad={()=>{if(pendingDraft.current){postTimesheetMessage('trident-resume-timesheet-draft',{id:pendingDraft.current});pendingDraft.current=''}else if(pendingNew.current){postTimesheetMessage('trident-new-timesheet');pendingNew.current=false}}} style={{height:Math.max(560,timesheetHeight)}} srcDoc={timesheetDocument}/></div>
+   </dialog>}
+  </section>}
 
   {(page==='oncall'||visitedPages.oncall)&&<section hidden={page!=='oncall'}><OnCallRoster request={request}/></section>}
 
