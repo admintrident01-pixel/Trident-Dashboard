@@ -20,10 +20,10 @@ class StandardReportTests(unittest.TestCase):
         before=copy.deepcopy(self.state);raw=stock_standard.excel(self.state,'2026-10-15');book=load_workbook(io.BytesIO(raw))
         self.assertEqual(book.sheetnames,['Stock overview','Stock quantities','Asset numbers'])
         row=[book['Stock quantities'].cell(7,c).value for c in range(1,12)]
-        self.assertEqual(row[5:],[8,1,9,1,12,4])
+        self.assertEqual(row[5:],[8,1,8,1,12,4])
         chart=book['Stock overview']._charts[0]
         self.assertEqual(chart.type,'bar');self.assertEqual(chart.grouping,'stacked')
-        self.assertEqual([sum(pt.v for pt in ser.val.numRef.numCache.pt) for ser in chart.series],[9,0,0])
+        self.assertEqual([sum(pt.v for pt in ser.val.numRef.numCache.pt) for ser in chart.series],[8,0,0])
         assets=book['Asset numbers'];self.assertEqual(assets['D7'].value,10)
         self.assertIsNotNone(assets['N7'].value)
         text='\n'.join(str(c.value or '') for row in assets for c in row)

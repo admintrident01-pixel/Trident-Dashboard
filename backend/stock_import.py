@@ -143,7 +143,7 @@ def export(state,template=None):
                 e=next(c for c in row if c.get('r')==f'E{index}');e.set('t','n')
                 for child in list(e):e.remove(child)
                 ET.SubElement(e,tag('v')).text=str(balance['onHandQuantity'])
-            note='Column E: current stock on hand, including allocated units still in store. '+str(balance['awaitingOpeningNumbers'])+' opening units await asset numbers.' if prod.get('openingQuantityConfirmed') else 'Opening quantity missing: confirm this product separately.' if prod.get('sourceRow') else 'Added in Trident Dashboard. Column E is current stock on hand.'
+            note='Column E: current stock on hand at Trident, excluding allocated and delivered client stock. '+str(balance['awaitingOpeningNumbers'])+' opening units await asset numbers.' if prod.get('openingQuantityConfirmed') else 'Opening quantity missing: confirm this product separately.' if prod.get('sourceRow') else 'Added in Trident Dashboard. Column E is current stock on hand.'
             cell(row,'H',join(source.get('additional'),note,prod.get('reviewNote')),styles.get('H'))
         dimension=tree.find('s:dimension',NS)
         if dimension is not None:dimension.set('ref',f'A1:H{max(rows)}')

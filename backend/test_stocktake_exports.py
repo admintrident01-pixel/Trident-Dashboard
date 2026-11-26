@@ -44,17 +44,17 @@ class StocktakeExportTests(unittest.TestCase):
  def test_found_missing_extra_and_unnumbered_flow_to_actual_exports(self):
   f=self.fixture();f.start();e=f.entry(4);e[f.pid].update(decisions={f.ids[0]:'found',f.ids[1]:'missing'},numbers=['EXTRA-A'],notes='Two unnumbered items found')
   original=copy.deepcopy(f.state);result=f.complete(e);data=stock.read(result)
-  self.assertEqual(data['products'][f.pid]['onHandQuantity'],5)
+  self.assertEqual(data['products'][f.pid]['onHandQuantity'],4)
   self.assertEqual(data['products'][f.pid]['allocatedQuantity'],1)
   self.assertEqual(data['products'][f.pid]['deliveredQuantity'],1)
   self.assertEqual(data['assets'][f.ids[1]]['status'],'Retired');self.assertEqual(data['assets'][f.ids[1]]['number'],'MISSING')
   self.assertEqual(result['stockTakes'][takes.read(original,'admin')['draft']['id']]['summary'][0]['counted'],4)
-  self.assert_exports(result,f.pid,5,4)
+  self.assert_exports(result,f.pid,4,4)
  def test_zero_and_repeated_stocktake_do_not_duplicate_stock(self):
   f=self.fixture();f.start();e=f.entry(0);e[f.pid]['decisions']={f.ids[0]:'missing',f.ids[1]:'retire'}
-  result=f.complete(e);self.assertEqual(stock.balances(result['stock'],f.pid)['onHandQuantity'],1);self.assertEqual(stock.balances(result['stock'],f.pid)['allocatedQuantity'],1)
+  result=f.complete(e);self.assertEqual(stock.balances(result['stock'],f.pid)['onHandQuantity'],0);self.assertEqual(stock.balances(result['stock'],f.pid)['allocatedQuantity'],1)
   f.state=result;f.start();result=f.complete({f.pid:dict(count=0,decisions={},numbers=[],notes='Counted again')})
-  self.assertEqual(len(result['stock']['assets']),4);self.assert_exports(result,f.pid,1,0)
+  self.assertEqual(len(result['stock']['assets']),4);self.assert_exports(result,f.pid,0,0)
  def test_new_product_appears_in_live_register_and_exports(self):
   f=self.fixture();d=f.start();f.state=takes.action(f.state,dict(action='add_product',id=d['id'],version=d['version'],code='NEW-CODE',description='New counted product',condition='NEW'),'admin')
   d=takes.read(f.state,'admin')['draft'];pid=d['rows'][-1]['id'];e=f.entry();e[pid]=dict(count=2,decisions={},numbers=['NEW-A'],notes='One unnumbered')

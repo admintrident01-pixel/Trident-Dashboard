@@ -175,7 +175,7 @@ def pdf(state,date):
         for j,label in enumerate(('NEW','REFURB','Unspecified')):
             x=left+j*110;drawing.add(Rect(x,h-12,8,8,fillColor=colors.HexColor('#'+COLORS[j]),strokeColor=None));drawing.add(String(x+13,h-11,label,fontName='Helvetica',fontSize=8,fillColor=colors.HexColor('#17365F')))
         story.extend([drawing,Spacer(1,8)])
-        story.append(para(f"Only products with recorded stock on hand are charted. {snap['unknown']} product/condition rows have unconfirmed quantities. Stock on hand includes allocated units still in store; delivered items are excluded."))
+        story.append(para(f"Only products with recorded stock on hand are charted. {snap['unknown']} product/condition rows have unconfirmed quantities. Stock on hand includes only units available at Trident; allocated and delivered client stock is excluded."))
     story.extend([PageBreak(),para('Stock quantities',heading),para('Each row is one product and condition. Available stock excludes allocated orders. Minimums come from Stock settings; shortfall is the available quantity needed to reach the minimum. Unconfirmed quantities remain Not recorded.'),Spacer(1,10)])
     weights=[50,58,190,53,52,51,60,52,50,48,53];scale=doc.width/sum(weights)
     story.append(table(['Product code','Condition','Description','Incoming','Refurb','Available','Allocated in store','Stock on hand','Delivered','Minimum','Shortfall'],snap['quantities'],[x*scale for x in weights]))

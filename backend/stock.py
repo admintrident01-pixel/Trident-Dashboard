@@ -122,7 +122,9 @@ def balance_index(data):
         elif status=='Refurbishing':row['refurbingQuantity']+=1
         elif status=='With client':row['deliveredQuantity']+=1
         if ready_refurb(asset):row['refurbedQuantity']+=1
-    for row in rows.values():row['onHandQuantity']=row['availableQuantity']+row['allocatedQuantity']
+    # Stock on hand is stock physically at Trident. Allocated and delivered
+    # client stock is tracked separately and must not inflate this balance.
+    for row in rows.values():row['onHandQuantity']=row['availableQuantity']
     return rows
 
 def balances(data,product_id,index=None):

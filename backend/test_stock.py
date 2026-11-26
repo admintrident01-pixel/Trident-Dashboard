@@ -330,7 +330,7 @@ class StockTests(unittest.TestCase):
         self.assertEqual((row['incomingQuantity'],row['onHandQuantity']),(1,1))
         self.act_assets('allocate',ids,client='Client',reference='PO',jobId='JOB')
         row=stock.read(self.state)['products'][self.pid]
-        self.assertEqual((row['onHandQuantity'],row['allocatedQuantity']),(1,1))
+        self.assertEqual((row['onHandQuantity'],row['allocatedQuantity']),(0,1))
         self.act_assets('dispatch',ids)
         row=stock.read(self.state)['products'][self.pid]
         self.assertEqual((row['onHandQuantity'],row['allocatedQuantity'],row['deliveredQuantity']),(0,0,1))
@@ -490,7 +490,7 @@ class StockImportTests(unittest.TestCase):
         self.assertEqual(stock.read(state)['products'][prod]['awaitingOpeningNumbers'],3)
         key=next(iter(state['stock']['assets']))
         state=stock.action(state,{'action':'allocate','assetIds':[key],'revisions':{key:1},'client':'Client','reference':'PO','jobId':'JOB'},'admin')
-        self.assertEqual(stock.read(state)['products'][prod]['onHandQuantity'],5)
+        self.assertEqual(stock.read(state)['products'][prod]['onHandQuantity'],4)
         self.assertEqual(stock.read(state)['summary']['Available stock'],4)
         state=stock.action(state,{'action':'dispatch','assetIds':[key],'revisions':{key:2}},'admin')
         self.assertEqual(stock.read(state)['products'][prod]['onHandQuantity'],4)

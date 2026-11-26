@@ -64,7 +64,7 @@ class StocktakeTests(unittest.TestCase):
   result=self.complete(self.entry(6));self.assertEqual(result['stock']['receipts'][rid],receipt)
  def test_existing_unlabelled_stock_assigned_without_double_counting(self):
   self.state=stock.action(self.state,dict(action='receive',productId=self.pid,pool='Existing stock',quantity=4,date='2026-10-15'),'admin');rid=list(self.state['stock']['receipts'])[-1];self.state['stock']['receipts'][rid]['openingBalance']=True;self.start();e=self.entry(5);e[self.pid]['numbers']=['EXTRA1','EXTRA2'];result=self.complete(e)
-  self.assertEqual(result['stock']['receipts'][rid]['quantity'],3);self.assertEqual(len(result['stock']['receipts'][rid]['assetIds']),2);self.assertEqual(stock.balances(result['stock'],self.pid)['onHandQuantity'],6)
+  self.assertEqual(result['stock']['receipts'][rid]['quantity'],3);self.assertEqual(len(result['stock']['receipts'][rid]['assetIds']),2);self.assertEqual(stock.balances(result['stock'],self.pid)['onHandQuantity'],5)
  def test_unknown_count_zero_becomes_known(self):
   self.state=stock.action({},dict(action='product',code='ZERO',description='Unknown'),'admin');self.pid=next(iter(self.state['stock']['products']));p=self.state['stock']['products'][self.pid];p.update(sourceRow=1,sourceQuantity=None,quantityBasis='listed_assets');self.start();result=self.complete({self.pid:dict(count=0,decisions={},numbers=[],notes='Checked empty')})
   self.assertTrue(stock.quantity_known(result['stock'],result['stock']['products'][self.pid]));self.assertEqual(stock.balances(result['stock'],self.pid)['onHandQuantity'],0)
