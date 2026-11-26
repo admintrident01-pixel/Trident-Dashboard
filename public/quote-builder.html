@@ -53,11 +53,12 @@
 .quote-editor-tabs{flex-wrap:wrap}#importedJobPanel{font-size:13px;line-height:1.5}#importedJobPanel h2{margin:8px 0 14px}#importedJobPanel h3{font-size:15px;margin:10px 0}#importedJobPanel h4{font-size:13px;margin:0 0 10px;overflow-wrap:anywhere}#importedJobPanel p{color:#58708d}.import-map-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}.import-map-toolbar select{flex:1;margin:0;min-width:170px}.import-review-layout{display:grid;grid-template-columns:1fr;gap:18px}.import-map-card{border:1px solid #d6e1ed;padding:12px;border-radius:7px;margin:12px 0;background:#fafbfd}.import-map-values{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}.import-map-values>div{min-width:0}.import-map-values pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;background:#edf2f8;border-radius:5px;padding:10px;max-height:180px;overflow:auto}.import-map-values small{display:block;white-space:pre-wrap;overflow-wrap:anywhere;max-height:100px;overflow:auto;margin:8px 0}.import-map-values button{padding:7px 10px}.import-source-table{overflow:auto;max-height:360px;margin:10px 0}.import-source-table table{border-collapse:collapse;font-size:11px;min-width:100%}.import-source-table th,.import-source-table td{border:1px solid #d6e1ed;padding:7px;min-width:75px;white-space:pre-wrap;overflow-wrap:anywhere;vertical-align:top}.import-source-table th{background:#edf2f8}#importedJobPanel details{border-top:1px solid #d6e1ed;margin-top:12px;padding-top:12px}#importedJobPanel summary{font-weight:bold;cursor:pointer}@media(min-width:1450px){.import-review-layout{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}}@media(max-width:600px){.import-map-values{grid-template-columns:1fr}#importedJobPanel input,#importedJobPanel select,#importedJobPanel textarea,#importedJobPanel button{font-size:16px;min-height:44px}.import-map-card{padding:10px}.import-map-toolbar select{width:100%}}
 </style><style>
 @media screen{
- body.trident-quote:has(#homePage:not([hidden])) header.app{padding:6px 16px;gap:6px;flex-wrap:nowrap}
+ body.trident-quote:has(#homePage:not([hidden])) header.app{padding:6px 16px;gap:6px;flex-wrap:wrap}
  body.trident-quote:has(#homePage:not([hidden])) header.app>div:first-child{display:none}
  body.trident-quote:has(#homePage:not([hidden])) header.app .last-quote{display:flex;align-items:baseline;gap:10px;max-width:none;min-width:0}
  body.trident-quote:has(#homePage:not([hidden])) header.app .last-quote span{margin:0;flex:none}
  body.trident-quote:has(#homePage:not([hidden])) header.app #homeButton{display:none}
+ body.trident-quote:has(#homePage:not([hidden])) header.app .actions{display:none}
  body.trident-quote #homePage{padding:16px}
  body.trident-quote .home-tools{margin:12px 0}
  body.trident-quote .home-table{scrollbar-gutter:stable}
@@ -518,7 +519,7 @@ async function migrateOlderDrafts(){
  }
  if(migrated){sourceDraftName='';fresh();editorBaseline=editorSignature();}
 }
-$('homeButton').onclick=()=>showHome();$('newQuote').onclick=startNewQuote;$('reset').onclick=startNewQuote;
+$('quoteSearch').setAttribute('aria-label','Search quotes');$('homeButton').onclick=()=>showHome();$('newQuote').onclick=startNewQuote;$('reset').onclick=startNewQuote;
 $('save').onclick=()=>saveQuote('Draft');$('confirmQuote').onclick=()=>saveQuote('Finalised');$('load').onclick=()=>{homeFilter='Draft';showHome();};
 $('quoteSearch').oninput=()=>{clearTimeout(quoteSearchTimer);dashboardGeneration++;dashboardController?.abort();quoteSearchTimer=setTimeout(renderHome,250);};document.querySelectorAll('[data-quote-filter]').forEach(b=>b.onclick=()=>{homeFilter=b.dataset.quoteFilter;renderHome();});
 var quoteStartup=Promise.resolve();window.addEventListener('DOMContentLoaded',()=>{quoteStartup=showHome(false);const ready=()=>parent.postMessage({type:'trident-quote-import-ready'},parent.location.origin);quoteStartup.then(ready,ready)});$('downloadExcel').onclick=async()=>{try{const r=await fetch('/api/workbook');if(!r.ok)throw Error((await r.json()).error);const url=URL.createObjectURL(await r.blob()),a=document.createElement('a');a.href=url;a.download='Trident-Quote-Settings.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){quoteConfirmationStatus(e.message);}};

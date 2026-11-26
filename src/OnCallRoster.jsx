@@ -58,10 +58,10 @@ function WeekHalf({row,label,next,busy,onAccept,onGrab,onHandover,onRelease,onRe
   {row.status==='open'&&<p className="oncall-hint">Any technician can grab this week.</p>}
   {row.customDays>0&&<p className="oncall-daysummary"><b>Day cover</b> {row.dayNote}</p>}
   <div className="oncall-actions">
-   {row.canAccept&&<button className="oncall-btn primary" disabled={busy} onClick={()=>onAccept(row)}><Icon name="check" size={14}/>Accept on call</button>}
-   {showManage&&<button className={'oncall-btn'+(row.canAccept?'':' primary')} disabled={busy} onClick={()=>onHandover(row)}><Icon name="repeat" size={14}/>Hand over</button>}
+   {row.canAccept&&<button className="oncall-btn primary td-accent" disabled={busy} onClick={()=>onAccept(row)}><Icon name="check" size={14}/>Accept on call</button>}
+   {showManage&&<button className="oncall-btn" disabled={busy} onClick={()=>onHandover(row)}><Icon name="repeat" size={14}/>Hand over</button>}
    {showRelease&&<button className="oncall-btn" disabled={busy} onClick={()=>onRelease(row)}><Icon name="users" size={14}/>Release to pool</button>}
-   {row.canGrab&&<button className="oncall-btn primary" disabled={busy} onClick={()=>onGrab(row)}><Icon name="users" size={14}/>Grab this week</button>}
+   {row.canGrab&&<button className="oncall-btn primary td-accent" disabled={busy} onClick={()=>onGrab(row)}><Icon name="users" size={14}/>Grab this week</button>}
    {row.canResend&&<button className="oncall-text" disabled={busy} onClick={()=>onResend(row)}><Icon name="mail" size={13}/>Resend email</button>}
    {canManageDays&&<button className="oncall-text" disabled={busy} onClick={()=>onManageDays(row)}><Icon name="calendar" size={13}/>Day cover</button>}
   </div>
@@ -71,7 +71,7 @@ function WeekHalf({row,label,next,busy,onAccept,onGrab,onHandover,onRelease,onRe
 function RowAction({row,busy,onAccept,onGrab,onHandover,onResend}){
  if(row.status==='open'){
   if(row.canHandover)return <button className="oncall-btn tiny" disabled={busy} onClick={()=>onHandover(row)}>Assign</button>
-  return row.canGrab?<button className="oncall-btn tiny" disabled={busy} onClick={()=>onGrab(row)}>Grab</button>:<span className="oncall-dash">—</span>
+  return row.canGrab?<button className="oncall-btn tiny td-accent" disabled={busy} onClick={()=>onGrab(row)}>Grab</button>:<span className="oncall-dash">—</span>
  }
  if(row.status==='awaiting'){
   if(row.canAccept)return <button className="oncall-text" disabled={busy} onClick={()=>onAccept(row)}><Icon name="check" size={12}/>Accept</button>
@@ -191,7 +191,7 @@ export default function OnCallRoster({request}){
  function setDayChoice(date,value){setDayDraft(current=>current.map(item=>item.day.date===date?{...item,choice:value}:item))}
  function resetDayDraft(){setDayDraft(current=>current.map(item=>({...item,choice:'__inherit__'})))}
 
- if(!data)return <main className="oncall-page"><div className="oncall-head"><div><h1>On call</h1><p>Loading this week’s roster…</p></div></div>{error&&<p role="alert" className="oncall-alert">{error} <button className="oncall-text" onClick={()=>{setError('');load().catch(problem=>setError(problem.message))}}>Try again</button></p>}</main>
+ if(!data)return <main className="oncall-page"><div className="oncall-head"><div><h1>On call</h1></div></div><p className="module-loading" role="status">Loading this week’s roster…</p>{error&&<p role="alert" className="oncall-alert">{error} <button className="oncall-text" onClick={()=>{setError('');load().catch(problem=>setError(problem.message))}}>Try again</button></p>}</main>
 
  const rows=data.rows,maxFocus=Math.max(0,rows.length-2),index=Math.min(focus,maxFocus),current=rows[index],next=rows[index+1],groups=planGroups(planDraft)
 
